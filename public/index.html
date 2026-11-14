@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Oracle · eyes on the ground</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#0d0f14; --card:#161a22; --line:#252a35; --ink:#eef0f4; --muted:#8e96a5;
+          --gold:#f5b83d; --g:#46c486; --a:#f5b83d; --r:#ef5a5a; --blue:#6aa7ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system, system-ui, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; align-items:center; gap:16px; padding:16px 24px; border-bottom:1px solid var(--line); }
+  .brand h1 { margin:0; font-size:24px; letter-spacing:-.02em; }
+  .brand p { margin:2px 0 0; color:var(--muted); font-size:13px; }
+  .stats { margin-left:auto; display:flex; gap:28px; }
+  .stat b { display:block; font-size:22px; } .stat span { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+  main { display:grid; grid-template-columns: 1.15fr 1fr; gap:16px; padding:16px 24px 24px; }
+  .col { display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .card h2 { margin:0 0 12px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600; }
+  #map { height:300px; border-radius:10px; }
+  .ask { display:flex; gap:8px; }
+  .ask select, .ask input { background:#0f1218; color:var(--ink); border:1px solid var(--line); border-radius:9px; padding:10px; font-size:15px; }
+  .ask input { flex:1; }
+  .ask button { background:var(--gold); color:#1b1400; border:0; border-radius:9px; padding:0 18px; font-weight:700; font-size:15px; cursor:pointer; }
+  #answer { margin-top:12px; font-size:15px; color:var(--muted); min-height:22px; }
+  #answer b { color:var(--ink); font-size:20px; }
+  .pill { display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; background:#262c38; color:var(--ink); margin-left:6px; vertical-align:middle; }
+  .pill.memory { background:#173b2a; color:var(--g); } .pill.people { background:#1d2c48; color:var(--blue); }
+  .pill.photo { background:#3d2f12; color:var(--gold); } .pill.web { background:#2e2340; color:#c79bff; } .pill.none { background:#3a1d1d; color:var(--r); }
+  #feed { display:flex; flex-direction:column; gap:10px; max-height:640px; overflow:auto; }
+  .q { border:1px solid var(--line); border-radius:12px; padding:12px; animation:in .35s ease; }
+  .q .top { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); }
+  .q h3 { margin:6px 0 10px; font-size:16px; }
+  .bar { display:flex; align-items:center; gap:8px; font-size:13px; margin:4px 0; }
+  .bar .lbl { width:92px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar .track { flex:1; height:10px; background:#0f1218; border-radius:99px; overflow:hidden; }
+  .bar .fill { height:100%; width:0; border-radius:99px; transition:width .4s ease; }
+  .bar .n { width:54px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .q .events { margin-top:8px; font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:4px; }
+  .q .result { margin-top:10px; font-size:15px; }
+  .q img { margin-top:8px; width:100%; max-height:220px; object-fit:cover; border-radius:10px; }
+  .q.settled { border-color:#2f6b4f; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td, th { padding:7px 4px; border-bottom:1px solid var(--line); text-align:left; }
+  th { color:var(--muted); font-weight:500; font-size:12px; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  a { color:var(--blue); text-decoration:none; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .trend-controls { display:flex; gap:8px; margin-bottom:8px; }
+  .trend-controls select { background:#0f1218; color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:6px; }
+  #insight { color:var(--muted); font-size:13px; margin-top:8px; }
+  .owl { width:52px; height:52px; } .owl .lid { transform-origin:center; transform:scaleY(0); }
+  .owl.blink .lid { animation:blink .35s ease; } .owl.hoot { animation:hoot .5s ease; }
+  @keyframes blink { 50% { transform:scaleY(1); } }
+  @keyframes hoot { 30% { transform:rotate(-8deg) scale(1.08); } 60% { transform:rotate(6deg); } }
+  @keyframes in { from { opacity:0; transform:translateY(-6px); } }
+  .leaflet-container { background:#0f1218; }
+  @media (max-width: 980px) { main { grid-template-columns:1fr; } .stats { display:none; } }
+</style>
+</head>
+<body>
+<header>
+  <svg class="owl" id="owl" viewBox="0 0 64 64" aria-label="Oracle owl">
+    <path d="M12 14 L20 22 L44 22 L52 14 L50 40 C50 52 42 58 32 58 C22 58 14 52 14 40 Z" fill="#c58b2c"/>
+    <path d="M20 40 C20 50 26 54 32 54 C38 54 44 50 44 40 C44 46 38 50 32 50 C26 50 20 46 20 40Z" fill="#f2d08a"/>
+    <circle cx="24" cy="31" r="8" fill="#fff"/><circle cx="40" cy="31" r="8" fill="#fff"/>
+    <circle cx="24" cy="31" r="3.6" fill="#1a1205"/><circle cx="40" cy="31" r="3.6" fill="#1a1205"/>
+    <rect class="lid" x="15" y="23" width="18" height="16" rx="8" fill="#c58b2c"/>
+    <rect class="lid" x="31" y="23" width="18" height="16" rx="8" fill="#c58b2c"/>
+    <path d="M30 37 L34 37 L32 42 Z" fill="#f5b83d"/>
+  </svg>
+  <div class="brand"><h1>Oracle</h1><p>Eyes on the ground for AI agents</p></div>
+  <div class="stats">
+    <div class="stat"><b id="sPeople">0</b><span>people</span></div>
+    <div class="stat"><b id="sAnswered">0</b><span>answered</span></div>
+    <div class="stat"><b id="sSpeed">–</b><span>avg answer</span></div>
+    <div class="stat"><b id="sSol">0</b><span>SOL paid</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="col">
+    <section class="card">
+      <h2>Ask the physical world</h2>
+      <div class="ask">
+        <select id="askPlace"></select>
+        <input id="askText" placeholder="How long is the line right now?" />
+        <button id="askBtn">Ask</button>
+      </div>
+      <div id="answer"></div>
+    </section>
+
+    <section class="card">
+      <h2>Live map</h2>
+      <div id="map"></div>
+    </section>
+
+    <section class="card">
+      <h2>Patterns</h2>
+      <div class="trend-controls"><select id="tPlace"></select><select id="tTopic"></select></div>
+      <canvas id="chart" height="150"></canvas>
+      <div id="insight"></div>
+    </section>
+
+    <div class="row2">
+      <section class="card"><h2>Top reporters</h2><table id="leaders"></table></section>
+      <section class="card"><h2>Payouts (devnet)</h2><table id="payouts"></table></section>
+    </div>
+  </div>
+
+  <div class="col">
+    <section class="card"><h2>Live questions</h2><div id="feed"></div></section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const hhmm = (t) => new Date(t).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+const COLORS = ["var(--g)", "var(--a)", "var(--r)"];
+const HEX = ["#46c486", "#f5b83d", "#ef5a5a"];
+const getJSON = (u) => fetch(u).then((r) => r.json());
+
+// ---------- owl
+const owl = $("owl");
+const blink = () => { owl.classList.remove("blink"); void owl.offsetWidth; owl.classList.add("blink"); };
+const hoot = () => { owl.classList.remove("hoot"); void owl.offsetWidth; owl.classList.add("hoot"); };
+setInterval(blink, 4500);
+
+// ---------- places, map
+let PLACES = [];
+const markers = {};
+const map = L.map("map", { zoomControl:false, attributionControl:true });
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  attribution: "&copy; OpenStreetMap &copy; CARTO", maxZoom: 19,
+}).addTo(map);
+
+async function loadPlaces() {
+  ({ places: PLACES } = await getJSON("/api/places"));
+  const opts = PLACES.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+  $("askPlace").innerHTML = opts; $("tPlace").innerHTML = opts;
+  map.fitBounds(L.latLngBounds(PLACES.map((p) => [p.lat, p.lng])).pad(0.6));
+  for (const p of PLACES) {
+    markers[p.id] = L.circleMarker([p.lat, p.lng], { radius:12, color:"#8e96a5", weight:2, fillOpacity:.35 }).addTo(map)
+      .bindTooltip(p.name, { permanent:true, direction:"top", offset:[0,-10], className:"" });
+  }
+}
+
+async function loadStatus() {
+  const status = await getJSON("/api/status");
+  for (const s of status) {
+    const m = markers[s.id]; if (!m) continue;
+    const c = s.latest?.option ? HEX[s.latest.option - 1] : "#8e96a5";
+    m.setStyle({ color:c, fillColor:c, radius: 10 + Math.min(12, s.people_here * 2) });
+    m.setTooltipContent(`${esc(s.name)}${s.latest ? ` · <b>${esc(s.latest.answer)}</b>` : ""} · ${s.people_here} here`);
+  }
+}
+function pulse(placeId, option) {
+  const m = markers[placeId]; if (!m) return;
+  const c = option ? HEX[option - 1] : "#6aa7ff";
+  const ring = L.circleMarker(m.getLatLng(), { radius:12, color:c, weight:3, fill:false }).addTo(map);
+  let r = 12; const t = setInterval(() => { r += 3; ring.setRadius(r); ring.setStyle({ opacity: Math.max(0, 1 - (r - 12) / 40) });
+    if (r > 52) { clearInterval(t); map.removeLayer(ring); } }, 30);
+}
+
+// ---------- ask box
+$("askBtn").onclick = async () => {
+  const place = $("askPlace").value, question = $("askText").value.trim() || "How long is the line right now?";
+  $("answer").textContent = "Asking people nearby…";
+  const r = await fetch("/api/ask", { method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ place, question, waitSeconds: 90 }) }).then((x) => x.json());
+  $("answer").innerHTML = r.error ? esc(r.error)
+    : r.answer ? `<b>${esc(r.answer)}</b><span class="pill ${r.source}">${r.source}</span>${r.votes ? `<span class="pill">${r.votes} votes</span>` : ""}${r.answered_in_s != null ? `<span class="pill">${r.answered_in_s}s</span>` : ""}`
+    : esc(r.note || r.status);
+  refresh();
+};
+$("askText").addEventListener("keydown", (e) => e.key === "Enter" && $("askBtn").click());
+
+// ---------- live question cards
+const cards = {};
+function card(e) {
+  if (cards[e.id]) return cards[e.id];
+  const el = document.createElement("div");
+  el.className = "q";
+  el.innerHTML = `<div class="top"><span>${esc(e.place)} · asked by ${esc(e.askedBy || "agent")}</span><span>${hhmm(e.at)}</span></div>
+    <h3>${esc(e.question)}</h3>
+    <div class="bars">${(e.options || []).map((o, i) => `<div class="bar"><span class="lbl">${esc(o)}</span>
+      <div class="track"><div class="fill" style="background:${COLORS[i]}"></div></div><span class="n">0</span></div>`).join("")}</div>
+    <div class="events"><span>📡 pinged ${e.pinged ?? 0} people nearby</span></div><div class="result"></div>`;
+  $("feed").prepend(el);
+  return (cards[e.id] = el);
+}
+function setTally(el, tally) {
+  const max = Math.max(1, ...tally.map((t) => t.weight));
+  el.querySelectorAll(".bar").forEach((b, i) => {
+    const t = tally[i] || { n:0, weight:0 };
+    b.querySelector(".fill").style.width = `${(t.weight / max) * 100}%`;
+    b.querySelector(".n").textContent = `${t.n} · ${t.weight}`;
+  });
+}
+const note = (el, html) => { const s = document.createElement("span"); s.innerHTML = html; el.querySelector(".events").append(s); };
+
+function onEvent(e) {
+  if (e.type === "question") { card(e); pulse(e.placeId); hoot(); }
+  if (e.type === "vote" && cards[e.id]) { setTally(cards[e.id], e.tally); note(cards[e.id], `📱 ${esc(e.name)} (trust ${e.trust}) → ${esc(e.answer)}`); pulse(e.placeId, e.option); blink(); }
+  if (e.type === "dispute" && cards[e.id]) note(cards[e.id], `⚖️ People disagree. Asked <b>${esc(e.name)}</b> for a photo.`);
+  if (e.type === "photo" && cards[e.id]) {
+    note(cards[e.id], e.passed ? `📸 Photo verified by Gemini: ${esc(e.reason)}${e.distanceM != null ? ` (${e.distanceM} m away)` : ""}`
+                               : `📸 Photo rejected: ${esc(e.reason)}`);
+    if (e.image) { const img = document.createElement("img"); img.src = e.image; cards[e.id].querySelector(".events").append(img); }
+  }
+  if (e.type === "web" && cards[e.id]) note(cards[e.id], `🐟 Nobody nearby. TinyFish is reading ${esc(e.url || "the web")}…`);
+  if (e.type === "answer") {
+    if (e.source === "memory") {
+      const el = document.createElement("div"); el.className = "q settled";
+      el.innerHTML = `<div class="top"><span>${esc(e.place)}</span><span>${hhmm(e.at)}</span></div><h3>${esc(e.question)}</h3>
+        <div class="result">⚡ <b>${esc(e.answer)}</b><span class="pill memory">memory</span> instant, ${esc(e.note || "")}</div>`;
+      $("feed").prepend(el);
+    } else if (cards[e.question_id]) {
+      const el = cards[e.question_id]; el.classList.add("settled");
+      el.querySelector(".result").innerHTML = e.answer
+        ? `✅ <b>${esc(e.answer)}</b><span class="pill ${e.source}">${e.source}</span><span class="pill">${e.answered_in_s}s</span>${e.confidence != null ? `<span class="pill">${Math.round(e.confidence * 100)}% sure</span>` : ""}${e.evidence ? `<div style="color:var(--muted);font-size:13px;margin-top:4px">${esc(e.evidence)}</div>` : ""}`
+        : `🤷 ${esc(e.note || "No answer")}`;
+    }
+    hoot(); refresh();
+  }
+  if (e.type === "payout") { refresh(); }
+}
+new EventSource("/api/stream").onmessage = (m) => onEvent(JSON.parse(m.data));
+
+// ---------- patterns
+let chart;
+async function loadTopics() {
+  const topics = await getJSON(`/api/topics?place=${$("tPlace").value}`);
+  const list = topics.length ? topics.map((t) => t.topic) : ["line_length", "crowd"];
+  const cur = $("tTopic").value;
+  $("tTopic").innerHTML = list.map((t) => `<option ${t === cur ? "selected" : ""}>${esc(t)}</option>`).join("");
+  loadTrend();
+}
+async function loadTrend() {
+  const place = $("tPlace").value, topic = $("tTopic").value;
+  const [rows, ins] = await Promise.all([getJSON(`/api/trend?place=${place}&topic=${topic}`), getJSON(`/api/insights?place=${place}&topic=${topic}`)]);
+  const data = Array.isArray(rows) ? rows : [];
+  const cfg = {
+    type: "line",
+    data: { labels: data.map((r) => new Date(r.bucket).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" })),
+            datasets: [{ data: data.map((r) => r.avg_option), borderColor:"#f5b83d", backgroundColor:"rgba(245,184,61,.15)", fill:true, tension:.35, pointRadius:3 }] },
+    options: { plugins:{ legend:{ display:false } }, scales: {
+      y: { min:1, max:3, ticks:{ stepSize:1, color:"#8e96a5", callback:(v) => ["", "low", "mid", "high"][v] }, grid:{ color:"#252a35" } },
+      x: { ticks:{ color:"#8e96a5", maxTicksLimit:8 }, grid:{ display:false } } } },
+  };
+  if (chart) { chart.data = cfg.data; chart.update(); } else chart = new Chart($("chart"), cfg);
+  $("insight").textContent = data.length ? (ins.summary || "") : "No answers yet for this place and topic.";
+}
+$("tPlace").onchange = loadTopics; $("tTopic").onchange = loadTrend;
+
+// ---------- side panels
+async function refresh() {
+  const [stats, leaders, pays] = await Promise.all([getJSON("/api/stats"), getJSON("/api/leaderboard"), getJSON("/api/payouts")]);
+  $("sPeople").textContent = stats.people ?? 0;
+  $("sAnswered").textContent = stats.answered ?? 0;
+  $("sSpeed").textContent = stats.avgSeconds ? `${stats.avgSeconds}s` : "–";
+  $("sSol").textContent = (stats.payouts?.sol ?? 0).toFixed(3);
+  $("leaders").innerHTML = `<tr><th>Name</th><th class="num">Correct</th><th class="num">Trust</th></tr>` +
+    (Array.isArray(leaders) ? leaders : []).slice(0, 6).map((u, i) => `<tr><td>${["🥇","🥈","🥉"][i] || ""} ${esc(u.name)}</td><td class="num">${u.correct}</td><td class="num">${u.trust}</td></tr>`).join("");
+  $("payouts").innerHTML = `<tr><th>To</th><th class="num">SOL</th><th></th></tr>` +
+    (Array.isArray(pays) ? pays : []).slice(0, 6).map((p) => `<tr><td>${esc(p.user_id.split(":").pop().slice(0, 10))}</td><td class="num">${p.amount_sol}</td><td class="num"><a href="${p.url}" target="_blank">tx ↗</a></td></tr>`).join("");
+  loadStatus();
+}
+
+(async () => { await loadPlaces(); await loadTopics(); refresh(); setInterval(refresh, 15000); })();
+</script>
+</body>
+</html>
