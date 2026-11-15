@@ -154,3 +154,8 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Decision:* Small lime tags appear where each sponsor acts: "Gemini" on a checked photo, "TinyFish" when Oracle reads an official page, "Tiger Data" on the 24-hour trend and on instant answers from memory, and "See it on Solana Explorer" on the latest payout. `/app`, `/` and `/join` have a description, a favicon and a link-preview image (`og:image`). No GitHub link: the repo is private.
 - *Why:* Sponsor judges look for their own technology; the demo should show it on screen at the moment it is used, not only in a list.
 - *Where:* `public/index.html` (`tags`, `photo`, `web`, `showPlace`, `refresh`), `<head>` of `public/app.html`, `public/index.html`, `public/join.html`.
+
+**D-028: The web uses the iPhone app's cream look (replaces the dark + lime theme in D-024)** · 2026-11-15 · Active
+- *Decision:* `/app`, `/` and `/join` use the app's Theme.swift look: cream paper with pink dots, charcoal outlines with offset shadows, blue primary buttons, pink/periwinkle/mint tag strips, rounded type, Ora's face as the logo, and a light map. Layouts from D-024 to D-027 are unchanged.
+- *Why:* The real iPhone app uses this cream style; the dark preview image in the repo was out of date.
+- *Where:* `public/app.html`, `public/index.html`, `public/join.html`.
