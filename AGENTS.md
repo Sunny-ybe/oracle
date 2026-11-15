@@ -23,7 +23,7 @@ Oracle: AI agents ask about real places, nearby people answer (tap/photo), trust
 | SQL schema (Tiger) | `schema.sql` |
 
 ## Run
-`npm run demo` starts a tunnel and the server, and rewrites `PUBLIC_URL` (`scripts/start.sh`). Plain `npm run dev` runs localhost:3000 only. To test without phones, use the `/api/dev/*` endpoints in `src/server.js`.
+`npm run demo` starts the public link (fixed domain, see D-014) and the server, and rewrites `PUBLIC_URL` (`scripts/start.sh`). Plain `npm run dev` runs localhost:3000 only. To test without phones, use the `/api/dev/*` endpoints in `src/server.js`.
 
 ## Code map (one line per file; open only the one you need)
 **Server and brain**
@@ -49,6 +49,9 @@ Oracle: AI agents ask about real places, nearby people answer (tap/photo), trust
 
 **Other**
 - `src/pay/solana.js`: devnet payouts.
-- `mcp/oracle-mcp.js`: stdio MCP server for Claude Desktop. It calls the HTTP API on :3000.
+- `mcp/tools.js`: the 5 MCP tools (they call the HTTP API). `mcp/oracle-mcp.js`: stdio entry for Claude Desktop. `mcp/http.js`: remote `/mcp` endpoint for claude.ai.
+- `src/web/native.js`, `src/web/game.js`, `src/channels/apns.js`: iPhone app support (nearby places, Crowd Guess game, Apple Push).
+- `ios/Oracle/`: native iPhone app (Swift). Has its own `README.md`. Not needed to run the server.
+- `scripts/check-env.js`: `npm run check` validates `.env` without printing secrets.
 - `public/`: `index.html` (dashboard), `app.html` (earner PWA), `join.html` (QR landing), `verify.html` (dispute photo), `sw.js` (push).
 - `scripts/start.sh`: demo launcher. `scripts/make-wallet.js`: new Solana treasury.
