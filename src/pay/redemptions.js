@@ -73,7 +73,9 @@ export const hasVerifiedWallet = (u) => Boolean(u?.walletVerified && u.walletVer
 export async function redeem(userId, { rewardId, idemKey, payout = "oracle" } = {}) {
   const reward = REWARDS.find((r) => r.id === rewardId);
   if (!reward) return { ok: false, code: "unknown", message: "Unknown reward." };
-  if (!/^[A-Za-z0-9_-]{8,80}$/.test(String(idemKey || ""))) return { ok: false, code: "bad_request", message: "Missing request key. Refresh and try again." };
+  // Older app versions (the current iPhone build) send no key: repeated taps within 15 seconds share one.
+  if (!idemKey) idemKey = `legacy-${String(userId).replace(/[^A-Za-z0-9_-]/g, "")}-${rewardId}-${Math.floor(Date.now() / 15000)}`.slice(0, 80);
+  if (!/^[A-Za-z0-9_-]{8,80}$/.test(String(idemKey))) return { ok: false, code: "bad_request", message: "Bad request key. Refresh and try again." };
 
   const earlier = await mongo.redemptionByKey(userId, idemKey);
   if (earlier) return { ok: earlier.status !== "rejected", duplicate: true, redemption: view(earlier), message: "Already requested." };
