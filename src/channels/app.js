@@ -4,8 +4,8 @@
 import webpush from "web-push";
 import { env } from "../config.js";
 import * as mongo from "../db/mongo.js";
-import { registerChannel } from "../core.js";
-import { apnsEnabled, sendApns, requestPayload } from "./apns.js";
+import { registerChannel, pendingFor } from "../core.js";
+import { apnsEnabled, sendApns, requestPayload, ORACLE_SOUND } from "./apns.js";
 
 let publicKey = null;
 export const vapidPublicKey = () => publicKey;
@@ -29,8 +29,21 @@ async function push(user, payload, apnsPayload) {
     }
   }
   if (!apnsEnabled()) return;
+  // The app icon badge shows how many requests are waiting for this person.
+  let badge;
+  try { badge = pendingFor(user._id).length; } catch {}
   for (const device of fresh?.apns || []) {
-    const r = await sendApns(device, apnsPayload, { collapseId: payload.tag });
+    const aps = { ...apnsPayload.aps, sound: device.sound === "default" ? "default" : apnsPayload.aps.sound || ORACLE_SOUND };
+    if (apnsPayload.request && Number.isInteger(badge)) aps.badge = badge;
+    const body = { ...apnsPayload, aps };
+    let r = await sendApns(device, body, { collapseId: payload.tag });
+    // A token from the other APNs server (an Xcode build vs TestFlight) is retried there once and remembered.
+    if (r.wrongEnvironment) {
+      const other = { ...device, sandbox: !device.sandbox };
+      const retry = await sendApns(other, body, { collapseId: payload.tag });
+      if (retry.ok) { await mongo.setApnsSandbox(user._id, device.token, other.sandbox); continue; }
+      r = retry;
+    }
     if (r.gone) await mongo.removeApns(user._id, device.token);
     else if (!r.ok) console.error("APNs failed:", r.status, r.reason);
   }

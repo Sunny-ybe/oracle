@@ -1,0 +1,62 @@
+/* Oracle "ink" look, shared by the web pages. Mirrors the iPhone app's Theme.swift:
+   cream paper with pink dots, charcoal outlines, solid offset shadows, rounded type. */
+:root {
+  --cream: #FFF6EC; --paper: #FFFFFF; --char: #212126; --muted: #5C5761;
+  --pink: #F79EB8; --pink-soft: #FDDEE8; --peri: #9EB0F5; --peri-soft: #D6DEFA;
+  --butter: #FDD96B; --butter-soft: #FFF0BF; --leaf: #94DBAB; --leaf-soft: #D9F5E0;
+  --blue: #3052D6; --danger: #DB454D;
+  --sand: #F3E9DC;                 /* inset fills: tracks, segmented controls */
+  --rule: rgba(33, 33, 38, .12);   /* hairline dividers inside cards */
+  --stroke: 2.5px;
+  --fr: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, sans-serif;
+}
+
+.dots-bg {
+  background-color: var(--cream);
+  background-image: radial-gradient(rgba(242, 168, 191, .5) 1.5px, transparent 1.7px);
+  background-size: 22px 22px;
+}
+
+/* ---------- map chrome ---------- */
+.maplibregl-map { font-family: var(--fr); }
+.maplibregl-ctrl-attrib { background: rgba(255, 255, 255, .9) !important; color: var(--muted) !important; font-size: 10.5px; border-radius: 10px !important; }
+.maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+.maplibregl-ctrl-attrib.maplibregl-compact { border: 2px solid var(--char); }
+.maplibregl-ctrl-group { background: #fff !important; border: var(--stroke) solid var(--char) !important; border-radius: 14px !important; box-shadow: 3px 3px 0 var(--char) !important; overflow: hidden; }
+.maplibregl-ctrl-group button { width: 36px !important; height: 36px !important; }
+.maplibregl-ctrl-group button + button { border-top: 2px solid var(--char) !important; }
+.maplibregl-ctrl-group button:hover { background: var(--butter-soft) !important; }
+
+/* ---------- place pins: a tinted circle with a charcoal outline, like the app's PlacePin ---------- */
+.ipin { position: relative; width: 36px; height: 36px; cursor: pointer; --tint: var(--pink); }
+.ipin-dot { position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--tint); border: var(--stroke) solid var(--char); box-shadow: 2px 2px 0 var(--char); transition: transform .18s; z-index: 2; }
+.ipin:hover .ipin-dot { transform: scale(1.1); }
+.ipin-lab { position: absolute; left: 42px; top: 18px; transform: translateY(-50%); z-index: 3; white-space: nowrap; line-height: 1.15;
+  background: #fff; color: var(--char); border: 2px solid var(--char); border-radius: 12px; box-shadow: 2px 2px 0 var(--char); padding: 4px 9px 5px;
+  transition: opacity .2s, visibility .2s; }
+.ipin-lab b { display: block; font-size: 12.5px; font-weight: 800; }
+.ipin-lab span { display: block; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.ipin-lab.hide { opacity: 0; visibility: hidden; }
+.ipin .ring { position: absolute; left: 18px; top: 18px; width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%;
+  border: 2.5px solid var(--blue); opacity: 0; pointer-events: none; }
+.ipin.live .ipin-dot { background: var(--butter); animation: ipinBob 1.2s ease-in-out infinite; }
+.ipin.live .ring { animation: ipinSonar 1.8s ease-out infinite; }
+.ipin.live .ring:nth-of-type(2) { animation-delay: .6s; } .ipin.live .ring:nth-of-type(3) { animation-delay: 1.2s; }
+.ipin.disputed .ipin-dot { background: var(--pink); }
+.ipin.disputed .ring { border-color: var(--danger); }
+@keyframes ipinBob { 50% { transform: translateY(-4px); } }
+@keyframes ipinSonar { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.4); opacity: 0; } }
+
+/* Standing pin (dashboard): the circle sits on a short stem with a shadow on the ground, so it reads in 3D. */
+.ipin.stem { height: 60px; }
+.ipin-stem { position: absolute; left: 16.5px; top: 32px; width: 3px; height: 24px; background: var(--char); border-radius: 2px; }
+.ipin-ground { position: absolute; left: 8px; bottom: -4px; width: 20px; height: 8px; border-radius: 50%; background: rgba(33, 33, 38, .28); }
+.ipin.stem .ring { top: 56px; border-color: var(--c, var(--blue)); }
+.ipin.stem.live .ring { border-color: var(--blue); }
+
+/* You are here */
+.me-dot, .you { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--char); animation: mePulse 2s infinite; }
+@keyframes mePulse { 0% { box-shadow: 0 0 0 2px var(--char), 0 0 0 0 rgba(48, 82, 214, .45); } 70% { box-shadow: 0 0 0 2px var(--char), 0 0 0 16px rgba(48, 82, 214, 0); } 100% { box-shadow: 0 0 0 2px var(--char); } }
+
+@media (prefers-reduced-motion: reduce) { .ipin-dot, .ipin .ring, .me-dot, .you { animation: none !important; } }

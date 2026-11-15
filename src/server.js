@@ -1,3 +1,4 @@
+import { searchPlaces } from "./web/place-search.js";
 import { gameRounds as nearbyGameRounds } from "./web/game.js";
 import express from "express";
 import { timingSafeEqual } from "node:crypto";
@@ -20,6 +21,7 @@ import { REWARDS, findPlace } from "./config.js";
 import { startDiscord } from "./channels/discord.js";
 import { startTelegram, telegramJoinLink } from "./channels/telegram.js";
 import { treasuryInfo } from "./pay/solana.js";
+import * as redemptions from "./pay/redemptions.js";
 import { ensureSpeedFile, saveScan, floorReport } from "./scan.js";
 import { register, login, setCredentials, googleSignIn, microsoftSignIn, appleSignIn, deleteAccount } from "./web/accounts.js";
 import { importPlaces } from "./web/places-import.js";
@@ -70,6 +72,7 @@ app.get("/api/recent", wrap(async () => (await mongo.recentAnswered()).map((q) =
 app.post("/api/places/ensure", wrap((req) => ensurePlace(req.body)));
 app.get("/api/insights", wrap((req) => insights(req.query.place, req.query.topic)));
 
+app.get("/api/app/search-places", wrap(async req => ({ results: await searchPlaces(req.query.q), attribution: "© OpenStreetMap contributors" })));
 app.get("/api/app/places/nearby", wrap(req => nearby(req.query)));
 app.post("/api/app/discover", appUser, wrap(req => discover(req.body)));
 // Public so the place photo shows before signing in. Google lookups only run when GOOGLE_PLACES_API_KEY is set.
@@ -95,6 +98,8 @@ app.get("/api/trend", wrap((req) => tiger.trend(req.query.place, req.query.topic
 app.get("/api/topics", wrap((req) => tiger.topicsForPlace(req.query.place)));
 app.get("/api/leaderboard", wrap(() => mongo.leaderboard()));
 app.get("/api/redemptions", requireKey, wrap(() => mongo.redemptions()));
+// Operator: mark a gift card as sent (manual fulfillment).
+app.post("/api/redemptions/:id/fulfilled", requireKey, wrap(async (req) => ({ ok: true, redemption: redemptions.view(await mongo.fulfillRedemption(req.params.id)) })));
 app.get("/api/payouts", wrap(() => tiger.recentPayouts()));
 app.get("/api/stats", wrap(async () => ({
   ...(await mongo.questionStats()), payouts: await tiger.payoutTotal(), treasury: await treasuryInfo().catch(() => null),
@@ -172,8 +177,15 @@ app.get("/api/game/rounds", wrap(req => nearbyGameRounds(req.query)));
 app.post("/api/app/apns", appUser, wrap(async (req) => {
   const token = String(req.body?.token || "").toLowerCase();
   if (!/^[0-9a-f]{64,200}$/.test(token)) throw new Error("That isn't an Apple push token.");
-  await mongo.addApns(req.user._id, token, req.body.sandbox === true);
+  await mongo.addApns(req.user._id, token, req.body.sandbox === true, req.body.sound === "default" ? "default" : "oracle");
   return { ok: true, apns: apnsEnabled() };
+}));
+// iPhone app sign-out: stop sending this device requests for the account.
+app.post("/api/app/apns/remove", appUser, wrap(async (req) => {
+  const token = String(req.body?.token || "").toLowerCase();
+  if (!/^[0-9a-f]{64,200}$/.test(token)) throw new Error("That isn't an Apple push token.");
+  await mongo.removeApns(req.user._id, token);
+  return { ok: true };
 }));
 // iPhone app: name for the Edit account screen (the username and password are edited through /api/app/account).
 app.get("/api/app/account", appUser, wrap(async (req) => {
@@ -197,20 +209,24 @@ app.get("/api/photos/:id", async (req, res) => {
 
 const me = async (u) => {
   const f = await mongo.getUser(u._id);
-  const { wallet, ...rest } = f;
+  const { wallet, walletChallenge, redeemIds, refundedIds, ...rest } = f;
   return {
     ...rest, wallet: f.payoutWallet || wallet.pub, walletUrl: explorerAddress(f.payoutWallet || wallet.pub), linkedWallet: Boolean(f.payoutWallet),
+    oracleWallet: wallet.pub, walletVerified: redemptions.hasVerifiedWallet(f), redemptions: await redemptions.mine(f._id),
     place: f.placeId ? findPlace(f.placeId)?.name : null, rewards: REWARDS, passHash: undefined, hasPassword: Boolean(f.passHash), pointsPerSol: env.pointsPerSol, minCashout: env.minCashout,
     requests: pendingFor(f._id),
   };
 };
 app.get("/api/app/me", appUser, wrap((req) => me(req.user)));
 app.post("/api/app/answer/:id", appUser, wrap((req) => answerFromApp(req.user._id, req.params.id, req.body)));
-app.post("/api/app/redeem", appUser, wrap((req) => {
-  const reward = REWARDS.find((r) => r.id === req.body.rewardId);
-  if (!reward) throw new Error("Unknown reward");
-  return redeemReward(req.user._id, reward);
-}));
+// Gift-card redemptions, recorded on Solana devnet with an opaque ID (src/pay/redemptions.js, D-032).
+app.post("/api/app/redeem", appUser, wrap((req) => redemptions.redeem(req.user._id, req.body || {})));
+app.get("/api/app/redemptions", appUser, wrap(async (req) => ({ redemptions: await redemptions.mine(req.user._id) })));
+app.post("/api/app/redemptions/:id/retry", appUser, wrap((req) => redemptions.retry(req.user._id, req.params.id)));
+app.post("/api/app/redemptions/:id/cancel", appUser, wrap((req) => redemptions.cancel(req.user._id, req.params.id)));
+// Wallet ownership: the wallet signs a one-time message. Oracle never asks for a seed phrase or private key.
+app.post("/api/app/wallet/challenge", appUser, wrap((req) => redemptions.walletChallenge(req.user, String(req.body?.address || ""))));
+app.post("/api/app/wallet/verify", appUser, wrap((req) => redemptions.verifyWallet(req.user, String(req.body?.address || ""), req.body?.signature)));
 app.post("/api/app/cashout", appUser, wrap((req) => cashOut(req.user._id, req.body.points)));
 app.post("/api/app/wallet", appUser, wrap(async (req) => {
   if (!isValidAddress(req.body.address)) throw new Error("That isn't a Solana address.");
@@ -277,6 +293,9 @@ if (!env.sessionSecret && !env.apiKey && !env.telegramToken) {
 if (!env.apiKey) console.warn("WARNING: ORACLE_API_KEY is empty, so /api/ask, /mcp and /api/dev/* accept anyone.");
 await connectMongo().catch((e) => { console.error("MongoDB connection failed:", e.message); process.exit(1); });
 await startAppChannel().catch((e) => console.error("App notifications off:", e.message));
+redemptions.onRedemptionEvent((type, data) => events.emit("event", { type, at: new Date().toISOString(), ...data }));
+const settleRedemptions = () => redemptions.reconcile().catch((e) => console.error("Redemption check:", e.message));
+settleRedemptions(); setInterval(settleRedemptions, 30000);
 await tiger.checkTiger().catch((e) => { console.error("Tiger Data connection failed:", e.message); process.exit(1); });
 app.listen(env.port, () => console.log(`🦉 Oracle running at http://localhost:${env.port}`));
 

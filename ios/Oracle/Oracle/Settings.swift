@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 import MapKit
 import SafariServices
 import AuthenticationServices
@@ -34,6 +35,8 @@ struct SettingsScreen: View {
                             .buttonStyle(.chunky(session.isConnected ? Ink.paper : Ink.blue, text: session.isConnected ? Ink.charcoal : .white, height: 44))
                     }
                 }
+
+                NotificationSettingsCard()
 
                 TagCard(tag: "Device profile · Sign in with Apple", color: Ink.periwinkle) {
                     VStack(alignment: .leading, spacing: 10) {
@@ -141,6 +144,138 @@ struct SettingsScreen: View {
         case .denied, .restricted: "Location is off. Search for any city or venue instead."
         default: "Location not requested yet."
         }
+    }
+}
+
+// MARK: - Notifications
+
+/// Shows what iOS currently allows, offers the one right action (ask, or open iPhone Settings), and lets people
+/// pick the alert sound. iOS settings, Focus and Silent Mode always win; this card never claims otherwise.
+struct NotificationSettingsCard: View {
+    @Environment(OracleSession.self) private var session
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(Notifier.soundKey) private var sound = "oracle"
+    @State private var settings: UNNotificationSettings?
+    @State private var testSent = false
+
+    var body: some View {
+        TagCard(tag: "Notifications", color: Ink.pink) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Circle().fill(statusColor).frame(width: 12, height: 12).overlay(Circle().strokeBorder(Ink.charcoal, lineWidth: 1.5))
+                    Text(statusTitle).font(.bold(.headline)).foregroundStyle(Ink.charcoal)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("notificationStatus")
+                Text(statusDetail).font(.soft(.caption)).foregroundStyle(Ink.muted).fixedSize(horizontal: false, vertical: true)
+
+                if let settings, allowed {
+                    VStack(alignment: .leading, spacing: 6) {
+                        detail("Lock Screen", settings.lockScreenSetting)
+                        detail("Banners", settings.alertSetting)
+                        detail("Sounds", settings.soundSetting)
+                        detail("Badges", settings.badgeSetting)
+                    }
+                }
+
+                switch settings?.authorizationStatus {
+                case .notDetermined?:
+                    Button { Task { await Notifier.shared.requestPermission(); await refresh() } } label: {
+                        Label("Turn on notifications", systemImage: "bell.badge.fill").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.chunky(Ink.blue, text: .white, height: 44))
+                    .accessibilityIdentifier("enableNotifications")
+                case .denied?:
+                    Button { openSettings() } label: { Label("Open iPhone Settings", systemImage: "gearshape.fill").frame(maxWidth: .infinity) }
+                        .buttonStyle(.chunky(Ink.butter, height: 44))
+                        .accessibilityIdentifier("openNotificationSettings")
+                default:
+                    EmptyView()
+                }
+
+                Picker("Alert sound", selection: $sound) {
+                    Text("Oracle chime").tag("oracle")
+                    Text("iPhone default").tag("default")
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("notificationSound")
+                .onChange(of: sound) { _, _ in Task { await Notifier.shared.resendToken() } }
+
+                if allowed {
+                    HStack(spacing: 10) {
+                        Button { Task { await Notifier.shared.sendTest(); testSent = true } } label: {
+                            Label(testSent ? "Test sent" : "Send a test alert", systemImage: testSent ? "checkmark" : "bell")
+                        }
+                        .buttonStyle(.chunky(Ink.paper, height: 40))
+                        .accessibilityIdentifier("testNotification")
+                        Button("iPhone Settings") { openSettings() }.font(.bold(.subheadline)).frame(minHeight: 44)
+                    }
+                }
+
+                Text("Alerts follow your iPhone’s notification settings, Focus and Silent Mode. Oracle can’t override them.")
+                    .font(.soft(.caption)).foregroundStyle(Ink.muted).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .task { await refresh() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await refresh() } } }
+    }
+
+    private var allowed: Bool {
+        guard let status = settings?.authorizationStatus else { return false }
+        return status == .authorized || status == .provisional || status == .ephemeral
+    }
+    /// The server can push only with an APNs key configured; otherwise alerts come from the open app.
+    private var serverPushOff: Bool { session.server?.integrations?.apns == false }
+
+    private var statusTitle: String {
+        switch settings?.authorizationStatus {
+        case .authorized?: "Notifications on"
+        case .provisional?: "Delivered quietly"
+        case .ephemeral?: "Notifications on"
+        case .denied?: "Notifications off"
+        case .notDetermined?: "Not turned on yet"
+        default: "Checking…"
+        }
+    }
+    private var statusDetail: String {
+        switch settings?.authorizationStatus {
+        case .denied?: return "Turn on Allow Notifications for Oracle in iPhone Settings to hear about requests near you."
+        case .notDetermined?: return "Get an alert when an AI asks about a place near you, even when Oracle is closed."
+        case .provisional?: return "Requests appear in Notification Center without a sound. Choose Keep → Deliver Immediately on one to get banners."
+        case nil: return " "
+        default:
+            if !session.isConnected { return "Sign in to Oracle to get requests on this iPhone." }
+            if serverPushOff { return "This Oracle server isn’t set up for Apple Push yet, so requests alert you only while Oracle is open." }
+            if Notifier.shared.deviceToken == nil, let error = Notifier.shared.registrationError { return "Apple Push isn’t available: \(error)" }
+            return "New requests near you alert you on the Lock Screen and as banners, even when Oracle is closed."
+        }
+    }
+    private var statusColor: Color {
+        switch settings?.authorizationStatus {
+        case .authorized?, .ephemeral?: serverPushOff || !session.isConnected ? Ink.butter : Ink.mint
+        case .provisional?: Ink.butter
+        case nil: Ink.paper
+        default: Ink.pink
+        }
+    }
+
+    private func detail(_ name: String, _ setting: UNNotificationSetting) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: setting == .enabled ? "checkmark.circle.fill" : "minus.circle").foregroundStyle(setting == .enabled ? Ink.blue : Ink.muted)
+            Text(name).font(.soft(.subheadline)).foregroundStyle(Ink.charcoal)
+            Spacer()
+            Text(setting == .enabled ? "On" : setting == .disabled ? "Off" : "Not available").font(.soft(.caption)).foregroundStyle(Ink.muted)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func refresh() async {
+        settings = await UNUserNotificationCenter.current().notificationSettings()
+    }
+
+    private func openSettings() {
+        if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
     }
 }
 
@@ -297,6 +432,9 @@ struct AccountScreen: View {
 // MARK: - AI assistants
 
 /// Each provider owns the approval flow. Opening setup is never treated as a verified connection.
+/// Connect: copies the Oracle MCP URL, then opens the provider's setup link with Oracle's name and URL filled in.
+/// iOS opens the provider's app when it is installed and claims the link; otherwise Connect opens the App Store.
+/// Neither provider lets another app add a connector silently, so the person still taps Add in Claude or ChatGPT.
 enum OracleAssistant: String, CaseIterable, Identifiable {
     case claude = "Claude", chatGPT = "ChatGPT"
     var id: String { rawValue }
@@ -356,14 +494,18 @@ struct AssistantConnection: View {
     @State private var copied = false
     @State private var details = false
 
+    /// Oracle's public MCP server. Cloud assistants can't reach a local server, so they use this one instead.
+    static let publicServer = OracleSession.productionServer + "/mcp"
     private var endpoint: String {
-        if let configured = session.server?.mcp?.url, !configured.isEmpty { return configured }
-        guard session.hasServer else { return "" }
-        return session.baseURL + (session.server?.mcp?.path ?? "/mcp")
+        if let configured = session.server?.mcp?.url, AssistantEndpoint.isPublic(configured) { return configured }
+        let derived = session.baseURL + (session.server?.mcp?.path ?? "/mcp")
+        if session.hasServer, AssistantEndpoint.isPublic(derived) { return derived }
+        return Self.publicServer
     }
     private var publicEndpoint: Bool { AssistantEndpoint.isPublic(endpoint) }
-    private var authKnown: Bool { session.server?.mcp?.auth != nil }
-    private var keyRequired: Bool { session.server?.mcp?.auth == "api-key" }
+    /// Oracle's public server needs no sign-in; another server reports its requirements in /api/app/config.
+    private var authKnown: Bool { endpoint == Self.publicServer || session.server?.mcp?.auth != nil }
+    private var keyRequired: Bool { endpoint != Self.publicServer && session.server?.mcp?.auth == "api-key" }
     private var oauth: Bool { session.server?.mcp?.oauth == true }
 
     var body: some View {
@@ -448,9 +590,7 @@ struct AssistantConnection: View {
                     if requiresSetup {
                         serverSettings = true
                     } else {
-                        UIPasteboard.general.string = endpoint
-                        copied = true
-                        browser = AssistantBrowser(url: assistant.setupURL(endpoint: endpoint))
+                        connect(assistant)
                     }
                 } label: {
                     HStack(spacing: 8) {
@@ -460,7 +600,7 @@ struct AssistantConnection: View {
                 }
                 .buttonStyle(.chunky(assistant == .claude ? Ink.butter : Ink.mint))
                 .accessibilityIdentifier(assistant == .claude ? "connectClaude" : "connectChatGPT")
-                Text("Setup opens on the web. You approve the connection there.")
+                Text("Opens " + assistant.rawValue + " with Oracle ready to add. No app yet? You’ll go to the App Store.")
                     .font(.soft(.caption)).foregroundStyle(Ink.muted).multilineTextAlignment(.center)
                 Link("Need the app? Get " + assistant.rawValue, destination: assistant.appStoreURL)
                     .font(.bold(.subheadline)).frame(minHeight: 44)
@@ -482,6 +622,12 @@ struct AssistantConnection: View {
                     Text(authHelp(for: assistant)).font(.soft(.caption)).foregroundStyle(Ink.muted)
                     Text(assistant == .claude ? "If setup opens without the form, sign in and choose Customize → Connectors → Add custom connector. Paste the copied address. Team members may need their owner to add it first." : "Custom MCP setup uses ChatGPT on the web. Availability depends on your account and workspace permissions.")
                         .font(.soft(.caption)).foregroundStyle(Ink.muted)
+                    Button("Set up on the web instead") {
+                        UIPasteboard.general.string = endpoint; copied = true
+                        browser = AssistantBrowser(url: assistant.setupURL(endpoint: endpoint))
+                    }
+                    .font(.bold(.subheadline)).frame(minHeight: 44)
+                    .accessibilityIdentifier(assistant == .claude ? "claudeWebSetup" : "chatGPTWebSetup")
                     Link("Open " + assistant.rawValue + " setup guide", destination: assistant.guideURL)
                         .font(.bold(.subheadline)).frame(minHeight: 44)
                     Text("The connection is managed in your assistant. Oracle cannot verify whether you finished adding it.")
@@ -489,6 +635,16 @@ struct AssistantConnection: View {
                 }.padding(.top, 12)
             }
             .font(.bold(.subheadline)).tint(Ink.blue)
+        }
+    }
+
+    /// Copies the URL, then opens the provider's own setup link. With `universalLinksOnly`, iOS opens the link only
+    /// in the provider's installed app (no private URL schemes); if the app isn't installed, the App Store opens.
+    private func connect(_ assistant: OracleAssistant) {
+        UIPasteboard.general.string = endpoint
+        copied = true
+        UIApplication.shared.open(assistant.setupURL(endpoint: endpoint), options: [.universalLinksOnly: true]) { opened in
+            if !opened { UIApplication.shared.open(assistant.appStoreURL) }
         }
     }
 
