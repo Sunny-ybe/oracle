@@ -408,6 +408,11 @@ struct LivePoll: View {
     @State private var photo: UIImage?
     @State private var reportText = ""
     @State private var noiseDb: Int?
+    @State private var mbps: Double?
+    @State private var testingSpeed = false
+    @State private var speedFailed = false
+    @State private var countText = ""
+    @FocusState private var countFocused: Bool
     @State private var success: Contribution?
 
     private var locked: Bool {
@@ -416,10 +421,15 @@ struct LivePoll: View {
     private var isNoiseRequest: Bool { request.sensor == "noise" }
     private var isPhotoRequest: Bool { request.sensor == "photo" || request.sensor == "people_count" }
     private var isReport: Bool { request.sensor == "report" }
+    private var isWifiRequest: Bool { request.sensor == "wifi" }
+    private var isCountRequest: Bool { request.sensor == "people_count" }
+    /// The number of people someone typed on a headcount request (the server accepts 0 to 9999).
+    private var typedCount: Int? { isCountRequest ? Int(countText) : nil }
     private var reply: String { reportText.trimmingCharacters(in: .whitespacesAndNewlines) }
     /// A tap answer always works; a reading, photo or written reply can stand in for it on matching requests.
     private var canSubmit: Bool {
         selection != nil || (isNoiseRequest && noiseDb != nil) || (isPhotoRequest && photo != nil) || (isReport && !reply.isEmpty)
+            || (isWifiRequest && mbps != nil) || typedCount != nil
     }
 
     var body: some View {
@@ -449,10 +459,12 @@ struct LivePoll: View {
                                 .disabled(locked)
                                 .accessibilityAddTraits(chosen ? .isSelected : [])
                             }
+                            if isCountRequest { countField }
                         }
                     }
                     status
                     if isReport { reportCard }
+                    if isWifiRequest { wifiCard }
                     PhotoCaptureCard(sensor: request.sensor, photo: $photo, disabled: locked)
                     noiseCard
                 }
@@ -467,7 +479,10 @@ struct LivePoll: View {
             .navigationTitle(request.place)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.font(.bold(.body)) } }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.font(.bold(.body)) }
+                ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { countFocused = false }.font(.bold(.body)) }
+            }
             .fullScreenCover(isPresented: $measuring) {
                 MeasureNoiseScreen(placeName: request.place) { db in noiseDb = db }
             }
@@ -501,6 +516,62 @@ struct LivePoll: View {
                     .buttonStyle(.chunky(Ink.butter, height: 40)).fixedSize()
                     .disabled(locked)
             }
+        }
+    }
+
+    /// Headcount requests: type the number you can see. It counts like a tap; a photo is what earns the bonus.
+    private var countField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TextField("Or type the number of people you see", text: $countText)
+                .keyboardType(.numberPad)
+                .focused($countFocused)
+                .font(.soft(.body)).foregroundStyle(Ink.charcoal)
+                .padding(.horizontal, 14).frame(minHeight: 50).inkOutline(14, fill: Ink.paper)
+                .disabled(locked)
+                .accessibilityIdentifier("peopleCount")
+                .onChange(of: countText) { _, new in
+                    let digits = String(new.filter { $0.isASCII && $0.isNumber }.prefix(4))
+                    if digits != new { countText = digits }
+                }
+            if photo != nil, typedCount != nil {
+                Text("With a photo attached, Oracle counts from the photo.").font(.soft(.caption)).foregroundStyle(Ink.muted)
+            }
+        }
+    }
+
+    /// Wi-Fi requests: two 1 MB downloads from the Oracle server, faster run kept. Only the Mbps number is sent.
+    private var wifiCard: some View {
+        TagCard(tag: "Wi-Fi speed test · exact reading", color: Ink.periwinkle) {
+            HStack(spacing: 12) {
+                Image(systemName: "wifi").font(.title2.weight(.bold)).foregroundStyle(Ink.charcoal)
+                    .frame(width: 46, height: 46).inkOutline(14, fill: mbps.map { WifiLevel(mbps: $0).soft } ?? Ink.periSoft)
+                VStack(alignment: .leading, spacing: 2) {
+                    if let mbps {
+                        Text("\(mbps.formatted()) Mbps · \(WifiLevel(mbps: mbps).title)").font(.bold(.headline)).foregroundStyle(Ink.charcoal)
+                        Text("Sent with your answer.").font(.soft(.caption)).foregroundStyle(Ink.muted)
+                    } else {
+                        Text(testingSpeed ? "Downloading…" : "Test Wi-Fi speed").font(.bold(.headline)).foregroundStyle(Ink.charcoal)
+                        Text(speedFailed ? "Couldn’t run the speed test. Tap an answer instead." : "Downloads a 1 MB file twice. Measures this iPhone’s current connection.")
+                            .font(.soft(.caption)).foregroundStyle(Ink.muted)
+                    }
+                }
+                Spacer(minLength: 0)
+                if testingSpeed { ProgressView().tint(Ink.charcoal) } else {
+                    Button(mbps == nil ? "Start" : "Redo") { runSpeedTest() }
+                        .buttonStyle(.chunky(Ink.periwinkle, height: 40)).fixedSize()
+                        .disabled(locked)
+                        .accessibilityIdentifier("runSpeedTest")
+                }
+            }
+        }
+    }
+
+    private func runSpeedTest() {
+        guard !testingSpeed else { return }
+        testingSpeed = true; speedFailed = false
+        Task {
+            do { mbps = try await SpeedTest.run(session: session) } catch { speedFailed = true }
+            testingSpeed = false
         }
     }
 
@@ -546,7 +617,7 @@ struct LivePoll: View {
         case .done: "Answer sent"
         case .expired: "Request closed"
         case .failed: "Retry"
-        case .choosing: canSubmit ? "Submit answer" : (isNoiseRequest ? "Pick an answer or measure" : isPhotoRequest ? "Pick an answer or take a photo" : "Pick an answer")
+        case .choosing: canSubmit ? "Submit answer" : (isNoiseRequest ? "Pick an answer or measure" : isWifiRequest ? "Pick an answer or test speed" : isCountRequest ? "Pick, type a number or take a photo" : isPhotoRequest ? "Pick an answer or take a photo" : "Pick an answer")
         }
     }
 
@@ -556,6 +627,9 @@ struct LivePoll: View {
         var body: [String: Any] = [:]
         if let selection { body["option"] = selection }
         if let noiseDb { body["db"] = noiseDb }
+        let sentMbps = isWifiRequest ? mbps : nil
+        if let sentMbps { body["mbps"] = sentMbps }
+        if let typedCount { body["count"] = typedCount }
         if isReport, !reply.isEmpty { body["text"] = String(reply.prefix(500)) }
         if let photo, let image = PhotoUpload.dataURL(for: photo) { body["image"] = image; body["mime"] = "image/jpeg" }
         let sentPhoto = photo != nil
@@ -567,10 +641,11 @@ struct LivePoll: View {
                     let points = result.points ?? 1
                     phase = .done(message.isEmpty ? "+\(points) points." : message)
                     let answer = selection.flatMap { request.options.indices.contains($0 - 1) ? request.options[$0 - 1] : nil }
-                    let kind = sentPhoto ? "Answer + photo" : noiseDb != nil ? "Answer + noise reading" : "Answer"
+                    let kind = sentPhoto ? "Answer + photo" : noiseDb != nil ? "Answer + noise reading" : sentMbps != nil ? "Answer + speed test" : "Answer"
                     EarningsLog.add(.init(title: "\(kind) · \(request.place)", points: points, at: .now))
                     var contribution = Contribution(place: request.place, answer: answer, noiseDb: noiseDb ?? (isNoiseRequest ? result.value.map { Int($0) } : nil), points: points)
                     contribution.photo = PhotoUpload.image(fromDataURL: result.image)
+                    contribution.mbps = sentMbps
                     contribution.detail = message.isEmpty ? nil : message
                     if request.sensor == "people_count", let count = result.value { contribution.headcount = Int(count) }
                     success = contribution
