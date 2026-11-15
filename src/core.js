@@ -4,6 +4,7 @@ import { randomUUID, randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { RULES, env, findPlace, PLACES, PRESETS } from "./config.js";
 import * as mongo from "./db/mongo.js";
+import * as redemptions from "./pay/redemptions.js";
 import * as tiger from "./db/tiger.js";
 import { planQuestion, checkPhoto, analyzePhoto, summarizeReports, estimateAnswer } from "./ai/gemini.js";
 import { maskPII } from "./ai/privacy.js";
@@ -794,12 +795,13 @@ export async function cashOut(userId, points) {
   }
 }
 
+// Chat channels (Telegram, Discord) redeem through the same on-chain flow as the app. Repeated taps on the
+// same reward within 15 seconds share one request key, so they can't redeem twice.
 export async function redeemReward(userId, reward) {
-  const user = await mongo.getUser(userId);
-  const r = user && (await mongo.redeem(user, reward));
-  if (!r) return { ok: false, message: `${reward.name} needs ${reward.points} points. You have ${user?.credits ?? 0}.` };
-  emit("redeem", { name: user.name, reward: reward.name, points: reward.points });
-  return { ok: true, message: `Redeemed ${reward.name} for ${reward.points} points. Your code will be sent here soon.` };
+  const idemKey = `chat-${String(userId).replace(/[^A-Za-z0-9_-]/g, "")}-${reward.id}-${Math.floor(Date.now() / 15000)}`.slice(0, 80);
+  const r = await redemptions.redeem(userId, { rewardId: reward.id, idemKey });
+  const url = r.redemption?.explorerUrl;
+  return { ok: r.ok, message: `${r.message}${url ? `\nSolana devnet record: ${url}` : ""}` };
 }
 
 // ---------------------------------------------------------------- views

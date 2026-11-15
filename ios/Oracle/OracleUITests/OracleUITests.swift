@@ -320,9 +320,15 @@ final class OracleUITests: XCTestCase {
 
     func test5_settingsSampleAndAssistants() {
         app.launch()
+        let start = app.buttons["Get started"]
+        if start.waitForExistence(timeout: 5) { start.tap() }
+        let area = app.buttons["San Francisco"]
+        if area.waitForExistence(timeout: 3) { area.tap() }
         tab("Settings")
-        XCTAssertTrue(app.staticTexts["Try a sample"].waitForExistence(timeout: 5))
-        app.staticTexts["Try a sample"].tap()
+        let sample = app.staticTexts["Try a sample"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 5))
+        scrollAboveTabBar(sample)
+        sample.tap()
         XCTAssertTrue(app.staticTexts["Sample · nothing here is real"].waitForExistence(timeout: 5), "Sample is clearly labeled")
         app.buttons["Some space"].tap()
         app.buttons["Submit sample answer"].tap()
@@ -471,5 +477,21 @@ final class OracleUITests: XCTestCase {
         wait(for: [done], timeout: 70)
         if let failure { throw failure }
         return result
+    }
+
+    /// Settings shows the notification state and the one action that fits it (turn on, or open iPhone Settings).
+    @objc func test9_notificationSettings() throws {
+        app.launch()
+        let start = app.buttons["Get started"]
+        if start.waitForExistence(timeout: 5) { start.tap() }
+        let area = app.buttons["San Francisco"]
+        if area.waitForExistence(timeout: 3) { area.tap() }
+        XCTAssertTrue(app.buttons["Explore places"].waitForExistence(timeout: 25))
+        tab("Settings")
+        XCTAssertTrue(app.otherElements["notificationStatus"].waitForExistence(timeout: 5) || app.staticTexts["notificationStatus"].waitForExistence(timeout: 2))
+        let actions = [app.buttons["enableNotifications"], app.buttons["openNotificationSettings"], app.buttons["testNotification"]]
+        XCTAssertTrue(actions.contains { $0.exists })
+        XCTAssertTrue(app.segmentedControls["notificationSound"].exists || app.otherElements["notificationSound"].exists)
+        shot("60-notification-settings")
     }
 }

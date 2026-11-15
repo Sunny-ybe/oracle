@@ -161,7 +161,7 @@ struct VenueMedia: Decodable {
 }
 
 struct ServerConfig: Decodable {
-    struct Integrations: Decodable { var gemini: Bool?; var venuePhotos: Bool?; var telegram: Bool?; var discord: Bool?; var solanaDevnet: Bool?; var tinyfish: Bool? }
+    struct Integrations: Decodable { var gemini: Bool?; var venuePhotos: Bool?; var telegram: Bool?; var discord: Bool?; var solanaDevnet: Bool?; var tinyfish: Bool?; var apns: Bool? }
     struct MCP: Decodable { var url: String?; var path: String?; var transport: String?; var auth: String?; var oauth: Bool? }
     let name: String
     var integrations: Integrations?
@@ -351,6 +351,12 @@ private enum SessionKey {
     }
 
     func signOut() {
+        // Stop push requests to this iPhone for the account being signed out, and clear old alerts and the badge.
+        if !token.isEmpty, hasServer, let device = Notifier.shared.deviceToken {
+            let (base, old) = (baseURL, token)
+            Task { let _: ServerMessage? = try? await send(base: base, path: "api/app/apns/remove", body: ["token": device], token: old) }
+        }
+        Task { await Notifier.shared.signedOut() }
         token = ""
         SessionKey.save("")
         account = nil

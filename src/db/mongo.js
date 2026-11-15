@@ -16,6 +16,9 @@ export async function connectMongo() {
   await col("places").createIndex({ location: "2dsphere" });
   await col("users").createIndex({ location: "2dsphere" });
   await col("redemptions").createIndex({ createdAt: -1 });
+  // One redemption per tap: the app sends the same idempotency key if a request is repeated.
+  await col("redemptions").createIndex({ userId: 1, idemKey: 1 }, { unique: true, partialFilterExpression: { idemKey: { $type: "string" } } });
+  await col("redemptions").createIndex({ status: 1, updatedAt: 1 });
   await col("users").createIndex({ username: 1 }, { unique: true, partialFilterExpression: { username: { $type: "string" } } });
 
   // Keep the places collection in sync with config.js, then bring back places discovered earlier.
@@ -186,16 +189,56 @@ export const gameRounds = (limit = 15) =>
       { projection: { place: 1, placeId: 1, question: 1, options: 1, result: 1, resolvedAt: 1 } })
     .sort({ resolvedAt: -1 }).limit(limit).toArray();
 
-// iPhone app device tokens for Apple Push. `sandbox` is true for builds run from Xcode.
-export async function addApns(id, token, sandbox) {
+// iPhone app device tokens for Apple Push. `sandbox` is true for builds signed for development (Xcode);
+// TestFlight and App Store builds use production. `sound` is "oracle" (bundled chime) or "default".
+export async function addApns(id, token, sandbox, sound = "oracle") {
   await col("users").updateMany({ "apns.token": token }, { $pull: { apns: { token } } }); // one account per device
-  await col("users").updateOne({ _id: id }, { $push: { apns: { token, sandbox: Boolean(sandbox), at: new Date() } } });
+  await col("users").updateOne({ _id: id }, { $push: { apns: { token, sandbox: Boolean(sandbox), sound, at: new Date() } } });
 }
 export const removeApns = (id, token) => col("users").updateOne({ _id: id }, { $pull: { apns: { token } } });
+export const setApnsSandbox = (id, token, sandbox) =>
+  col("users").updateOne({ _id: id, "apns.token": token }, { $set: { "apns.$.sandbox": Boolean(sandbox) } });
 
 // ---------- rewards ----------
 
 export const setPayoutWallet = (id, address) => col("users").updateOne({ _id: id }, { $set: { payoutWallet: address } });
+
+// ---------- verified wallets (signed challenge) and on-chain redemptions ----------
+export const setWalletChallenge = (id, challenge) => col("users").updateOne({ _id: id }, { $set: { walletChallenge: challenge } });
+export const setVerifiedWallet = (id, address) =>
+  col("users").updateOne({ _id: id }, { $set: { payoutWallet: address, walletVerified: address }, $unset: { walletChallenge: "" } });
+
+/** Inserts a redemption; a repeated idempotency key returns { duplicate } with the earlier one instead. */
+export async function createRedemption(doc) {
+  try { await col("redemptions").insertOne({ ...doc, updatedAt: new Date() }); return { created: doc }; }
+  catch (e) {
+    if (e.code !== 11000) throw e;
+    return { duplicate: await col("redemptions").findOne({ userId: doc.userId, idemKey: doc.idemKey }) };
+  }
+}
+export const getRedemption = (id) => col("redemptions").findOne({ _id: id });
+export const redemptionByKey = (userId, idemKey) => col("redemptions").findOne({ userId, idemKey });
+export const myRedemptions = (userId) => col("redemptions").find({ userId }).sort({ createdAt: -1 }).limit(10).toArray();
+export const redemptionsIn = (statuses, olderThan) =>
+  col("redemptions").find({ status: { $in: statuses }, ...(olderThan ? { updatedAt: { $lt: olderThan } } : {}) }).limit(50).toArray();
+/** Moves a redemption to a new state only if it is still in one of `from` (so two taps can't both act). */
+export const moveRedemption = (id, from, set, extra = {}) =>
+  col("redemptions").findOneAndUpdate({ _id: id, status: { $in: from } }, { $set: { ...set, updatedAt: new Date() }, ...extra }, { returnDocument: "after" });
+export const updateRedemption = (id, set, extra = {}) =>
+  col("redemptions").updateOne({ _id: id }, { $set: { ...set, updatedAt: new Date() }, ...extra });
+
+/** Takes the points once per redemption ID: a repeat (retry, crash, double tap) can never deduct twice. */
+export async function deductForRedemption(userId, rid, points) {
+  const r = await col("users").updateOne({ _id: userId, credits: { $gte: points }, redeemIds: { $ne: rid } }, { $inc: { credits: -points }, $push: { redeemIds: rid } });
+  return r.modifiedCount === 1;
+}
+/** Gives the points back once per redemption ID, and only if they were taken. */
+export async function refundForRedemption(userId, rid, points) {
+  const r = await col("users").updateOne({ _id: userId, redeemIds: rid, refundedIds: { $ne: rid } }, { $inc: { credits: points }, $push: { refundedIds: rid } });
+  return r.modifiedCount === 1;
+}
+export const wasDeducted = async (userId, rid) => Boolean(await col("users").findOne({ _id: userId, redeemIds: rid }, { projection: { _id: 1 } }));
+export const fulfillRedemption = (id) => moveRedemption(id, ["awaiting_fulfillment"], { status: "fulfilled", fulfilledAt: new Date() });
 
 export async function redeem(user, reward) {
   if (!(await spendCredit(user._id, reward.points))) return null;

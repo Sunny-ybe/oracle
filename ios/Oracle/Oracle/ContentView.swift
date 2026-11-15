@@ -62,14 +62,13 @@ struct ContentView: View {
             }
             LiveLocation.shared.start()
             // Apple Push token → server, so requests reach this phone while the app is closed.
+            // The server also learns which APNs server issued the token (development vs TestFlight / App Store)
+            // and which sound to play.
             Notifier.shared.uploadToken = { [session] token in
                 guard session.isConnected else { return }
-                #if DEBUG
-                let sandbox = true   // Xcode builds use the APNs sandbox
-                #else
-                let sandbox = false  // TestFlight / App Store builds use production
-                #endif
-                let _: ServerMessage? = try? await session.request("api/app/apns", body: ["token": token, "sandbox": sandbox])
+                let _: ServerMessage? = try? await session.request("api/app/apns", body: [
+                    "token": token, "sandbox": Notifier.apnsSandbox, "sound": Notifier.shared.soundPreference,
+                ])
             }
             async let restore: Void = session.restore()
             try? await Task.sleep(for: .seconds(2))
@@ -79,6 +78,7 @@ struct ContentView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, session.hasStoredSession { Task { await session.restore() } }
+            if phase == .active { Task { await Notifier.shared.registerIfAllowed() } }  // permission may have changed in iPhone Settings
             if phase == .active { LiveLocation.shared.start() } else if phase == .background { LiveLocation.shared.pause(); AppSounds.shared.stop() }
         }
     }
