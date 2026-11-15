@@ -4,7 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { PLACES } from "../src/config.js";
 
-const BASE = process.env.ORACLE_URL || "http://localhost:3000";
+const BASE = process.env.ORACLE_URL || `http://localhost:${process.env.PORT || 3000}`;
 const headers = { "Content-Type": "application/json", "x-oracle-key": process.env.ORACLE_API_KEY || "" };
 const call = async (path, init) => {
   const response = await fetch(`${BASE}${path}`, { headers, ...init, signal: AbortSignal.timeout(35000) });
