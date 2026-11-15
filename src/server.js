@@ -1,3 +1,4 @@
+import { searchPlaces } from "./web/place-search.js";
 import { gameRounds as nearbyGameRounds } from "./web/game.js";
 import express from "express";
 import { timingSafeEqual } from "node:crypto";
@@ -70,6 +71,7 @@ app.get("/api/recent", wrap(async () => (await mongo.recentAnswered()).map((q) =
 app.post("/api/places/ensure", wrap((req) => ensurePlace(req.body)));
 app.get("/api/insights", wrap((req) => insights(req.query.place, req.query.topic)));
 
+app.get("/api/app/search-places", wrap(async req => ({ results: await searchPlaces(req.query.q), attribution: "© OpenStreetMap contributors" })));
 app.get("/api/app/places/nearby", wrap(req => nearby(req.query)));
 app.post("/api/app/discover", appUser, wrap(req => discover(req.body)));
 // Public so the place photo shows before signing in. Google lookups only run when GOOGLE_PLACES_API_KEY is set.
