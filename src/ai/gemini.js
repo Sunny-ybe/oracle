@@ -178,3 +178,18 @@ Return JSON:
     { inline_data: { mime_type: mime || "image/jpeg", data: base64 } },
   ], 20000);
 }
+
+// Last resort when nobody is there and nobody has ever answered here: a clearly labeled guess.
+// `similar` is an optional real report from a comparable place, e.g. { place: "Hayden Library", answer: "16 Mbps" }.
+export async function estimateAnswer({ place, question, options, similar }) {
+  if (!env.geminiKey) return null;
+  return generate([
+    {
+      text: `Nobody is at "${place.name}" (${place.kind || "place"}) right now to answer: "${question}"
+Options, from least to most: 1 = "${options[0]}", 2 = "${options[1]}", 3 = "${options[2]}".
+${similar ? `A real report from a similar place: at "${similar.place}" people reported "${similar.answer}" ${similar.ago}.` : "There are no reports from similar places."}
+Give your best estimate from general knowledge of places like this, the time of day (${new Date().toLocaleString("en-US", { weekday: "long", hour: "numeric", timeZone: "America/Phoenix" })} Phoenix time)${similar ? " and that report" : ""}.
+Return JSON: {"option": 1, 2 or 3, "reason": one short sentence, honest that this is an estimate}`,
+    },
+  ], 15000);
+}
