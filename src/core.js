@@ -87,6 +87,7 @@ export async function ask({ place, question, topic, askedBy = "agent", waitSecon
     let answer = mem.answer_text;
     if (mem.avg_value != null && plan.sensor === "people_count") answer = `About ${Math.round(mem.avg_value)} people`;
     if (mem.avg_value != null && plan.sensor === "noise") answer = `${mem.answer_text} (~${Math.round(mem.avg_value)} dB)`;
+    if (mem.avg_value != null && plan.sensor === "wifi") answer = `${mem.answer_text} (~${Math.round(mem.avg_value * 10) / 10} Mbps)`;
     const result = {
       status: "answered", source: "memory", place: p.name, question: plan.question,
       answer, option: mem.option, votes: mem.n, as_of: mem.last_time,
@@ -430,8 +431,11 @@ export async function submitReading(token, body) {
       const text = String(body.text || "").trim().slice(0, 500);
       if (!text && !option) return { ok: false, message: "Reply with what you found out." };
       if (text) extra.text = text;
+    } else if (sensor === "people_count" && !body.image && typedCount(body) != null) {
+      // Someone typed the number they can see. It counts like a tap; a photo is what earns the bonus.
+      value = typedCount(body); option = bucket(value, L.q.thresholds); extra.typed = true;
     } else if ((sensor === "people_count" || sensor === "photo") && !body.image && !option) {
-      return { ok: false, message: "Tap an answer or send a photo." };
+      return { ok: false, message: sensor === "people_count" ? "Tap an answer, type the number, or send a photo." : "Tap an answer or send a photo." };
     } else if (sensor === "poll" && !option) {
       return { ok: false, message: "Pick an answer first." };
     }
@@ -471,6 +475,13 @@ export async function submitReading(token, body) {
   return { ok: true, value, unit, image: shown, points: RULES.creditVote + photoBonus, message: `Sent: ${what}. +${RULES.creditVote + photoBonus} point${RULES.creditVote + photoBonus === 1 ? "" : "s"} 🦉` };
 }
 
+// "23", "about 23", "23 people" -> 23. Anything else (or an absurd number) is not a count.
+function typedCount(body) {
+  const raw = body.count ?? body.text;
+  if (raw == null || raw === "") return null;
+  const m = String(raw).trim().match(/^\D{0,15}(\d{1,4})\D{0,15}$/);
+  return m ? Number(m[1]) : null;
+}
 const unitOf = (sensor) => (sensor === "noise" ? "dB" : sensor === "people_count" ? "people" : sensor === "wifi" ? "Mbps" : "");
 export const photoById = (id) => mongo.getPhoto(id);
 const bucket = (v, th) => (!th ? 2 : v < th[0] ? 1 : v < th[1] ? 2 : 3);
@@ -491,7 +502,7 @@ async function onDeadline(L) {
   if (L.q.votes.length === 0) return answerFromHistory(L);
   if (L.q.sensor === "photo" && L.q.votes.some((v) => v.photoId)) return finalize(L);
   // A phone measured it (people counted in a photo, decibels, Mbps): that reading stands even if few answered.
-  if (["people_count", "noise", "wifi"].includes(L.q.sensor) && L.q.votes.some((v) => v.value != null)) return finalize(L);
+  if (["people_count", "noise", "wifi"].includes(L.q.sensor) && L.q.votes.some((v) => v.value != null && !v.typed)) return finalize(L);
 
   const t = tally(L.q.votes);
   const best = [...t].sort((a, b) => b.weight - a.weight)[0];
@@ -641,9 +652,10 @@ export function pendingFor(userId) {
 }
 
 // Chat channels: which open request does an incoming photo / voice note / text belong to?
-export function findRequestFor(userId, kind) {
+export function findRequestFor(userId, kind, text = "") {
   const open = pendingFor(userId);
-  const prefer = { photo: ["photo", "people_count", "report", "poll"], voice: ["noise", "poll"], text: ["report"] }[kind] || [];
+  const number = kind === "text" && typedCount({ text }) != null;
+  const prefer = { photo: ["photo", "people_count", "report", "poll"], voice: ["noise", "poll"], text: number ? ["people_count", "report"] : ["report"] }[kind] || [];
   for (const s of prefer) { const r = open.find((x) => x.sensor === s); if (r) return r.id; }
   return null;
 }
@@ -670,13 +682,16 @@ export async function answerFromApp(userId, questionId, body = {}) {
     return submitReading(token, body);
   }
 
-  const option = Number(body.option);
-  if (![1, 2, 3].includes(option)) return { ok: false, message: "Pick an answer first." };
+  let option = Number(body.option);
+  if (![1, 2, 3].includes(option) && !body.image) return { ok: false, message: "Pick an answer first." };
   const extra = {};
   let image = null;
   if (body.image) {
     try {
       const m = await maskedPhoto({ ...L, q: { ...L.q, sensor: "photo" } }, body);
+      // A photo on its own answers the poll: Gemini reads which option it shows.
+      if (![1, 2, 3].includes(option)) option = Number(m.analysis.option);
+      if (![1, 2, 3].includes(option)) return { ok: false, message: `Couldn't read an answer from the photo. Tap the one that fits: ${L.q.options.map((o, n) => `${n + 1} = ${o}`).join(", ")}.` };
       extra.photoId = m.photoId; extra.description = m.analysis.description; image = m.dataUrl;
       emit("photo", { id: L.q._id, placeId: L.q.placeId, place: L.q.place, passed: true, masked: m.masked, reason: m.analysis.description, image });
       await mongo.addCredits(userId, RULES.creditPhoto - RULES.creditVote);

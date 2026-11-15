@@ -60,7 +60,7 @@ export async function startDiscord() {
       const isAudio = file?.contentType?.startsWith("audio/");
       const kind = isImage ? "photo" : isAudio ? "voice" : m.content ? "text" : null;
       if (!kind) return;
-      const qid = findRequestFor(user._id, kind);
+      const qid = findRequestFor(user._id, kind, m.content);
       if (!qid) return m.reply(kind === "text" ? "🦉 Use `/checkin` to say where you are; questions about it will show up here." : "🦉 Thanks! There's no open request for that right now.");
       let body;
       if (isImage) {
@@ -110,7 +110,7 @@ export async function startDiscord() {
       const hint = {
         noise: `Tap one, or send a 10-second 🎙️ voice message for an exact reading (+${RULES.creditPhoto} pts).`,
         wifi: `Tap one, or run the 1 MB speed test for an exact reading (+${RULES.creditPhoto} pts).`,
-        people_count: `Tap one, or reply with a 📸 photo of the room for an exact count (+${RULES.creditPhoto} pts). Faces are blurred.`,
+        people_count: `Tap one, type the number you see, or reply with a 📸 photo for an exact count (+${RULES.creditPhoto} pts and more SOL). Faces are blurred.`,
         photo: `Tap one, or reply with a 📸 photo (+${RULES.creditPhoto} pts). Faces and plates are blurred.`,
         report: "Find out, then reply here with what you learned. You can attach a photo.",
       }[q.sensor] || "";

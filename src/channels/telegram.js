@@ -7,8 +7,9 @@ import { explorerAddress, isValidAddress, solanaEnabled } from "../pay/solana.js
 import { loudnessDb } from "../ai/audio.js";
 import { linkToken } from "../web/auth.js";
 
+const TG = (process.env.TELEGRAM_API_BASE || "https://api.telegram.org").replace(/\/$/, ""); // overridable for tests
 const api = async (method, body) => {
-  const res = await fetch(`https://api.telegram.org/bot${env.telegramToken}/${method}`, {
+  const res = await fetch(`${TG}/bot${env.telegramToken}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -25,7 +26,7 @@ const replyTo = new Map(); // "chatId:messageId" -> question id, so replies land
 
 async function download(fileId) {
   const f = await api("getFile", { file_id: fileId });
-  const res = await fetch(`https://api.telegram.org/file/bot${env.telegramToken}/${f.file_path}`);
+  const res = await fetch(`${TG}/file/bot${env.telegramToken}/${f.file_path}`);
   return Buffer.from(await res.arrayBuffer());
 }
 const replyFor = (m) => (m.reply_to_message ? replyTo.get(`${m.chat.id}:${m.reply_to_message.message_id}`) : null);
@@ -80,7 +81,7 @@ export async function startTelegram() {
   const HINT = {
     noise: `Tap one, or hold 🎙️ and send a 10-second voice note for an exact reading (+${RULES.creditPhoto} pts).`,
     wifi: `Tap one, or run the 1 MB speed test for an exact reading (+${RULES.creditPhoto} pts).`,
-    people_count: `Tap one, or send a 📸 photo of the room for an exact count (+${RULES.creditPhoto} pts). Faces are blurred.`,
+    people_count: `Tap one, type the number you see, or send a 📸 photo for an exact count (+${RULES.creditPhoto} pts and more SOL). Faces are blurred.`,
     photo: `Tap one, or send a 📸 photo (+${RULES.creditPhoto} pts). Faces and plates are blurred.`,
     report: `Find out, then reply to this message with what you learned. You can attach a photo.`,
   };
@@ -180,7 +181,7 @@ async function handle(u) {
   if (m.photo || m.voice || m.audio || (m.text && !m.text.startsWith("/"))) {
     const user = await userFrom(m.from);
     const kind = m.photo ? "photo" : m.voice || m.audio ? "voice" : "text";
-    const qid = replyFor(m) || findRequestFor(user._id, kind);
+    const qid = replyFor(m) || findRequestFor(user._id, kind, m.text);
     if (!qid && kind === "text") return searchPlaces(m, user, m.text);
     if (!qid) return say(m.chat.id, "🦉 Thanks! There's no open request for that right now.");
     let body;
