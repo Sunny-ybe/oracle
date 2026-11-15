@@ -26,6 +26,7 @@ import { importPlaces } from "./web/places-import.js";
 
 import { nearby, discover, venueMedia } from "./web/native.js";
 import { mountMcp } from "../mcp/http.js";
+import { warmFacts, tinyfishEnabled } from "./web/tinyfish.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = express();
@@ -294,6 +295,10 @@ async function importAround(lat, lng) {
   console.log(`Loaded ${r.added} places around ${lat.toFixed(3)}, ${lng.toFixed(3)} (${r.total} total)`);
   if (r.added) events.emit("event", { type: "places", at: new Date().toISOString(), added: r.added, total: r.total });
 }
+
+// Official pages (hours, schedules, menus): read them in the background so answers from them are instant.
+if (tinyfishEnabled()) warmFacts().catch((e) => console.error("TinyFish warm-up failed:", e.message));
+else console.log("No TINYFISH_API_KEY: official-page answers off");
 
 if (env.discordToken) startDiscord().catch((e) => console.error("Discord failed to start:", e.message));
 else console.log("No DISCORD_TOKEN: Discord off");
