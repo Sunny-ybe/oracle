@@ -702,7 +702,7 @@ let draft = {};
 function openRequest(id) {
   const r = REQS.find((x) => x.id === id);
   if (!r) { toast("That request was already answered by people nearby."); return go("contribute"); }
-  draft = { id, option: null, image: null, db: null, text: "" };
+  draft = { id, option: null, image: null, db: null, mbps: null, text: "" };
   const s = r.sensor || "poll";
   const needsPhoto = s === "photo" || s === "people_count";
   $("request").innerHTML = `
@@ -713,14 +713,15 @@ function openRequest(id) {
       <span class="live-badge">Live request</span>
       <div class="where">📍 ${esc(r.place)}</div>
       <p class="q">${esc(r.question)}</p>
-      ${s !== "poll" && s !== "report" ? `<div class="muted" style="font-size:13.5px;margin:-6px 0 8px">Tap an answer${needsPhoto ? ", and add a photo for 5 points" : s === "noise" ? ", or measure the noise for an exact reading" : ""}:</div>` : ""}
+      ${s !== "poll" && s !== "report" ? `<div class="muted" style="font-size:13.5px;margin:-6px 0 8px">Tap an answer${needsPhoto ? ", and add a photo for 5 points" : s === "noise" ? ", or measure the noise for an exact reading" : s === "wifi" ? ", or run the speed test for an exact reading" : ""}:</div>` : ""}
       ${(r.options || []).map((o, i) => `<button class="opt" data-o="${i + 1}">${esc(o)}</button>`).join("")}
       ${s === "report" ? `<textarea id="rtext" placeholder="What did you find out?"></textarea>` : ""}
       <img class="shot" id="shot" alt="Your photo">
       <div class="sensors">
-        ${s === "noise" ? `<button class="sensor wide need" id="noiseBtn">🎙️ Measure noise<small>5 seconds · only a number is sent</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
+        ${s === "noise" ? `<button class="sensor wide need" id="noiseBtn">🎙️ Measure noise<small>10 seconds · only a number is sent</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
         ${s !== "noise" ? `<label class="sensor ${needsPhoto ? "wide need" : ""}" for="cam" id="camBtn">📸 ${needsPhoto ? (s === "people_count" ? "Photograph the room" : "Take a photo") : "Add photo"}<small>${needsPhoto ? "Faces & IDs are blurred" : "(optional)"}</small></label><input id="cam" type="file" accept="image/*" capture="environment">` : ""}
-        ${s === "poll" || s === "report" ? `<button class="sensor" id="noiseBtn">🎙️ Report noise<small>(5 sec)</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
+        ${s === "wifi" ? `<button class="sensor wide need" id="wifiBtn">🛜 Test Wi-Fi speed<small>Downloads 1 MB · only the speed is sent</small><div class="meter"><i id="wlvl"></i></div></button>` : ""}
+        ${s === "poll" || s === "report" ? `<button class="sensor" id="noiseBtn">🎙️ Report noise<small>(10 sec)</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
       </div>
       <div class="note">🔒 Photos are shared only after faces, name badges, screens and plates are blurred. Your location is used to check you're there, never shown.</div>
       <button class="primary" id="submitBtn" disabled>Submit</button>
@@ -732,6 +733,7 @@ function openRequest(id) {
   $("rtext")?.addEventListener("input", (e) => { draft.text = e.target.value; ready(); });
   $("cam")?.addEventListener("change", onPhoto);
   $("noiseBtn")?.addEventListener("click", measure);
+  $("wifiBtn")?.addEventListener("click", speedTest);
   $("submitBtn").onclick = submit;
   draft.sensor = s;
   go("request");
@@ -739,7 +741,7 @@ function openRequest(id) {
 function ready() {
   const s = draft.sensor;
   // A tap is always enough; a photo, noise reading or written report makes it precise.
-  const ok = !!draft.option || (s === "noise" ? draft.db != null : s === "report" ? draft.text.trim().length > 0 : !!draft.image);
+  const ok = !!draft.option || (s === "noise" ? draft.db != null : s === "wifi" ? draft.mbps != null : s === "report" ? draft.text.trim().length > 0 : !!draft.image);
   $("submitBtn").disabled = !ok;
 }
 async function onPhoto(e) {
@@ -765,7 +767,7 @@ async function measure() {
     energy += rms * rms; n++;
     const db = 20 * Math.log10(rms) + 95;   // rough phone calibration
     $("lvl").style.width = `${Math.max(0, Math.min(100, (db - 30) / 70 * 100))}%`;
-    const left = 5 - (performance.now() - t0) / 1000;
+    const left = 10 - (performance.now() - t0) / 1000;
     btn.firstChild.textContent = `🎙️ Listening… ${Math.max(0, left).toFixed(1)}s `;
     left > 0 ? requestAnimationFrame(tick) : done();
   }; tick(); });
@@ -774,9 +776,34 @@ async function measure() {
   btn.firstChild.textContent = `🎙️ ${draft.db} dB · ${draft.db < 55 ? "Quiet" : draft.db < 70 ? "Chatty" : "Loud"} `;
   btn.classList.add("done"); delete btn.dataset.busy; ready();
 }
+// Wi-Fi question: download the 1 MB test file twice and keep the faster run. Only the speed is sent.
+async function speedTest() {
+  const btn = $("wifiBtn"); if (btn.dataset.busy) return; btn.dataset.busy = 1;
+  try {
+    let best = 0;
+    for (let run = 0; run < 2; run++) {
+      const t0 = performance.now();
+      const res = await fetch(`/speedtest.bin?r=${Math.random()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("no test file");
+      const reader = res.body.getReader(); let got = 0;
+      for (;;) {
+        const { done, value } = await reader.read(); if (done) break;
+        got += value.length;
+        const secs = (performance.now() - t0) / 1000;
+        btn.firstChild.textContent = `🛜 Downloading… ${Math.round(got / 10485.76)}% `;
+        if (secs > 0.05) $("wlvl").style.width = `${Math.max(3, Math.min(100, (got * 8) / secs / 1e6))}%`;
+      }
+      best = Math.max(best, (got * 8) / ((performance.now() - t0) / 1000) / 1e6);
+    }
+    draft.mbps = Math.round(best * 10) / 10;
+    btn.firstChild.textContent = `🛜 ${draft.mbps} Mbps · ${draft.mbps < 10 ? "Slow" : draft.mbps < 50 ? "Okay" : "Fast"} `;
+    btn.classList.add("done");
+  } catch { toast("Couldn't run the speed test. Tap an answer instead."); btn.firstChild.textContent = "🛜 Test Wi-Fi speed "; }
+  delete btn.dataset.busy; ready();
+}
 async function submit() {
   const b = $("submitBtn"); b.disabled = true; b.textContent = draft.image ? "Blurring and checking…" : "Sending…";
-  const body = { option: draft.option, db: draft.db, text: draft.text, ...(draft.image && { image: draft.image, mime: "image/jpeg" }) };
+  const body = { option: draft.option, db: draft.db, mbps: draft.mbps, text: draft.text, ...(draft.image && { image: draft.image, mime: "image/jpeg" }) };
   const r = await api(`/api/app/answer/${draft.id}`, body).catch((e) => ({ ok: false, message: e.message }));
   if (!r.ok) { b.disabled = false; b.textContent = "Submit"; return toast(`🦉 ${esc(r.message || r.error)}`); }
   tg?.HapticFeedback?.notificationOccurred?.("success");

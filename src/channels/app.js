@@ -11,7 +11,8 @@ let publicKey = null;
 export const vapidPublicKey = () => publicKey;
 
 const HINT = {
-  noise: "Tap an answer or measure the noise (5 sec)",
+  noise: "Tap an answer or measure the noise (10 sec)",
+  wifi: "Tap an answer or run the 1 MB speed test",
   people_count: "Tap an answer or snap the room",
   photo: "Tap an answer or snap a photo",
   report: "Find out and reply",

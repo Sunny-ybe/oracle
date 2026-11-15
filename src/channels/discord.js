@@ -5,6 +5,7 @@ import {
 } from "discord.js";
 import { geocode } from "../web/geo.js";
 import { loudnessDb } from "../ai/audio.js";
+import { linkToken } from "../web/auth.js";
 import { env, PLACES, findPlace, RULES, REWARDS } from "../config.js";
 import * as mongo from "../db/mongo.js";
 import { ask, registerChannel, announceJoin, answerRequest, findRequestFor, cashOut, redeemReward } from "../core.js";
@@ -107,15 +108,21 @@ export async function startDiscord() {
     },
     async sendTask(user, q) {
       const hint = {
-        noise: `Tap one, or send a 5-second 🎙️ voice message for an exact reading (+${RULES.creditPhoto} pts).`,
+        noise: `Tap one, or send a 10-second 🎙️ voice message for an exact reading (+${RULES.creditPhoto} pts).`,
+        wifi: `Tap one, or run the 1 MB speed test for an exact reading (+${RULES.creditPhoto} pts).`,
         people_count: `Tap one, or reply with a 📸 photo of the room for an exact count (+${RULES.creditPhoto} pts). Faces are blurred.`,
         photo: `Tap one, or reply with a 📸 photo (+${RULES.creditPhoto} pts). Faces and plates are blurred.`,
         report: "Find out, then reply here with what you learned. You can attach a photo.",
       }[q.sensor] || "";
       const content = `🦉 **Oracle asks:** ${q.question}${q.note ? `\n${q.note}` : ""}\n${hint}`;
+      // A bot can't measure the connection, so the speed test runs on a web page signed in as this person.
+      // The link is personal, so it only goes out by DM, never to the shared channel.
+      const speed = q.sensor === "wifi" && env.publicUrl.startsWith("https://")
+        ? [new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("🛜 Run speed test").setURL(`${env.publicUrl}/app?q=${q._id}&t=${linkToken(user._id)}`))]
+        : [];
       try {
         const u = await client.users.fetch(user.channelUserId);
-        await u.send({ content, components: [pollRow(q)] });
+        await u.send({ content, components: [pollRow(q), ...speed] });
       } catch {
         const ch = await client.channels.fetch(env.discordChannelId);
         await ch.send({ content: `<@${user.channelUserId}> ${content}`, components: [pollRow(q)] });

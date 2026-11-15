@@ -50,6 +50,7 @@ function presetFor(text) {
   if (/(staff|ask them|in stock|available|do they have|special|menu)/.test(s)) return "ask_staff";
   if (/(line|queue|wait)/.test(s)) return "line_length";
   if (/(loud|noise|quiet)/.test(s)) return "noise";
+  if (/(wi-?fi|internet|connection|mbps|download speed|signal)/.test(s)) return "wifi";
   return "crowd";
 }
 
@@ -72,11 +73,13 @@ Return JSON: {"topic": string, "question": string, "options": [string, string, s
 Rules:
 - sensor: how phones should answer.
   "noise": how loud/quiet it is (the phone's microphone measures it).
+  "wifi": how fast or good the Wi-Fi / internet is (each phone downloads a 1 MB test file and measures the speed).
   "people_count": how many people are there (each phone takes a photo; people are counted).
   "photo": anything better answered by looking (sky, weather, dust storm/haboob, how full shelves are, is it open, what's on the menu board, what it looks like).
   "report": anything someone has to go and find out or ask a person (ask the staff, check if something is in stock, is a room booked, what's today's special).
   "poll": simple things a person standing there can answer with one tap (line length, is there pizza, are there free seats).
 - For "noise": topic "noise", options ["Quiet","Chatty","Loud"], thresholds [55, 70] (decibels).
+- For "wifi": topic "wifi", options ["Slow","Okay","Fast"], thresholds [10, 50] (Mbps).
 - For "people_count": topic "people_count", options like ["Under 15","15-40","40+"] sized for this kind of place, and thresholds = the two boundary numbers (e.g. [15, 40]).
 - For "photo": 3 options ordered low -> high for what the photo will show (e.g. "how sunny is it" -> ["Cloudy","Partly sunny","Bright sun"]; haboob -> ["Mild dust","Hazy","Severe"]; parking -> ["Plenty","A few","Full"]); thresholds null.
 - For "report": options ["Yes","Partly","No"] if it's a yes/no question, else any 3 short options; thresholds null.
@@ -89,9 +92,9 @@ Rules:
     ], 8000);
     if (!plan?.topic || !Array.isArray(plan.options) || plan.options.length !== 3) return fallback();
     plan.topic = plan.topic.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 40);
-    plan.sensor = ["noise", "people_count", "photo", "report"].includes(plan.sensor) ? plan.sensor : "poll";
+    plan.sensor = ["noise", "wifi", "people_count", "photo", "report"].includes(plan.sensor) ? plan.sensor : "poll";
     if (plan.sensor !== "poll" && !(Array.isArray(plan.thresholds) && plan.thresholds.length === 2)) {
-      plan.thresholds = PRESETS[plan.sensor === "noise" ? "noise" : "people_count"].thresholds;
+      plan.thresholds = PRESETS[plan.sensor === "noise" ? "noise" : plan.sensor === "wifi" ? "wifi" : "people_count"].thresholds;
     }
     return plan;
   } catch (err) {

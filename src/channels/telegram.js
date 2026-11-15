@@ -5,6 +5,7 @@ import * as mongo from "../db/mongo.js";
 import { ask, recordVote, registerChannel, announceJoin, cashOut, redeemReward, answerRequest, findRequestFor, resolvePlace } from "../core.js";
 import { explorerAddress, isValidAddress, solanaEnabled } from "../pay/solana.js";
 import { loudnessDb } from "../ai/audio.js";
+import { linkToken } from "../web/auth.js";
 
 const api = async (method, body) => {
   const res = await fetch(`https://api.telegram.org/bot${env.telegramToken}/${method}`, {
@@ -77,7 +78,8 @@ export async function startTelegram() {
     `🦉 Oracle asks: ${q.question}${q.note ? `\n${q.note}` : ""}${extraLine ? `\n\n${extraLine}` : ""}`;
   const buttons = (q) => ({ inline_keyboard: [q.options.map((o, i) => ({ text: o, callback_data: `ans:${q._id}:${i + 1}` }))] });
   const HINT = {
-    noise: `Tap one, or hold 🎙️ and send a 5-second voice note for an exact reading (+${RULES.creditPhoto} pts).`,
+    noise: `Tap one, or hold 🎙️ and send a 10-second voice note for an exact reading (+${RULES.creditPhoto} pts).`,
+    wifi: `Tap one, or run the 1 MB speed test for an exact reading (+${RULES.creditPhoto} pts).`,
     people_count: `Tap one, or send a 📸 photo of the room for an exact count (+${RULES.creditPhoto} pts). Faces are blurred.`,
     photo: `Tap one, or send a 📸 photo (+${RULES.creditPhoto} pts). Faces and plates are blurred.`,
     report: `Find out, then reply to this message with what you learned. You can attach a photo.`,
@@ -86,7 +88,10 @@ export async function startTelegram() {
     sendPoll: (user, q) => api("sendMessage", { chat_id: user.channelUserId, text: ask1(q), reply_markup: buttons(q) }),
     sendText: (user, text) => api("sendMessage", { chat_id: user.channelUserId, text }),
     sendTask: async (user, q) => {
-      const msg = await api("sendMessage", { chat_id: user.channelUserId, text: ask1(q, HINT[q.sensor]), reply_markup: buttons(q) });
+      const markup = buttons(q);
+      // A bot can't measure the connection, so the speed test runs on a web page signed in as this person.
+      if (q.sensor === "wifi" && env.publicUrl.startsWith("https://")) markup.inline_keyboard.push([{ text: "🛜 Run speed test", url: `${env.publicUrl}/app?q=${q._id}&t=${linkToken(user._id)}` }]);
+      const msg = await api("sendMessage", { chat_id: user.channelUserId, text: ask1(q, HINT[q.sensor]), reply_markup: markup });
       replyTo.set(`${user.channelUserId}:${msg.message_id}`, q._id);
       return msg;
     },
