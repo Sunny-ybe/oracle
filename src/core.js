@@ -85,7 +85,7 @@ export async function ask({ place, question, topic, askedBy = "agent", waitSecon
       : await planQuestion(question, p);
 
   // 1. Memory: a fresh agreed answer is free and instant.
-  const mem = await tiger.recentConsensus(p.id, plan.topic, RULES.cacheMinutes);
+  const mem = RULES.cacheMinutes > 0 ? await tiger.recentConsensus(p.id, plan.topic, RULES.cacheMinutes) : null;
   if (mem) {
     let answer = mem.answer_text;
     if (mem.avg_value != null && plan.sensor === "people_count") answer = `About ${Math.round(mem.avg_value)} people`;

@@ -211,3 +211,8 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
   - *Web Rewards:* shows per-card progress, a confirmation with the wallet choice, Phantom/Solflare/Backpack connect, and a Pending → Confirmed on devnet → Awaiting fulfillment timeline with the Explorer link, plus Retry and Cancel on failure. Devnet and manual fulfillment are labeled.
 - *Why:* "Best Use of Solana": a verifiable on-chain record of each redemption without exposing personal data, and no lost or double-spent points.
 - *Where:* `src/pay/redemptions.js`, `src/pay/solana.js` (memo helpers), `src/db/mongo.js`, `src/server.js`, `src/core.js` (`redeemReward` for chat), `public/app.html` (Rewards), `scripts/test-redemptions.js` (19 checks against devnet).
+
+**D-035: The answer cache is off by default (0 minutes)** · 2026-11-15 · Active
+- *Decision:* `RULES.cacheMinutes` defaults to 0, and at 0 `ask` skips the memory lookup, so every question goes to people, even when the same topic was answered a minute ago. `CACHE_MINUTES` in `.env` turns it back on. The history and TinyFish fallbacks when nobody answers are unchanged.
+- *Why:* The user wants every ask to reach people live (demos and recordings repeat the same question), instead of returning "answered from memory".
+- *Where:* `src/config.js`, `src/core.js` (`ask`), server `/opt/oracle/.env`.

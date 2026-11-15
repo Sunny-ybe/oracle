@@ -42,7 +42,7 @@ npm run deploy   # syntax check, copy the code, install, restart, confirm it ans
 
 - Dev endpoints (no phones): `POST /api/dev/checkin {name, place}`, `POST /api/dev/vote {name, questionId, option}`, `GET /api/dev/open`, `POST /api/ask {place, question, waitSeconds}`.
 - Use a faraway place such as `"Merrill-Cazier Library, Utah State University, Logan UT"` and users named `zz-test-…`, and delete the test users, questions and answers afterwards.
-- Asking the same topic at the same place within 10 minutes returns the remembered answer and pings nobody. Change the place or topic between tests.
+- The answer cache is off (`CACHE_MINUTES=0`, D-035): every question pings people, even a repeat. Set `CACHE_MINUTES` to turn it back on.
 
 ## What works (all tested on 2026-11-15)
 

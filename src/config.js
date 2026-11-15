@@ -57,7 +57,7 @@ export const RULES = {
   waitSeconds: 45,      // how long an asker waits before getting "pending" (longer than the deadline, so it rarely happens)
   deadlineSeconds: num(process.env.DEADLINE_SECONDS, 40), // every question settles by now: nobody waits a minute for an answer
   photoMinutes: 5,      // how long a photo link stays valid
-  cacheMinutes: num(process.env.CACHE_MINUTES, 10),     // an answer this fresh is served from memory
+  cacheMinutes: num(process.env.CACHE_MINUTES, 0),      // an answer this fresh is served from memory; 0 = always ask people (D-035)
   pingCooldownSec: num(process.env.PING_COOLDOWN, 10), // don't ping the same person more often than this
   graceSeconds: num(process.env.GRACE_SECONDS, 8),     // after consensus, wait this long for the rest of the room
   maxPings: num(process.env.MAX_PINGS, 25), // people pinged per question
