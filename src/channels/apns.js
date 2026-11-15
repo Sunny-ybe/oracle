@@ -40,11 +40,18 @@ function client(sandbox) {
   return (sessions[host] = fresh);
 }
 
-/** Sends one notification. Resolves { ok, status, reason, gone } — gone means the token should be dropped. */
-export function sendApns({ token: deviceToken, sandbox }, payload, { collapseId } = {}) {
+// The bundled notification sound in the iPhone app (ios/Oracle/Oracle/oracle-chime.caf).
+export const ORACLE_SOUND = "oracle-chime.caf";
+// A request is only worth answering for a few minutes; Apple drops it if the phone is offline longer.
+const REQUEST_TTL_S = 15 * 60;
+
+/** Sends one notification. Resolves { ok, status, reason, gone, wrongEnvironment }.
+ *  gone means the token should be dropped; wrongEnvironment means it belongs to the other APNs server. */
+export function sendApns({ token: deviceToken, sandbox }, payload, { collapseId, ttl = REQUEST_TTL_S } = {}) {
   return new Promise((resolve) => {
     const done = (status, reason = "") => resolve({
       ok: status === 200, status, reason,
+      wrongEnvironment: reason === "BadDeviceToken",
       gone: status === 410 || /BadDeviceToken|Unregistered|DeviceTokenNotForTopic/.test(reason),
     });
     let req;
@@ -53,6 +60,7 @@ export function sendApns({ token: deviceToken, sandbox }, payload, { collapseId 
         ":method": "POST", ":path": `/3/device/${deviceToken}`,
         authorization: `bearer ${token()}`, "apns-topic": env.apnsBundleId,
         "apns-push-type": "alert", "apns-priority": "10",
+        "apns-expiration": String(Math.floor(Date.now() / 1000) + ttl),
         ...(collapseId ? { "apns-collapse-id": String(collapseId).slice(0, 64) } : {}),
       });
     } catch (e) { return done(0, e.message); }
@@ -67,13 +75,15 @@ export function sendApns({ token: deviceToken, sandbox }, payload, { collapseId 
   });
 }
 
-/** The payload the iPhone app understands: answer buttons come from the category, the request rides along. */
+/** The payload the iPhone app understands: answer buttons come from the category, the request rides along.
+ *  The sound and badge are filled in per device by the app channel. */
 export function requestPayload(q, title) {
   const options = Array.isArray(q.options) ? q.options : [];
   return {
     aps: {
       alert: { title, ...(q.note ? { subtitle: q.note.replace("📍 ", "") } : {}), body: q.question },
-      sound: "default",
+      sound: ORACLE_SOUND,
+      "interruption-level": "active",
       category: options.length ? `poll.${options.join("|")}` : "ORACLE_POLL",
       "thread-id": "oracle-requests",
     },
