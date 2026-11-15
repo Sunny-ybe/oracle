@@ -59,6 +59,20 @@ export async function resolvePlace(query) {
   return findPlace(query);
 }
 
+// A place someone clicked on the map (from OpenStreetMap) becomes an Oracle place, so it can get answers.
+export async function ensurePlace({ name, lat, lng, kind }) {
+  name = String(name || "").trim().slice(0, 80); lat = Number(lat); lng = Number(lng);
+  if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error("Need a name and a location.");
+  const known = PLACES.find((p) => (p.name.toLowerCase() === name.toLowerCase() && haversineM(lat, lng, p.lat, p.lng) < 300) || haversineM(lat, lng, p.lat, p.lng) < 12);
+  if (known) return { id: known.id, name: known.name, lat: known.lat, lng: known.lng, kind: known.kind };
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 28) || "place";
+  const p = { id: `${slug}-${randomBytes(2).toString("hex")}`, name, aliases: [name.toLowerCase()], lat, lng, radiusM: 80, kind: kind || "place", tagline: "", dynamic: true };
+  PLACES.push(p);
+  await mongo.addPlace(p).catch(() => {});
+  emit("place", { id: p.id, name: p.name, lat: p.lat, lng: p.lng, kind: p.kind });
+  return { id: p.id, name: p.name, lat: p.lat, lng: p.lng, kind: p.kind };
+}
+
 export async function ask({ place, question, topic, askedBy = "agent", waitSeconds = RULES.waitSeconds }) {
   const p = await resolvePlace(place);
   if (!p) throw new Error(`Couldn't find "${place}" on the map. Try adding the street or city.`);
@@ -633,7 +647,7 @@ const TOPIC_KEYS = { line_length: "line", noise: "noise", crowd: "crowd", people
 
 // Everything the app's map needs, one call.
 export async function placesForApp() {
-  const [latest, counts, rows] = await Promise.all([mongo.latestAnswers(), mongo.peopleByPlace(), tiger.latestByPlace()]);
+  const [latest, counts, rows] = await Promise.all([mongo.latestAnswers(24), mongo.peopleByPlace(), tiger.latestByPlace()]);
   const resolved = Object.fromEntries(latest.map((x) => [x._id, x.q]));
   return PLACES.map((p) => {
     const mine = rows.filter((r) => r.place_id === p.id);
@@ -641,7 +655,7 @@ export async function placesForApp() {
     for (const r of mine) if (TOPIC_KEYS[r.topic]) live[TOPIC_KEYS[r.topic]] = { answer: r.answer_text, option: r.option, value: r.value, at: r.time };
     const q = resolved[p.id];
     return {
-      id: p.id, name: p.name, lat: p.lat, lng: p.lng, kind: p.kind || "place", tagline: p.tagline || "",
+      id: p.id, name: p.name, lat: p.lat, lng: p.lng, kind: p.kind || "place", tagline: p.tagline || "", dynamic: Boolean(p.dynamic),
       people_here: counts[p.id] || 0, live,
       headline: q ? { question: q.question, answer: q.result.answer, option: q.result.option, source: q.result.source,
         confidence: q.result.confidence, votes: q.result.votes, at: q.resolvedAt } : null,
@@ -699,7 +713,7 @@ export async function redeemReward(userId, reward) {
 // ---------------------------------------------------------------- views
 
 export async function liveStatus() {
-  const [latest, counts] = await Promise.all([mongo.latestAnswers(), mongo.peopleByPlace()]);
+  const [latest, counts] = await Promise.all([mongo.latestAnswers(24 * 14), mongo.peopleByPlace()]);
   const byPlace = Object.fromEntries(latest.map((x) => [x._id, x.q]));
   return PLACES.map((p) => {
     const q = byPlace[p.id];

@@ -7,7 +7,7 @@ import * as mongo from "./db/mongo.js";
 import * as tiger from "./db/tiger.js";
 import {
   ask, getAnswer, recordVote, events, openQuestions, liveStatus, insights, disputeInfo, submitPhoto, announceJoin,
-  placeDetail, photoById, redeemReward, cashOut, pendingFor, answerFromApp, placesForApp,
+  placeDetail, photoById, redeemReward, cashOut, pendingFor, answerFromApp, placesForApp, ensurePlace,
 } from "./core.js";
 import { appUser, linkToken } from "./web/auth.js";
 import { startAppChannel, vapidPublicKey } from "./channels/app.js";
@@ -17,10 +17,21 @@ import { REWARDS, findPlace } from "./config.js";
 import { startDiscord } from "./channels/discord.js";
 import { startTelegram, telegramJoinLink } from "./channels/telegram.js";
 import { treasuryInfo } from "./pay/solana.js";
+import { ensureSpeedFile, saveScan, floorReport } from "./scan.js";
+import { register, login, setCredentials } from "./web/accounts.js";
+import { importPlaces } from "./web/places-import.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = express();
 app.use(express.json({ limit: "12mb" }));
+
+// Wi-Fi speed test: a 1 MB file stored on this server, never cached, so every download is real.
+ensureSpeedFile(path.join(root, "public"));
+app.get("/speedtest.bin", (_req, res) => {
+  res.set({ "Cache-Control": "no-store, no-transform", "Content-Type": "application/octet-stream" });
+  res.sendFile(path.join(root, "public", "speedtest.bin"));
+});
+app.get("/api/ping", (_req, res) => res.set("Cache-Control", "no-store").json({ t: Date.now() }));
 app.use(express.static(path.join(root, "public")));
 
 const wrap = (fn) => async (req, res) => {
@@ -40,6 +51,9 @@ const requireKey = (req, res, next) => {
 app.post("/api/ask", requireKey, wrap((req) => ask(req.body)));
 app.get("/api/questions/:id", requireKey, wrap((req) => getAnswer(req.params.id, Number(req.query.wait) || 0)));
 app.get("/api/status", wrap(() => liveStatus()));
+app.get("/api/recent", wrap(async () => (await mongo.recentAnswered()).map((q) => ({
+  question: q.question, place: q.place, placeId: q.placeId, answer: q.result.answer, option: q.result.option, source: q.result.source, at: q.resolvedAt }))));
+app.post("/api/places/ensure", wrap((req) => ensurePlace(req.body)));
 app.get("/api/insights", wrap((req) => insights(req.query.place, req.query.topic)));
 
 // ---- dashboard
@@ -87,15 +101,15 @@ app.get("/icon.png", async (req, res) => {
 
 // ---- app sign-up and notifications
 app.post("/api/app/register", wrap(async (req) => {
-  const name = String(req.body.name || "").trim().slice(0, 40);
-  if (!name) throw new Error("Tell us your first name.");
-  const u = await mongo.getOrCreateUser({ channel: "app", channelUserId: Math.random().toString(36).slice(2, 12), name });
+  const { user, token } = await register(req.body);
   if (findPlace(req.body.place)) {
-    await mongo.checkIn(u._id, findPlace(req.body.place).id);
-    announceJoin(u, findPlace(req.body.place).id).catch(() => {});
-  }
-  return { token: linkToken(u._id) };
+    await mongo.checkIn(user._id, findPlace(req.body.place).id);
+    announceJoin(user, findPlace(req.body.place).id).catch(() => {});
+  } else announceJoin(user, null).catch(() => {});
+  return { token };
 }));
+app.post("/api/app/login", wrap((req) => login(req.body, req.ip)));
+app.post("/api/app/account", appUser, wrap(async (req) => setCredentials(await mongo.getUser(req.user._id), req.body)));
 app.get("/api/app/push-key", (_req, res) => res.json({ key: vapidPublicKey() }));
 app.post("/api/app/push", appUser, wrap(async (req) => {
   if (!req.body?.endpoint) throw new Error("No subscription");
@@ -120,7 +134,7 @@ const me = async (u) => {
   const { wallet, ...rest } = f;
   return {
     ...rest, wallet: f.payoutWallet || wallet.pub, walletUrl: explorerAddress(f.payoutWallet || wallet.pub), linkedWallet: Boolean(f.payoutWallet),
-    place: f.placeId ? findPlace(f.placeId)?.name : null, rewards: REWARDS, pointsPerSol: env.pointsPerSol, minCashout: env.minCashout,
+    place: f.placeId ? findPlace(f.placeId)?.name : null, rewards: REWARDS, passHash: undefined, hasPassword: Boolean(f.passHash), pointsPerSol: env.pointsPerSol, minCashout: env.minCashout,
     requests: pendingFor(f._id),
   };
 };
@@ -150,6 +164,10 @@ app.post("/api/app/checkin", appUser, wrap(async (req) => {
   return { ok: true, place: findPlace(req.body.place).name };
 }));
 
+// ---- spot scans: Wi-Fi speed, 10-second loudness, floor -> which floor is best
+app.post("/api/app/scan", appUser, wrap(async (req) => saveScan(await mongo.getUser(req.user._id), req.body)));
+app.get("/api/floors", wrap((req) => floorReport(req.query.place)));
+
 // ---- photo verification page
 app.get("/verify/:token", (_req, res) => res.sendFile(path.join(root, "public", "verify.html")));
 app.get("/api/verify/:token", (req, res) => {
@@ -157,6 +175,13 @@ app.get("/api/verify/:token", (req, res) => {
   info ? res.json(info) : res.status(404).json({ error: "This link has expired or the question is already settled." });
 });
 app.post("/api/verify/:token", wrap((req) => submitPhoto(req.params.token, req.body)));
+
+// ---- load every named place around campus from OpenStreetMap
+app.post("/api/dev/import-places", wrap(async (req) => {
+  const r = await importPlaces({ radiusM: Number(req.body?.radiusM) || undefined });
+  events.emit("event", { type: "places", at: new Date().toISOString(), added: r.added, total: r.total });
+  return { added: r.added, total: r.total };
+}));
 
 // ---- testing without phones: fake people check in and vote
 app.get("/api/dev/open", (_req, res) => res.json(openQuestions()));
@@ -179,6 +204,13 @@ await connectMongo();
 await startAppChannel().catch((e) => console.error("App notifications off:", e.message));
 await tiger.checkTiger();
 app.listen(env.port, () => console.log(`🦉 Oracle running at http://localhost:${env.port}`));
+
+// First run: bring in every named place around campus, so questions can be about anywhere nearby.
+if (PLACES.length < 25 && process.env.AUTO_IMPORT_PLACES !== "0") {
+  importPlaces()
+    .then((r) => { console.log(`Loaded ${r.added} places from OpenStreetMap (${r.total} total)`); events.emit("event", { type: "places", at: new Date().toISOString(), added: r.added, total: r.total }); })
+    .catch((e) => console.error("Couldn't load places from OpenStreetMap:", e.message));
+}
 
 if (env.discordToken) startDiscord().catch((e) => console.error("Discord failed to start:", e.message));
 else console.log("No DISCORD_TOKEN: Discord off");

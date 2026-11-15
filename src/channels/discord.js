@@ -15,7 +15,7 @@ const OWL = 0xf5b83d;
 const commands = [
   new SlashCommandBuilder().setName("checkin").setDescription("Tell Oracle where you are")
     .addStringOption((o) => o.setName("place").setDescription("Where are you?").setRequired(true)
-      .addChoices(...PLACES.map((p) => ({ name: p.name, value: p.id })))),
+      .addChoices(...PLACES.filter((p) => !p.dynamic).slice(0, 25).map((p) => ({ name: p.name, value: p.id })))),
   new SlashCommandBuilder().setName("location").setDescription("Set your area so you get questions for places near you")
     .addStringOption((o) => o.setName("area").setDescription("A street, campus spot or ZIP, e.g. 'Mill Ave Tempe' or '85281'").setRequired(true)),
   new SlashCommandBuilder().setName("ask").setDescription(`Ask people at a place (costs ${RULES.creditAsk} credit)`)
@@ -42,7 +42,7 @@ function pollRow(q) {
 
 function placeRow() {
   return new ActionRowBuilder().addComponents(
-    PLACES.slice(0, 5).map((p) => new ButtonBuilder().setCustomId(`place:${p.id}`).setLabel(p.name).setStyle(ButtonStyle.Secondary))
+    PLACES.filter((p) => !p.dynamic).slice(0, 5).map((p) => new ButtonBuilder().setCustomId(`place:${p.id}`).setLabel(p.name).setStyle(ButtonStyle.Secondary))
   );
 }
 

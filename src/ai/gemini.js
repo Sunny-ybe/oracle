@@ -160,3 +160,21 @@ Return JSON: {"answer": one or two sentences combining what they found, noting a
   ]);
   return r.answer;
 }
+
+// A photo of a floor sign, elevator panel, stairwell number or room number -> which floor the person is on.
+// Lets one person prove their floor without anyone else around.
+export async function readFloorSign({ base64, mime, place }) {
+  if (!env.geminiKey) throw new Error("Gemini key not set");
+  return generate([
+    {
+      text: `Someone inside "${place.name}" took this photo to prove which floor they are on.
+It should show a floor sign, an elevator panel or display, a stairwell floor number, or a room number.
+Work out the floor. Room numbers usually start with the floor (room 312 is on floor 3, 2041 is floor 2, B12 or LL5 is the basement).
+Return JSON:
+{"floor": integer or null (0 = basement or lower level, 1 = ground or first floor, 2 = second floor, ...),
+ "evidence": short phrase saying what you read, e.g. "elevator display shows 3" or "room 214",
+ "real_photo": boolean (false if it is a screenshot, a photo of a screen, or a printed or handwritten note held up to the camera)}`,
+    },
+    { inline_data: { mime_type: mime || "image/jpeg", data: base64 } },
+  ], 20000);
+}

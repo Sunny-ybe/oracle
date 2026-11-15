@@ -17,7 +17,7 @@ export const env = {
   telegramToken: process.env.TELEGRAM_TOKEN,
 
   geminiKey: process.env.GEMINI_API_KEY,
-  geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-3.8-flash",
   // Tried in order when the main model is overloaded or slow, e.g. "gemini-3.8-flash-lite".
   geminiFallbacks: (process.env.GEMINI_FALLBACK_MODELS || "").split(",").map((s) => s.trim()).filter(Boolean),
   tinyfishKey: process.env.TINYFISH_API_KEY,

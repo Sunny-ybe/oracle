@@ -74,5 +74,15 @@ server.tool(
   })
 );
 
+server.tool(
+  "get_floor_report",
+  "Which floor of a building is best right now. Earners scan a spot with their phone: a Wi-Fi speed test " +
+    "(1 MB download), a 10-second loudness recording, and the floor they're on. Use for questions like " +
+    "'which floor of Hayden Library is quietest?', 'where's the best Wi-Fi in the MU?', 'where should I study?'. " +
+    "If there are no scans yet, use ask_place to ask people there.",
+  { place: z.string().describe("Place id or name, e.g. 'hayden' or 'Hayden Library'") },
+  async ({ place }) => ({ content: [{ type: "text", text: JSON.stringify(await call(`/api/floors?place=${encodeURIComponent(place)}`), null, 2) }] })
+);
+
 await server.connect(new StdioServerTransport());
 console.error("Oracle MCP ready");

@@ -31,7 +31,7 @@ const replyFor = (m) => (m.reply_to_message ? replyTo.get(`${m.chat.id}:${m.repl
 // Deep link that opens the bot and checks the person in at a place in one tap.
 export const telegramJoinLink = (placeId) => (botUsername ? `https://t.me/${botUsername}?start=${placeId || "join"}` : null);
 
-const placeKeyboard = () => ({ inline_keyboard: PLACES.map((p) => [{ text: p.name, callback_data: `place:${p.id}` }]) });
+const placeKeyboard = () => ({ inline_keyboard: PLACES.filter((p) => !p.dynamic).slice(0, 8).map((p) => [{ text: p.name, callback_data: `place:${p.id}` }]) });
 const locationKeyboard = {
   keyboard: [[{ text: "📍 Share my location", request_location: true }]],
   resize_keyboard: true, one_time_keyboard: true,

@@ -16,6 +16,7 @@ export async function connectMongo() {
   await col("places").createIndex({ location: "2dsphere" });
   await col("users").createIndex({ location: "2dsphere" });
   await col("redemptions").createIndex({ createdAt: -1 });
+  await col("users").createIndex({ username: 1 }, { unique: true, partialFilterExpression: { username: { $type: "string" } } });
 
   // Keep the places collection in sync with config.js, then bring back places discovered earlier.
   const configured = new Set(PLACES.map((p) => p.id));
@@ -189,6 +190,11 @@ export const recentResolved = (placeId) =>
   col("questions").find({ placeId, status: "resolved", resolvedAt: { $gt: new Date(Date.now() - 6 * 3600 * 1000) } })
     .sort({ resolvedAt: -1 }).limit(40).toArray();
 
+// The most recent answered questions anywhere, for the dashboard's "Earlier" list.
+export const recentAnswered = (n = 12) =>
+  col("questions").find({ status: "resolved", "result.answer": { $ne: null } }, { projection: { question: 1, place: 1, placeId: 1, result: 1, resolvedAt: 1 } })
+    .sort({ resolvedAt: -1 }).limit(n).toArray();
+
 export const redemptions = () => col("redemptions").find({}).sort({ createdAt: -1 }).limit(50).toArray();
 
 export const leaderboard = () =>
@@ -210,9 +216,9 @@ export const updateQuestion = (id, set) => col("questions").updateOne({ _id: id 
 export const pushVote = (id, vote) => col("questions").updateOne({ _id: id }, { $push: { votes: vote } });
 export const getQuestion = (id) => col("questions").findOne({ _id: id });
 
-export async function latestAnswers() {
-  // Most recent resolved answer per place in the last hour.
-  const since = new Date(Date.now() - 60 * 60 * 1000);
+export async function latestAnswers(hours = 1) {
+  // Most recent resolved answer per place in the last `hours` hours.
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
   return col("questions")
     .aggregate([
       { $match: { status: "resolved", resolvedAt: { $gte: since }, "result.answer": { $ne: null } } },

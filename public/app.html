@@ -8,8 +8,10 @@
 <title>Oracle · earn by being somewhere</title>
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="apple-touch-icon" href="/icon.png?s=180" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800;900&display=swap" />
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -56,7 +58,8 @@
   .pin .lab span { font-size: 12.5px; font-weight: 600; }
   .pin.live .ic { animation: bob 1.2s ease-in-out infinite; }
   @keyframes bob { 50% { transform: rotate(-45deg) translate(3px, -3px); } }
-  .me-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(47,111,224,.18); }
+  .me-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); border: 3px solid #fff; box-shadow: 0 0 0 0 rgba(47,111,224,.45); animation: mepulse 2s infinite; }
+  @keyframes mepulse { 70% { box-shadow: 0 0 0 16px rgba(47,111,224,0); } }
 
   /* cards and lists */
   .section { padding: 0 18px; }
@@ -151,8 +154,80 @@
   .toast { position: absolute; left: 16px; right: 16px; top: calc(12px + env(safe-area-inset-top)); z-index: 3000; background: var(--ink); color: #fff; border-radius: 16px; padding: 14px 16px;
     font-size: 15px; box-shadow: 0 16px 40px -12px rgba(0,0,0,.5); transform: translateY(-140%); transition: transform .35s cubic-bezier(.2,1.2,.4,1); cursor: pointer; }
   .toast.show { transform: none; }
-  .gate { position: absolute; inset: 0; z-index: 4000; background: var(--bg); display: none; place-content: center; text-align: center; padding: 30px; }
-  .gate.on { display: grid; }
+
+  /* ===== sign in / sign out: the owl watching over the map ===== */
+  .gate { position: absolute; inset: 0; z-index: 4000; background: #0b2618; display: none; flex-direction: column; overflow: hidden; color: #f3f8f4; }
+  .gate.on { display: flex; }
+  .scene { position: relative; flex: 1; min-height: 240px; }
+  .scene svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .scene .street { stroke: #bfe3cc; stroke-opacity: .12; stroke-width: 1.2; fill: none; }
+  .scene .street.main { stroke-opacity: .2; stroke-width: 2.4; }
+  .scene .lbl { fill: #bfe3cc; fill-opacity: .45; font: 600 8.5px -apple-system, system-ui, sans-serif; letter-spacing: .02em; }
+  .scene .ring { fill: none; stroke: #2f8a5c; stroke-width: 1.4; transform-box: fill-box; transform-origin: center; animation: ring 3.6s cubic-bezier(.2,.6,.3,1) infinite; opacity: 0; }
+  .scene .ring.r2 { animation-delay: 1.2s; } .scene .ring.r3 { animation-delay: 2.4s; }
+  @keyframes ring { 0% { transform: scale(.35); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
+  .scene .phone rect.body { fill: #123826; stroke: #bfe3cc; stroke-opacity: .55; stroke-width: 1.2; }
+  .scene .phone rect.screen { fill: #2f8a5c; fill-opacity: .35; transition: fill-opacity .3s, fill .3s; }
+  .scene .phone.hit rect.screen { fill: #f2b33d; fill-opacity: 1; }
+  .scene .halo { fill: #f2b33d; fill-opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .scene .phone.hit .halo { animation: halo .9s ease-out; }
+  @keyframes halo { 0% { fill-opacity: .55; transform: scale(.6); } 100% { fill-opacity: 0; transform: scale(2.6); } }
+  .scene .qb rect { fill: #f3f8f4; } .scene .qb text { fill: #13241b; font: 700 8.5px -apple-system, system-ui, sans-serif; }
+  .scene .earn { fill: #f2b33d; font: 800 12px "Schibsted Grotesk", -apple-system, sans-serif; }
+  .scene .lid { fill: #1e6b46; transform-box: fill-box; transform-origin: top; transform: scaleY(0); animation: blink 5s infinite; }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(0); } 95% { transform: scaleY(1); } }
+  .gate.sleep .scene .lid { animation: none; transform: scaleY(1); transition: transform .6s ease; }
+  .scene .shut { opacity: 0; transition: opacity .4s .3s; } .gate.sleep .scene .shut { opacity: 1; }
+  .gate.sleep .scene .ring { animation-duration: 7s; }
+  .scene .zz { fill: #bfe3cc; font: 800 13px "Schibsted Grotesk", sans-serif; opacity: 0; }
+  .gate.sleep .scene .zz { animation: zz 2.8s ease-in infinite; }
+  .gate.sleep .scene .zz.z2 { animation-delay: 1.4s; }
+  @keyframes zz { 0% { opacity: 0; transform: translate(0, 0); } 30% { opacity: .9; } 100% { opacity: 0; transform: translate(14px, -26px); } }
+  .sheet { background: #f3f8f4; color: var(--ink); border-radius: 28px 28px 0 0; padding: 26px 22px calc(22px + env(safe-area-inset-bottom));
+    box-shadow: 0 -20px 50px -20px rgba(0,0,0,.6); animation: rise .7s cubic-bezier(.2,1,.3,1) both; }
+  @keyframes rise { from { transform: translateY(100%); } }
+  .panel { display: none; } .panel.on { display: block; animation: in .3s ease; }
+  .panel h2 { font: 800 30px/1.02 "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.025em; margin: 0 0 10px; color: #0b2618; }
+  .panel p.lead { color: var(--muted); line-height: 1.45; margin: 0 0 18px; font-size: 15.5px; max-width: 34ch; }
+  .panel label { font-weight: 700; font-size: 13.5px; }
+  .panel input { width: 100%; border: 1.5px solid var(--line); border-radius: 14px; padding: 14px; font-size: 17px; margin: 6px 0 14px; background: #fff; }
+  .panel input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px var(--mint); }
+  .linkish { display: block; margin: 14px auto 0; border: 0; background: none; color: var(--green); font-weight: 700; font-size: 14.5px; cursor: pointer; padding: 6px; }
+  .err { color: var(--red); font-size: 13.5px; min-height: 18px; margin: -6px 0 8px; }
+  .pw { position: relative; } .pw input { padding-right: 70px; }
+  .pw .eye { position: absolute; right: 8px; top: 13px; border: 0; background: var(--mint); color: var(--green); font-weight: 700; font-size: 13px; border-radius: 10px; padding: 7px 10px; cursor: pointer; }
+  .perks { display: flex; gap: 8px; margin: 0 0 18px; flex-wrap: wrap; }
+  .perks span { font-size: 12.5px; font-weight: 700; color: var(--green); background: var(--mint); border-radius: 99px; padding: 5px 10px; }
+
+  /* ===== scan this spot ===== */
+  .scanEntry { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 0; cursor: pointer; border-radius: var(--r); padding: 16px;
+    background: linear-gradient(135deg, #0b2618, #1e6b46); color: #f3f8f4; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .scanEntry .ic { width: 46px; height: 46px; border-radius: 14px; background: rgba(191,227,204,.14); display: grid; place-items: center; flex: none; }
+  .scanEntry b { display: block; font: 800 18px "Schibsted Grotesk", -apple-system, sans-serif; }
+  .scanEntry small { opacity: .8; font-size: 13px; }
+  .scanEntry .chip { background: #f2b33d; color: #2a1a00; margin-left: auto; }
+  .floors { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 10px 0 6px; }
+  .floors button { border: 1.5px solid var(--line); background: #fff; border-radius: 12px; padding: 10px 0; font-weight: 800; cursor: pointer; }
+  .floors button.sel { background: var(--green); border-color: var(--green); color: #fff; }
+  .floors button.sug { border-color: var(--green); box-shadow: 0 0 0 3px var(--mint); }
+  .gauge { display: block; width: 100%; max-width: 260px; margin: 0 auto; }
+  .gauge .track { fill: none; stroke: var(--line); stroke-width: 14; stroke-linecap: round; }
+  .gauge .val { fill: none; stroke: url(#gg); stroke-width: 14; stroke-linecap: round; transition: stroke-dasharray .25s ease; }
+  .gauge .needle { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; transition: transform .25s ease; transform-origin: 110px 110px; }
+  .gauge text { font: 600 9px -apple-system, system-ui, sans-serif; fill: var(--muted); }
+  .readout { text-align: center; margin-top: -6px; }
+  .readout b { font: 800 34px "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.02em; }
+  .readout span { color: var(--muted); font-size: 13.5px; }
+  .viz { width: 100%; height: 90px; display: block; border-radius: 12px; background: var(--mint-2); }
+  .step { display: flex; align-items: center; gap: 8px; font-weight: 800; margin-bottom: 8px; }
+  .step i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; background: var(--mint); color: var(--green); display: grid; place-items: center; font-size: 13px; }
+  .step.ok i { background: var(--green); color: #fff; }
+  .floorrow { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .floorrow:last-child { border: 0; }
+  .floorrow .fl { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font: 800 18px "Schibsted Grotesk", sans-serif; flex: none; }
+  .floorrow.mine .fl { outline: 3px solid var(--mint); }
+  .v-good { background: var(--mint); color: var(--green); } .v-okay { background: #fbf1dc; color: var(--amber); } .v-bad { background: #fbe4e4; color: var(--red); }
+  .summary { font: 800 21px/1.25 "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.01em; margin: 4px 0 10px; }
   .notify { background: var(--ink); color: #fff; border-radius: var(--r); padding: 14px 16px; margin: 0 18px 12px; display: none; gap: 12px; align-items: center; }
   .notify.on { display: flex; }
   .notify p { margin: 0; flex: 1; font-size: 14px; line-height: 1.4; }
@@ -195,8 +270,18 @@
   <section class="screen" id="contribute">
     <div class="head"><h1>Live requests</h1></div>
     <div class="notify" id="notify2"><p id="notifyText2">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
+    <div class="section">
+      <button class="scanEntry" onclick="openScan()">
+        <span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bfe3cc" stroke-width="2" stroke-linecap="round"><path d="M2 9a15 15 0 0120 0M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0"/><circle cx="12" cy="19.5" r="1.2" fill="#bfe3cc"/></svg></span>
+        <span><b>Scan this spot</b><small>Wi-Fi speed, 10-second loudness, your floor</small></span>
+        <span class="chip">+3 pts</span>
+      </button>
+    </div>
     <div class="section" id="reqList"></div>
   </section>
+
+  <!-- SCAN THIS SPOT -->
+  <section class="screen" id="scan"></section>
 
   <!-- ONE LIVE REQUEST -->
   <section class="screen" id="request"></section>
@@ -226,15 +311,60 @@
 
   <div class="toast" id="toast" role="status"></div>
   <div class="gate" id="gate">
-    <form id="signup" style="max-width:340px;width:100%;text-align:left">
-      <div style="text-align:center;font-size:52px">🦉</div>
-      <h2 style="text-align:center;margin:6px 0 4px">Welcome to Oracle</h2>
-      <p class="muted" style="text-align:center;line-height:1.5;margin:0 0 18px">Get a notification when an AI agent asks about a place you're at. Answer in one tap, earn points.</p>
-      <label for="suName" style="font-weight:600;font-size:14px">Your first name</label>
-      <input id="suName" autocomplete="given-name" required style="width:100%;border:1.5px solid var(--line);border-radius:14px;padding:14px;font-size:17px;margin:6px 0 14px">
-      <button class="primary" type="submit">Start earning</button>
-      <p class="muted" id="suPlace" style="text-align:center;font-size:13px;margin-top:12px"></p>
-    </form>
+    <div class="scene" aria-hidden="true">
+      <svg id="sceneSvg" viewBox="0 0 360 300" preserveAspectRatio="xMidYMid meet" style="overflow:visible">
+        <path class="street main" d="M-400 206 C -100 180, 90 186, 190 212 S 500 180, 760 196"/>
+        <path class="street main" d="M128 -400 C 136 100, 118 210, 140 700"/>
+        <path class="street" d="M-400 84 L 760 112 M-400 270 L 760 240 M34 -400 L 62 700 M246 -400 L 234 700 M322 -400 L 296 700 M-400 140 L 120 150 M-400 -60 L 760 -30 M-400 380 L 760 350 M-120 -400 L -90 700 M470 -400 L 450 700"/>
+        <text class="lbl" x="40" y="78">MEMORIAL UNION</text><text class="lbl" x="262" y="104">HAYDEN</text>
+        <text class="lbl" x="40" y="290">STUDENT PAVILION</text><text class="lbl" x="268" y="268">SDFC</text>
+        <circle class="ring" cx="180" cy="150" r="34"/><circle class="ring r2" cx="180" cy="150" r="34"/><circle class="ring r3" cx="180" cy="150" r="34"/>
+        <g id="phones"></g>
+        <g id="flights"></g>
+        <g id="bigOwl" transform="translate(180 150)">
+          <path d="M-30 -36l14 12h32l14-12-3 40c0 21-14 32-27 32s-27-11-27-32z" fill="#1e6b46"/>
+          <path d="M-14 22c4 6 24 6 28 0" stroke="#bfe3cc" stroke-opacity=".5" stroke-width="2" fill="none"/>
+          <circle cx="-12" cy="-6" r="11" fill="#f3f8f4"/><circle cx="12" cy="-6" r="11" fill="#f3f8f4"/>
+          <circle id="pupL" cx="-12" cy="-6" r="5" fill="#0b2618"/><circle id="pupR" cx="12" cy="-6" r="5" fill="#0b2618"/>
+          <rect class="lid" x="-23.5" y="-17.5" width="23" height="23" rx="11.5"/><rect class="lid" x="0.5" y="-17.5" width="23" height="23" rx="11.5"/>
+          <path class="shut" d="M-20 -6q8 6 16 0M4 -6q8 6 16 0" stroke="#bfe3cc" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          <path d="M-4 8h8l-4 7z" fill="#f2b33d"/>
+          <text class="zz" x="24" y="-26">z</text><text class="zz z2" x="30" y="-36">z</text>
+        </g>
+      </svg>
+    </div>
+    <div class="sheet">
+      <form class="panel" data-panel="new" id="signup">
+        <h2>Be the eyes AI doesn't have.</h2>
+        <p class="lead">When an AI agent asks about a place near you, you get one quick question. Answer it, earn points.</p>
+        <div class="perks"><span>🎁 Gift cards</span><span>◎ Solana</span><span>🔒 Faces blurred</span></div>
+        <label for="suUser">Username</label>
+        <input id="suUser" autocomplete="username" autocapitalize="off" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_.]{3,20}">
+        <label for="suPass">Password</label>
+        <div class="pw"><input id="suPass" type="password" autocomplete="new-password" required minlength="6"><button type="button" class="eye" aria-label="Show password" data-for="suPass">Show</button></div>
+        <div class="err" id="suErr" role="alert"></div>
+        <button class="primary" type="submit" id="suBtn">Create account</button>
+        <p class="muted" id="suPlace" style="text-align:center;font-size:13px;margin:10px 0 0"></p>
+        <button class="linkish" type="button" onclick="showGate('code')">I already have an account</button>
+      </form>
+      <form class="panel" data-panel="code" id="signin">
+        <h2>Welcome back.</h2>
+        <p class="lead">Sign in to get requests for places near you.</p>
+        <label for="siUser">Username</label>
+        <input id="siUser" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+        <label for="siPass">Password</label>
+        <div class="pw"><input id="siPass" type="password" autocomplete="current-password" required><button type="button" class="eye" aria-label="Show password" data-for="siPass">Show</button></div>
+        <div class="err" id="siErr" role="alert"></div>
+        <button class="primary" type="submit" id="siBtn">Sign in</button>
+        <button class="linkish" type="button" onclick="showGate('new')">Create an account</button>
+      </form>
+      <div class="panel" data-panel="out">
+        <h2>You're signed out.</h2>
+        <p class="lead" id="outText">Your points are safe. Oracle won't send requests to this device until you sign back in.</p>
+        <button class="primary" type="button" id="backIn">Sign back in</button>
+        <button class="linkish" type="button" onclick="forgetMe()">Use a different account</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -248,7 +378,7 @@ const params = new URLSearchParams(location.search);
 if (params.get("t")) localStorage.setItem("oracleToken", params.get("t"));
 const auth = localStorage.getItem("oracleToken") ? { "x-oracle-token": localStorage.getItem("oracleToken") } : {};
 const api = (path, body) => fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json", ...auth }, body: JSON.stringify(body) } : { headers: auth })
-  .then(async (r) => { if (r.status === 401) { $("gate").classList.add("on"); throw new Error("signed out"); } return r.json(); });
+  .then(async (r) => { if (r.status === 401) { showGate(); throw new Error("signed out"); } return r.json(); });
 
 /* ---------- icons per kind of place ---------- */
 const KIND = {
@@ -276,15 +406,15 @@ const colorFor = (o) => (o ? OPT[o - 1] : "var(--muted)");
 let current = "explore";
 function go(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
-  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id || (id === "request" && b.dataset.tab === "contribute") || (id === "place" && b.dataset.tab === "explore")));
+  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id || ((id === "request" || id === "scan") && b.dataset.tab === "contribute") || (id === "place" && b.dataset.tab === "explore")));
   current = id;
-  if (id === "explore") setTimeout(() => map.invalidateSize(), 50);
+  if (id === "explore") setTimeout(() => map?.resize(), 50);
   if (id === "contribute") renderRequests();
   if (id === "rewards") renderRewards();
   if (id === "profile") renderProfile();
-  tg?.BackButton?.[id === "request" || id === "place" ? "show" : "hide"]?.();
+  tg?.BackButton?.[id === "request" || id === "place" || id === "scan" ? "show" : "hide"]?.();
 }
-tg?.BackButton?.onClick?.(() => go(current === "request" ? "contribute" : "explore"));
+tg?.BackButton?.onClick?.(() => go(current === "request" || current === "scan" ? "contribute" : "explore"));
 function toast(html, onclick) {
   const t = $("toast"); t.innerHTML = html; t.onclick = () => { t.classList.remove("show"); onclick?.(); };
   t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 5000);
@@ -294,8 +424,33 @@ function toast(html, onclick) {
 /* ---------- map ---------- */
 let PLACES = [], ME = null;
 const pins = {};
-const map = L.map("map", { zoomControl: false, attributionControl: false });
-L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { maxZoom: 19 }).addTo(map);
+// A light 3D campus: OpenStreetMap buildings extruded to their real heights (OpenFreeMap tiles, no key).
+const MAP_STYLE = {
+  version: 8,
+  glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+  sources: { omt: { type: "vector", url: "https://tiles.openfreemap.org/planet" } },
+  layers: [
+    { id: "bg", type: "background", paint: { "background-color": "#eef3ef" } },
+    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#e6efe8" } },
+    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#d3ead9" } },
+    { id: "grass", type: "fill", source: "omt", "source-layer": "landcover", filter: ["in", ["get", "class"], ["literal", ["grass", "wood", "farmland"]]], paint: { "fill-color": "#d9ecdf" } },
+    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#cfe3f2" } },
+    { id: "paths", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["path", "track", "service"]]],
+      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .6, 18, 3] } },
+    { id: "roads", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["minor", "tertiary", "secondary", "primary", "trunk"]]],
+      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 11] } },
+    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#c2ccc6", "line-width": 1.5, "line-dasharray": [3, 2] } },
+    { id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13,
+      paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#dfe6e1", 30, "#cfd9d3", 80, "#bccac2"],
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": .95 } },
+  ],
+};
+let map = null;
+try {
+  map = new maplibregl.Map({ container: "map", style: MAP_STYLE, center: [-111.9338, 33.4183], zoom: 15, pitch: 0, maxPitch: 65, attributionControl: false });
+  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: "© OpenStreetMap · OpenFreeMap" }), "top-right");
+  map.on("load", () => { map.setLight({ anchor: "map", position: [1.3, 200, 40], color: "#ffffff", intensity: .35 }); addPlaceLayers(); });
+} catch { $("map").innerHTML = '<p class="empty">The map couldn\'t load. Check your connection.</p>'; }
 let meMarker;
 
 function pinHtml(p, live) {
@@ -303,35 +458,137 @@ function pinHtml(p, live) {
   return `<div class="pin ${live ? "live" : ""}"><div class="ic" style="background:${kindOf(p).color}">${icon(p)}</div>
     <div class="lab"><b>${esc(p.name)}</b><span style="color:${colorFor(s.option)}">${esc(s.text)}</span></div></div>`;
 }
+// Big pins for places with something going on; every other place is a dot whose name pops in as you zoom.
+const featured = (p) => !p.dynamic || p.people_here > 0 || p.headline || Object.keys(p.live || {}).length || liveQuestions.has(p.id);
+const WALK_M = 400;   // about a 5-minute walk
+let me = null;
+const distM = (a, b) => Math.hypot((a.lat - b.lat) * 110540, (a.lng - b.lng) * 111320 * Math.cos(a.lat * Math.PI / 180));
+const ring = ([lng, lat], m) => Array.from({ length: 49 }, (_, i) => { const a = (i / 48) * Math.PI * 2; return [lng + (m / (111320 * Math.cos(lat * Math.PI / 180))) * Math.cos(a), lat + (m / 110540) * Math.sin(a)]; });
+const DOT_COLOR = ["match", ["get", "kind"], "food", "#5b3fd6", "coffee", "#7a4b2a", "library", "#1e6b46", "gym", "#d64545", "store", "#2f6fe0", "events", "#2f8a5c", "parking", "#66756c", "park", "#3f9a5f", "#4b5a52"];
+function dotsData() {
+  return { type: "FeatureCollection", features: PLACES.filter((p) => !pins[p.id]).map((p) => ({ type: "Feature",
+    properties: { id: p.id, name: p.name, kind: p.kind || "place", near: me ? distM(me, p) <= WALK_M : false }, geometry: { type: "Point", coordinates: [p.lng, p.lat] } })) };
+}
+function addPlaceLayers() {
+  if (!map || !map.isStyleLoaded() || map.getSource("dots")) return;
+  map.addSource("dots", { type: "geojson", data: dotsData() });
+  map.addSource("walk", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+  map.addLayer({ id: "walk-fill", type: "fill", source: "walk", paint: { "fill-color": "#2f6fe0", "fill-opacity": .07 } }, "buildings");
+  map.addLayer({ id: "walk-edge", type: "line", source: "walk", paint: { "line-color": "#2f6fe0", "line-width": 2, "line-opacity": .6, "line-dasharray": [2, 2] } }, "buildings");
+  map.addLayer({ id: "dot", type: "circle", source: "dots", paint: {
+    "circle-color": DOT_COLOR, "circle-stroke-color": "#ffffff", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2.5, 1.5],
+    "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["boolean", ["get", "near"], false], 4.5, 2.5], 17, ["case", ["boolean", ["get", "near"], false], 9, 6.5]] } });
+  map.addLayer({ id: "dot-name-near", type: "symbol", source: "dots", filter: ["==", ["get", "near"], true], minzoom: 14,
+    layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, 1], "text-anchor": "top", "text-max-width": 9 },
+    paint: { "text-color": "#13241b", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
+  map.addLayer({ id: "dot-name", type: "symbol", source: "dots", filter: ["==", ["get", "near"], false], minzoom: 15.8,
+    layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.8, 10.5, 18, 12.5], "text-offset": [0, .9], "text-anchor": "top", "text-max-width": 8 },
+    paint: { "text-color": "#3d4a43", "text-halo-color": "#ffffff", "text-halo-width": 1.4 } });
+  // Every shop, café, restaurant and campus building from OpenStreetMap. Dots appear as you zoom in, then names fade in.
+  const POI_COLOR = ["match", ["get", "class"], ["cafe"], "#7a4b2a", ["restaurant", "fast_food", "bar", "beer", "ice_cream", "bakery"], "#5b3fd6",
+    ["shop", "grocery", "clothing_store", "alcohol_shop", "pharmacy", "mobile_phone", "books"], "#2f6fe0", ["library", "college", "school", "university"], "#1e6b46",
+    ["sports", "stadium", "fitness", "swimming", "pitch"], "#d64545", ["cinema", "theatre", "music", "art_gallery", "museum", "attraction"], "#2f8a5c", ["parking"], "#66756c", "#4b5a52"];
+  map.addLayer({ id: "poi-dot", type: "circle", source: "omt", "source-layer": "poi", minzoom: 14.5, filter: ["has", "name"],
+    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1,
+      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1], "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1] } }, "dot");
+  map.addLayer({ id: "poi-name", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 15.3, filter: ["has", "name"],
+    layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.3, 10.5, 18, 13],
+      "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 8, "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
+    paint: { "text-color": "#3d4a43", "text-halo-color": "#ffffff", "text-halo-width": 1.4, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
+  // Inside your 5-minute-walk circle, names show from further out and in bold.
+  map.addLayer({ id: "poi-name-near", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 13.8, filter: ["==", 1, 0],
+    layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 9,
+      "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
+    paint: { "text-color": "#13241b", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
+  const pickPoi = async (e) => {
+    const f = e.features?.[0]; if (!f?.properties?.name) return;
+    const [lng, lat] = f.geometry.coordinates;
+    const p = await fetch("/api/places/ensure", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: f.properties.name, lat, lng, kind: f.properties.class }) }).then((r) => r.json()).catch(() => null);
+    if (p?.id) { PLACES = await api("/api/app/places"); openPlace(p.id); }
+  };
+  map.on("click", "poi-dot", pickPoi); map.on("click", "poi-name", pickPoi); map.on("click", "poi-name-near", pickPoi);
+  for (const l of ["poi-dot", "poi-name", "poi-name-near", "dot"]) { map.on("mouseenter", l, () => (map.getCanvas().style.cursor = "pointer")); map.on("mouseleave", l, () => (map.getCanvas().style.cursor = "")); }
+  map.on("click", "dot", (e) => { const id = e.features[0]?.properties?.id; if (id) openPlace(id); });
+  if (me) drawWalk();
+}
+const updateDots = () => { if (map?.getSource("dots")) map.getSource("dots").setData(dotsData()); else addPlaceLayers(); };
+
 async function loadPlaces(fit) {
   PLACES = await api("/api/app/places");
   for (const p of PLACES) {
+    if (!map || !featured(p)) continue;
     const html = pinHtml(p, liveQuestions.has(p.id));
     if (!pins[p.id]) {
-      pins[p.id] = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html, iconSize: [0, 0] }) }).addTo(map);
-      pins[p.id].on("click", () => openPlace(p.id));
-    } else pins[p.id].setIcon(L.divIcon({ className: "", html, iconSize: [0, 0] }));
+      const el = document.createElement("div"); el.style.cursor = "pointer"; el.innerHTML = html;
+      el.addEventListener("click", () => openPlace(p.id));
+      pins[p.id] = new maplibregl.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(map);
+    } else pins[p.id].getElement().innerHTML = html;
   }
-  if (fit) map.fitBounds(L.latLngBounds(PLACES.map((p) => [p.lat, p.lng])).pad(0.5));
+  updateDots();
+  if (fit && map && PLACES.length && !me) {
+    const core = PLACES.filter((p) => !p.dynamic).length ? PLACES.filter((p) => !p.dynamic) : PLACES;
+    const lngs = core.map((p) => p.lng), lats = core.map((p) => p.lat);
+    const go = () => {
+      const cam = map.cameraForBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: { top: 80, bottom: 120, left: 50, right: 50 } });
+      if (cam && !me) map.flyTo({ center: cam.center, zoom: Math.min(cam.zoom, 17), pitch: 52, bearing: -20, duration: 2600 });
+    };
+    map.loaded() ? go() : map.once("load", go);
+  }
   const live = PLACES.reduce((n, p) => n + p.people_here, 0);
-  $("mapHint").innerHTML = `<b>${live} earner${live === 1 ? "" : "s"}</b> on the map right now. Agents ask in Claude; you answer here.`;
+  const near = me ? PLACES.filter((p) => distM(me, p) <= WALK_M).length : null;
+  $("mapHint").innerHTML = near != null
+    ? `<b>${near} place${near === 1 ? "" : "s"}</b> within a 5-min walk. Zoom in to see their names.`
+    : `<b>${live} earner${live === 1 ? "" : "s"}</b> on the map. Tap the arrow to see places near you.`;
 }
 $("search").addEventListener("input", (e) => {
   const s = e.target.value.toLowerCase(); if (!s) return;
-  const p = PLACES.find((x) => x.name.toLowerCase().includes(s)); if (p) map.setView([p.lat, p.lng], 18);
+  const p = PLACES.find((x) => x.name.toLowerCase().startsWith(s)) || PLACES.find((x) => x.name.toLowerCase().includes(s));
+  if (p) map?.flyTo({ center: [p.lng, p.lat], zoom: 18, pitch: 58, duration: 1400 });
 });
+function nearbyCount() {
+  const names = new Set(PLACES.filter((p) => distM(me, p) <= WALK_M).map((p) => p.name.toLowerCase()));
+  try { for (const f of map.querySourceFeatures("omt", { sourceLayer: "poi" })) {
+    const nm = f.properties?.name; if (!nm || f.geometry.type !== "Point") continue;
+    const [lng, lat] = f.geometry.coordinates; if (distM(me, { lat, lng }) <= WALK_M) names.add(nm.toLowerCase());
+  } } catch {}
+  return names.size;
+}
+function drawWalk() {
+  if (!map?.getSource("walk") || !me) return;
+  const poly = { type: "Polygon", coordinates: [ring([me.lng, me.lat], WALK_M)] };
+  map.getSource("walk").setData({ type: "Feature", geometry: poly });
+  if (map.getLayer("poi-name-near")) { map.setFilter("poi-name-near", ["all", ["has", "name"], ["within", poly]]); map.setFilter("poi-name", ["all", ["has", "name"], ["!", ["within", poly]]]); }
+  const near = nearbyCount();
+  $("mapHint").innerHTML = `<b>${near} place${near === 1 ? "" : "s"}</b> within a 5-min walk. Zoom in to see them all.`;
+}
+let firstFix = true, watching = false;
+function showMe(lat, lng) {
+  me = { lat, lng };
+  if (!map) return;
+  if (!meMarker) { const el = document.createElement("div"); el.className = "me-dot"; meMarker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map); }
+  else meMarker.setLngLat([lng, lat]);
+  updateDots(); drawWalk(); map.once("idle", drawWalk);
+}
+function watchMe() {
+  if (watching || !navigator.geolocation) return; watching = true;
+  navigator.geolocation.watchPosition((pos) => {
+    showMe(pos.coords.latitude, pos.coords.longitude);
+    if (firstFix) { firstFix = false; map?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 16.6, pitch: 52, duration: 2000 }); }
+  }, () => { watching = false; }, { enableHighAccuracy: true, maximumAge: 10000 });
+}
 function locateMe() {
   if (!navigator.geolocation) return toast("Location isn't available on this device.");
   navigator.geolocation.getCurrentPosition(async (pos) => {
     const { latitude: lat, longitude: lng } = pos.coords;
-    if (!meMarker) meMarker = L.marker([lat, lng], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(map);
-    else meMarker.setLatLng([lat, lng]);
-    map.setView([lat, lng], 17);
+    showMe(lat, lng); watchMe(); map?.flyTo({ center: [lng, lat], zoom: 16.8, pitch: 55, duration: 1800 });
     const r = await api("/api/app/checkin", { lat, lng }).catch(() => null);
     toast(r?.place ? `📍 You're near <b>${esc(r.place)}</b>. Requests for places around you will come here.` : "📍 You're all set. Requests for places near you will come here.");
     refreshMe();
-  }, () => toast("Allow location so Oracle can send you requests for where you are."), { enableHighAccuracy: true, timeout: 10000 });
+  }, () => toast("Allow location for this site: tap the icon next to the address bar, then Location → Allow."), { enableHighAccuracy: true, timeout: 10000 });
 }
+// If location is already allowed, keep your dot live on the map.
+navigator.permissions?.query({ name: "geolocation" }).then((st) => { if (st.state === "granted") watchMe(); }).catch(() => {});
 
 /* ---------- place detail ---------- */
 let chart;
@@ -515,6 +772,16 @@ function renderProfile() {
       <div style="margin-top:12px"><div class="kv"><span>Trust</span><b>${ME.trust}</b></div><div class="kv"><span>Answers</span><b>${ME.answered}</b></div>
       <div class="kv"><span>Matched the crowd</span><b>${acc}%</b></div><div class="kv"><span>SOL earned</span><b>${(ME.earnedSol || 0).toFixed(3)}</b></div></div>
       <button class="small ghost" style="margin-top:12px;width:100%" onclick="locateMe()">📍 Update my location</button></div>
+    ${ME.hasPassword
+      ? `<div class="card"><b>Account</b><div class="kv"><span>Username</span><b>@${esc(ME.username)}</b></div>
+          <p class="muted" style="font-size:13.5px;line-height:1.45;margin:6px 0 0">Sign in on any device with your username and password.</p>
+          <button class="small" style="margin-top:12px;width:100%;background:#fbe4e4;color:var(--red)" onclick="signOut()">Sign out</button></div>`
+      : `<div class="card"><b>Secure your account</b>
+          <p class="muted" style="font-size:13.5px;line-height:1.45;margin:6px 0 4px">Add a username and password so you can sign in on any device and never lose your points.</p>
+          <input id="acUser" placeholder="Username" autocapitalize="off" spellcheck="false" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:6px 0">
+          <input id="acPass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:0 0 8px">
+          <button class="small" style="width:100%" onclick="saveAccount()">Save</button>
+          <button class="small" style="margin-top:10px;width:100%;background:#fbe4e4;color:var(--red)" onclick="signOut()">Sign out</button></div>`}
     <div class="card"><b>Where requests reach you</b>
       <div class="sens"><span class="dot ${"Notification" in window && Notification.permission === "granted" ? "" : "off"}"></span><div class="grow">Oracle app notifications<div class="muted" style="font-size:12.5px">${"Notification" in window && Notification.permission === "granted" ? "On" : "Off"}</div></div>
       ${"Notification" in window && Notification.permission !== "granted" ? '<button class="small" onclick="enableNotifications()">Turn on</button>' : ""}</div></div>
@@ -529,17 +796,297 @@ function renderProfile() {
       <button class="small" style="margin-top:10px;background:#f2b33d;color:#2a1a00" onclick="toast('🦉 The native app is coming soon. You\\'ll be first to know.')">Join the waitlist</button></div>`;
 }
 
-/* ---------- sign-up (once) ---------- */
+/* ---------- sign up, sign in, sign out ---------- */
 const joinPlace = params.get("join") || "";
 if (joinPlace && joinPlace !== "anywhere") fetch(`/api/join?place=${encodeURIComponent(joinPlace)}`).then((r) => r.json()).then((j) => { if (j.name) $("suPlace").textContent = `You'll start at ${j.name}.`; });
-$("signup").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const r = await fetch("/api/app/register", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: $("suName").value, place: joinPlace }) }).then((x) => x.json());
-  if (!r.token) return toast(esc(r.error || "Couldn't sign up."));
-  localStorage.setItem("oracleToken", r.token);
-  location.replace("/app?welcome=1");
+const lastUser = () => { try { return JSON.parse(localStorage.getItem("oracleLast") || "null"); } catch { return null; } };
+
+function showGate(panel) {
+  panel = panel || (lastUser() ? "out" : "new");
+  const g = $("gate");
+  g.classList.add("on");
+  g.classList.toggle("sleep", panel === "out");
+  document.querySelectorAll(".panel").forEach((x) => x.classList.toggle("on", x.dataset.panel === panel));
+  if (panel === "out") {
+    const u = lastUser();
+    $("backIn").textContent = u?.name ? `Continue as ${u.name}` : "Sign back in";
+    $("outText").textContent = u?.points != null
+      ? `Your ${u.points} points are safe. Oracle won't send requests to this device until you sign back in.`
+      : "Your points are safe. Oracle won't send requests to this device until you sign back in.";
+  }
+  startScene();
+}
+$("backIn").onclick = () => {
+  const u = lastUser();
+  if (!u?.token) return showGate("code");
+  localStorage.setItem("oracleToken", u.token); localStorage.removeItem("oracleLast");
+  wake(() => location.replace("/app"));
+};
+function forgetMe() { localStorage.removeItem("oracleLast"); showGate("code"); }
+function signOut() {
+  localStorage.setItem("oracleLast", JSON.stringify({ name: ME?.name, points: ME?.credits, token: localStorage.getItem("oracleToken") }));
+  localStorage.removeItem("oracleToken");
+  try { swReg?.pushManager?.getSubscription().then((sub) => sub?.unsubscribe()); } catch {}
+  showGate("out");
+}
+async function copyCode() {
+  try { await navigator.clipboard.writeText(localStorage.getItem("oracleToken") || ""); toast("📋 Sign-in code copied. Keep it private."); }
+  catch { prompt("Copy your sign-in code:", localStorage.getItem("oracleToken") || ""); }
+}
+// Open the owl's eyes, then continue.
+function wake(then) { $("gate").classList.remove("sleep"); setTimeout(then, 650); }
+
+document.querySelectorAll(".eye").forEach((b) => b.onclick = () => {
+  const i = $(b.dataset.for), show = i.type === "password"; i.type = show ? "text" : "password";
+  b.textContent = show ? "Hide" : "Show"; b.setAttribute("aria-label", show ? "Hide password" : "Show password");
 });
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json().catch(() => ({ error: "Something went wrong. Try again." }));
+}
+$("signup").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("suErr").textContent = "";
+  $("suBtn").disabled = true; $("suBtn").textContent = "Creating your account…";
+  const r = await post("/api/app/register", { username: $("suUser").value, password: $("suPass").value, place: joinPlace });
+  if (!r.token) { $("suBtn").disabled = false; $("suBtn").textContent = "Create account"; $("suErr").textContent = r.error || "Couldn't create the account. Try again."; return; }
+  localStorage.setItem("oracleToken", r.token); localStorage.removeItem("oracleLast");
+  wake(() => location.replace("/app?welcome=1"));
+});
+$("signin").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("siErr").textContent = "";
+  $("siBtn").disabled = true; $("siBtn").textContent = "Signing in…";
+  const r = await post("/api/app/login", { username: $("siUser").value, password: $("siPass").value });
+  if (!r.token) { $("siBtn").disabled = false; $("siBtn").textContent = "Sign in"; $("siErr").textContent = r.error || "Couldn't sign in."; return; }
+  localStorage.setItem("oracleToken", r.token); localStorage.removeItem("oracleLast");
+  wake(() => location.replace("/app"));
+});
+async function saveAccount() {
+  const r = await api("/api/app/account", { username: $("acUser").value, password: $("acPass").value }).catch((e) => ({ error: e.message }));
+  toast(r.ok ? `🔐 Saved. Sign in anywhere as <b>${esc(r.username)}</b>.` : `🦉 ${esc(r.error)}`);
+  if (r.ok) refreshMe().then(renderProfile);
+}
+
+/* ---------- the sign-in scene: questions fly from the owl to phones, answers earn points ---------- */
+const SVGNS = "http://www.w3.org/2000/svg";
+const PHONES = [[70, 112], [298, 140], [96, 238], [262, 214], [214, 46], [52, 180], [318, 64]];
+const QS = ["Line at the MU?", "Seats in Hayden?", "Is it loud?", "Pizza left?", "Gym busy?", "Wi-Fi okay?", "How sunny?"];
+let sceneTimer = null;
+function startScene() {
+  const g = $("phones");
+  if (!g.childElementCount) for (const [x, y] of PHONES) {
+    const ph = document.createElementNS(SVGNS, "g"); ph.setAttribute("class", "phone");
+    ph.innerHTML = `<circle class="halo" cx="${x}" cy="${y}" r="12"/><rect class="body" x="${x - 7}" y="${y - 12}" width="14" height="24" rx="3.5"/><rect class="screen" x="${x - 4.5}" y="${y - 9}" width="9" height="16" rx="1.5"/>`;
+    g.appendChild(ph);
+  }
+  if (sceneTimer || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  sceneTimer = setInterval(() => { if (!$("gate").classList.contains("on")) { clearInterval(sceneTimer); sceneTimer = null; return; } if (!$("gate").classList.contains("sleep")) fly(); }, 1500);
+  setTimeout(fly, 500);
+}
+function fly() {
+  const i = Math.floor(Math.random() * PHONES.length), [x, y] = PHONES[i], text = QS[Math.floor(Math.random() * QS.length)];
+  const w = text.length * 5.1 + 16;
+  const q = document.createElementNS(SVGNS, "g"); q.setAttribute("class", "qb");
+  q.innerHTML = `<rect x="${-w / 2}" y="-9" width="${w}" height="18" rx="9"/><text x="0" y="3" text-anchor="middle">${text}</text>`;
+  $("flights").appendChild(q);
+  const a = q.animate([{ transform: "translate(180px,150px) scale(.4)", opacity: 0 }, { transform: "translate(180px,118px) scale(1)", opacity: 1, offset: .25 },
+    { transform: `translate(${x}px,${y - 22}px) scale(.9)`, opacity: 1 }], { duration: 1500, easing: "cubic-bezier(.4,0,.2,1)" });
+  a.onfinish = () => {
+    q.remove();
+    const ph = $("phones").children[i]; ph.classList.remove("hit"); void ph.getBBox(); ph.classList.add("hit");
+    setTimeout(() => ph.classList.remove("hit"), 900);
+    const t = document.createElementNS(SVGNS, "text"); t.setAttribute("class", "earn"); t.setAttribute("text-anchor", "middle"); t.textContent = "+5";
+    $("flights").appendChild(t);
+    t.animate([{ transform: `translate(${x}px,${y - 16}px)`, opacity: 0 }, { transform: `translate(${x}px,${y - 26}px)`, opacity: 1, offset: .3 }, { transform: `translate(${x}px,${y - 44}px)`, opacity: 0 }],
+      { duration: 1100, easing: "ease-out" }).onfinish = () => t.remove();
+  };
+}
+// The owl watches your finger.
+addEventListener("pointermove", (e) => {
+  if (!$("gate").classList.contains("on")) return;
+  const r = $("bigOwl").getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const a = Math.atan2(e.clientY - cy, e.clientX - cx), d = Math.min(4, Math.hypot(e.clientX - cx, e.clientY - cy) / 40);
+  for (const [id, x0] of [["pupL", -12], ["pupR", 12]]) { $(id).setAttribute("cx", x0 + Math.cos(a) * d); $(id).setAttribute("cy", -6 + Math.sin(a) * d); }
+});
+if (!localStorage.getItem("oracleToken") && !tg?.initData) showGate();
+
+/* ---------- scan this spot: Wi-Fi speed, 10-second loudness, floor ---------- */
+const scan = { placeId: null, floor: null, mbps: null, pingMs: null, db: null, peakDb: null, altitude: null, altAcc: null, lat: null, lng: null, accuracy: null, busy: false };
+const FLOORS = [[0, "B"], [1, "1"], [2, "2"], [3, "3"], [4, "4"], [5, "5"], [6, "6"]];
+const ord = (f) => (f === 0 ? "Basement" : f === 1 ? "1st floor" : f === 2 ? "2nd floor" : f === 3 ? "3rd floor" : `${f}th floor`);
+
+function openScan() {
+  const nearest = me ? [...PLACES].sort((a, b) => distM(me, a) - distM(me, b))[0]?.id : null;
+  Object.assign(scan, { placeId: nearest || ME?.placeId || PLACES[0]?.id, mbps: null, pingMs: null, db: null, peakDb: null, busy: false });
+  scan.floor = Number(localStorage.getItem(`floor:${scan.placeId}`)) || null;
+  $("scan").innerHTML = `
+    <div class="lr-head"><button class="back" aria-label="Back" onclick="go('contribute')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <b style="font-size:18px">Scan this spot</b></div>
+    <div class="section">
+      <div class="card">
+        <div class="step" id="st1"><i>1</i>Where are you?</div>
+        <select id="scPlace" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:16px;background:#fff">
+          ${(me ? [...PLACES].sort((a, b) => distM(me, a) - distM(me, b)) : [...PLACES].sort((a, b) => a.name.localeCompare(b.name))).slice(0, 150)
+            .map((p) => `<option value="${esc(p.id)}" ${p.id === scan.placeId ? "selected" : ""}>${esc(p.name)}${me ? ` · ${Math.round(distM(me, p))} m` : ""}</option>`).join("")}</select>
+        <div class="floors" id="scFloors">${FLOORS.map(([v, l]) => `<button type="button" data-f="${v}" aria-label="${ord(v)}">${l}</button>`).join("")}</div>
+        <label class="sensor wide" for="signCam" id="signBtn" style="display:block;margin-top:8px">📸 Prove your floor<small>Photo of a floor sign, elevator panel or room number · 3 pts instead of 1</small></label>
+        <input id="signCam" type="file" accept="image/*" capture="environment">
+        <img class="shot" id="signShot" alt="Your floor sign photo">
+        <div class="note" id="altNote" style="margin:4px 2px 0">📍 Reading your altitude…</div>
+        <div class="note" style="margin:4px 2px 0">Browsers can't read your phone's barometer, so Oracle checks your floor another way: you must be at the building, and a photo of a floor sign or room number confirms the floor. The photo is only read, never stored. The native Oracle app reads the barometer directly.</div>
+      </div>
+      <div class="card">
+        <div class="step" id="st2"><i>2</i>Wi-Fi speed</div>
+        <svg class="gauge" viewBox="0 -8 220 136" aria-hidden="true">
+          <defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#d64545"/><stop offset=".45" stop-color="#c98a12"/><stop offset="1" stop-color="#2f8a5c"/></linearGradient></defs>
+          <path class="track" d="M20 110 A90 90 0 0 1 200 110"/><path class="val" id="gVal" d="M20 110 A90 90 0 0 1 200 110" pathLength="100" stroke-dasharray="0 100"/>
+          <line class="needle" id="gNeedle" x1="110" y1="110" x2="110" y2="36" style="transform:rotate(-90deg)"/><circle cx="110" cy="110" r="6" fill="#13241b"/>
+          <text x="17" y="126" text-anchor="middle">1</text><text x="84" y="6" text-anchor="middle">10</text><text x="200" y="50" text-anchor="middle">100</text><text x="203" y="126" text-anchor="middle">300</text></svg>
+        <div class="readout"><b id="mbps">–</b> <span>Mbps</span><div class="muted" id="ping" style="font-size:13px">Downloads a 1 MB test file from Oracle</div></div>
+      </div>
+      <div class="card">
+        <div class="step" id="st3"><i>3</i>Loudness · 10 seconds</div>
+        <canvas class="viz" id="viz" width="600" height="180" aria-label="Live sound levels"></canvas>
+        <div class="readout" style="margin-top:8px"><b id="dbv">–</b> <span>dB</span><div class="muted" id="dbNote" style="font-size:13px">Only a number is shared, never audio</div></div>
+      </div>
+      <button class="primary" id="scanBtn">Start scan</button>
+      <div id="scanOut" style="margin-top:14px"></div>
+    </div>`;
+  $("scPlace").onchange = (e) => { scan.placeId = e.target.value; scan.floor = Number(localStorage.getItem(`floor:${scan.placeId}`)) || null; paintFloors(); suggestFloor(); };
+  $("scFloors").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; scan.floor = Number(b.dataset.f); paintFloors(); };
+  $("scanBtn").onclick = runScan;
+  $("signCam").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const img = await createImageBitmap(f), k = Math.min(1, 1024 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    scan.signImage = c.toDataURL("image/jpeg", 0.8);
+    $("signShot").src = scan.signImage; $("signShot").style.display = "block";
+    $("signBtn").classList.add("done"); $("signBtn").firstChild.textContent = "📸 Floor photo added ";
+  };
+  scan.signImage = null;
+  paintFloors(); go("scan"); readAltitude();
+}
+function paintFloors() {
+  for (const b of $("scFloors").children) b.classList.toggle("sel", Number(b.dataset.f) === scan.floor);
+  $("st1").classList.toggle("ok", scan.floor != null);
+}
+function readAltitude() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { $("altNote").textContent = "📍 This browser can't share location, so the scan can't be confirmed."; return resolve(false); }
+    navigator.geolocation.getCurrentPosition((pos) => {
+      Object.assign(scan, { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, altitude: pos.coords.altitude, altAcc: pos.coords.altitudeAccuracy });
+      $("altNote").textContent = scan.altitude == null ? "📍 Location found. Your phone didn't report altitude here."
+        : `📍 Altitude ${Math.round(scan.altitude)} m${scan.altAcc ? ` (±${Math.round(scan.altAcc)} m)` : ""}`;
+      suggestFloor(); resolve(true);
+    }, () => { $("altNote").textContent = "📍 Allow location: Oracle checks you're really at the place before counting a scan."; resolve(false); },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  });
+}
+// If you've scanned this building before with a precise altitude, guess the floor from the height difference (~3.6 m a floor).
+function suggestFloor() {
+  const ref = JSON.parse(localStorage.getItem(`alt:${scan.placeId}`) || "null");
+  for (const b of $("scFloors").children) b.classList.remove("sug");
+  if (!ref || scan.altitude == null || !(scan.altAcc <= 6)) return;
+  const f = Math.max(0, Math.min(6, ref.floor + Math.round((scan.altitude - ref.alt) / 3.6)));
+  $("scFloors").querySelector(`[data-f="${f}"]`)?.classList.add("sug");
+  if (scan.floor == null) { scan.floor = f; paintFloors(); }
+  $("altNote").textContent += ` · looks like the ${ord(f).toLowerCase()}`;
+}
+
+async function runScan() {
+  if (scan.busy) return;
+  if (scan.floor == null) return toast("Tap the floor you're on first.");
+  scan.busy = true; $("scanBtn").disabled = true;
+  try {
+    $("scanBtn").textContent = "Checking you're there…";
+    if (!(await readAltitude())) throw new Error("Allow location so Oracle can confirm you're at the place.");
+    $("scanBtn").textContent = "Testing Wi-Fi…"; await wifiTest();
+    $("scanBtn").textContent = "Listening for 10 seconds…"; await loudness10();
+    $("scanBtn").textContent = "Sharing…";
+    const r = await api("/api/app/scan", { placeId: scan.placeId, floor: scan.floor, mbps: scan.mbps, pingMs: scan.pingMs, db: scan.db, peakDb: scan.peakDb,
+      altitude: scan.altitude, altAcc: scan.altAcc, lat: scan.lat, lng: scan.lng, accuracy: scan.accuracy, ua: navigator.userAgent, signImage: scan.signImage });
+    if (r.error) throw new Error(r.error);
+    localStorage.setItem(`floor:${scan.placeId}`, scan.floor);
+    if (scan.altitude != null && scan.altAcc <= 6) localStorage.setItem(`alt:${scan.placeId}`, JSON.stringify({ floor: scan.floor, alt: scan.altitude }));
+    toast(`${r.status === "confirmed" ? "✅" : "📡"} <b>+${r.points} point${r.points > 1 ? "s" : ""}</b> · ${esc(r.message)}`); refreshMe();
+    renderFloorReport(r.report);
+    $("scanBtn").textContent = "Scan again";
+  } catch (e) { toast(`🦉 ${esc(e.message || "The scan didn't finish. Try again.")}`); $("scanBtn").textContent = "Start scan"; }
+  scan.busy = false; $("scanBtn").disabled = false;
+}
+
+function setGauge(mbps) {
+  const pct = Math.max(0, Math.min(1, Math.log10(mbps + 1) / Math.log10(301)));
+  $("gVal").setAttribute("stroke-dasharray", `${pct * 100} 100`);
+  $("gNeedle").style.transform = `rotate(${-90 + pct * 180}deg)`;
+  $("mbps").textContent = mbps >= 100 ? Math.round(mbps) : mbps.toFixed(1);
+}
+async function wifiTest() {
+  const pings = [];
+  for (let i = 0; i < 4; i++) { const t = performance.now(); await fetch(`/api/ping?r=${Math.random()}`, { cache: "no-store" }); pings.push(performance.now() - t); }
+  scan.pingMs = Math.round(pings.slice(1).sort((a, b) => a - b)[1]);
+  $("ping").textContent = `Ping ${scan.pingMs} ms · downloading 1 MB…`;
+  let best = 0;
+  for (let run = 0; run < 2; run++) {
+    const t0 = performance.now();
+    const res = await fetch(`/speedtest.bin?r=${Math.random()}`, { cache: "no-store" });
+    const reader = res.body.getReader(); let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read(); if (done) break;
+      got += value.length;
+      const secs = (performance.now() - t0) / 1000;
+      if (secs > 0.05) setGauge((got * 8) / secs / 1e6);
+    }
+    best = Math.max(best, (got * 8) / ((performance.now() - t0) / 1000) / 1e6);
+  }
+  scan.mbps = Math.round(best * 10) / 10; setGauge(scan.mbps);
+  $("ping").textContent = `Ping ${scan.pingMs} ms · ${scan.mbps >= 50 ? "fast" : scan.mbps >= 10 ? "decent" : "slow"} connection`;
+  $("st2").classList.add("ok");
+}
+async function loudness10() {
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch { $("dbNote").textContent = "Microphone not allowed, so the scan is Wi-Fi only."; return; }
+  const ctx = new (window.AudioContext || window.webkitAudioContext)(), an = ctx.createAnalyser(); an.fftSize = 2048; an.smoothingTimeConstant = .75;
+  ctx.createMediaStreamSource(stream).connect(an);
+  const wave = new Float32Array(an.fftSize), freq = new Uint8Array(an.frequencyBinCount), cv = $("viz"), g = cv.getContext("2d");
+  let energy = 0, n = 0, peak = 0; const recent = []; const t0 = performance.now();
+  await new Promise((done) => { const tick = () => {
+    an.getFloatTimeDomainData(wave); let s = 0; for (const v of wave) s += v * v; const rms = Math.sqrt(s / wave.length) || 1e-8;
+    energy += rms * rms; n++;
+    const db = 20 * Math.log10(rms) + 95;
+    recent.push(db); if (recent.length > 12) recent.shift();
+    peak = Math.max(peak, recent.reduce((a, b) => a + b, 0) / recent.length);
+    an.getByteFrequencyData(freq);
+    g.clearRect(0, 0, cv.width, cv.height);
+    const bars = 48, bw = cv.width / bars;
+    for (let i = 0; i < bars; i++) {
+      const v = freq[Math.floor(Math.pow(i / bars, 1.6) * freq.length * .6)] / 255, h = Math.max(4, v * cv.height * .92);
+      g.fillStyle = v < .45 ? "#2f8a5c" : v < .7 ? "#c98a12" : "#d64545";
+      g.beginPath(); if (g.roundRect) g.roundRect(i * bw + 3, cv.height - h, bw - 6, h, 4); else g.rect(i * bw + 3, cv.height - h, bw - 6, h); g.fill();
+    }
+    const left = 10 - (performance.now() - t0) / 1000;
+    $("dbv").textContent = Math.round(db);
+    $("dbNote").textContent = `Listening… ${Math.max(0, left).toFixed(1)}s left`;
+    left > 0 ? requestAnimationFrame(tick) : done();
+  }; tick(); });
+  stream.getTracks().forEach((t) => t.stop()); ctx.close();
+  scan.db = Math.round(10 * Math.log10(energy / n) + 95); scan.peakDb = Math.round(peak);
+  $("dbv").textContent = scan.db;
+  $("dbNote").textContent = `${scan.db < 55 ? "Quiet" : scan.db < 68 ? "A bit noisy" : "Loud"} · peak ${scan.peakDb} dB`;
+  $("st3").classList.add("ok");
+}
+function renderFloorReport(rep) {
+  if (!rep) return;
+  $("scanOut").innerHTML = `<div class="card"><div class="muted" style="font-size:13px">${esc(rep.place)} · last ${rep.hours} h</div>
+    <div class="summary">${esc(rep.summary)}</div>
+    ${rep.floors.map((f) => `<div class="floorrow ${f.floor === scan.floor ? "mine" : ""}"><div class="fl v-${f.verdict}">${f.floor === 0 ? "B" : f.floor}</div>
+      <div class="grow"><b>${esc(f.name)}</b> <span class="pillv v-${f.verdict}">${f.verdict === "good" ? "Good" : f.verdict === "bad" ? "Bad" : "Okay"}</span>
+      <div class="muted" style="font-size:13px;margin-top:2px">${f.mbps != null ? `📶 ${f.mbps} Mbps` : ""}${f.mbps != null && f.db != null ? " · " : ""}${f.db != null ? `🔊 ${f.db} dB` : ""}</div>
+      <div style="font-size:12.5px;margin-top:2px;font-weight:600;color:${f.confirmed ? "var(--green)" : "var(--amber)"}">${f.confirmed ? "✓ Floor confirmed" : "Floor not confirmed yet"} · ${f.people} ${f.people === 1 ? "person" : "people"}</div></div></div>`).join("")}
+  </div>`;
+  $("scanOut").scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 /* ---------- notifications ---------- */
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);

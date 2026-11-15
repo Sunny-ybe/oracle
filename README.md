@@ -12,10 +12,11 @@
 6. **Nobody there → web.** TinyFish reads the place's live web pages (hours, schedules) and answers, clearly labeled `web`.
 7. **Everyone who was right** gains trust and gets paid in devnet SOL. Wrong answers lose trust, so liars get quieter over time.
 8. **Every answer becomes data** in Tiger Data: trends, busiest hours, and instant future answers.
+9. **Spot scans.** In the Oracle app, earners tap *Scan this spot*: a Wi-Fi speed test (a 1 MB file served by Oracle), a 10-second loudness recording (only the dB number leaves the phone), and their floor. Scans per floor become "2nd floor is good, 3rd floor is bad", which agents read with `get_floor_report`.
 
 | Layer | Tech |
 |---|---|
-| Agent interface | MCP server (`mcp/oracle-mcp.js`): `ask_place`, `get_answer`, `get_live_status`, `get_place_insights` |
+| Agent interface | MCP server (`mcp/oracle-mcp.js`): `ask_place`, `get_answer`, `get_live_status`, `get_place_insights`, `get_floor_report` |
 | People | Discord bot (buttons + `/checkin` `/ask` `/me` `/leaderboard`), Telegram bot |
 | Brain | Node.js + Express (`src/core.js`) |
 | People, places, questions | MongoDB Atlas (2dsphere geo index) |
