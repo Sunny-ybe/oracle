@@ -51,7 +51,7 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Decision:* Not now. The only free route would be AppleScript plus reading `chat.db` on a Mac with Full Disk Access.
 - *Why:* There's no Apple API, and it's fragile. Other channels come first.
 
-**D-011: Permanent public URL** · 2026-11-15 · Open (pending the domain question)
+**D-011: Permanent public URL** · 2026-11-15 · Superseded by D-014
 - *Decision:* Preferred: a Cloudflare named tunnel on a team domain (free, no warning page, same URL from any laptop through `TUNNEL_TOKEN`). Fallback without a domain: an ngrok free static domain (shows a one-time warning page).
 - *Why:* The quick-tunnel URL changes every run, which breaks QR codes, Telegram links and claude.ai connectors.
 
@@ -83,3 +83,17 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Decision:* Use the face-only app icon in the wordmark/loading view, show the loading animation for two seconds, and provide short locally generated interface tones with a persistent Settings switch. Respect Reduce Motion and Silent Mode; suppress tones while recording.
 - *Why:* The user requested consistent branding, more time to see the loader, and subtle sound effects.
 - *Where:* `ios/Oracle/Oracle/ContentView.swift`, `Theme.swift`, `Voice.swift`, `Settings.swift`.
+
+**D-014: Public link — ngrok fixed domain now, `oracle.tryalethea.com` when DNS allows** · 2026-11-15 · Active
+- *Decision:* `scripts/start.sh` picks the link in this order: Cloudflare named tunnel (`TUNNEL_TOKEN` + `PUBLIC_DOMAIN`), then ngrok fixed domain (`NGROK_DOMAIN`), then a quick tunnel. Today the demo runs on `https://swarm-exemplify-verbalize.ngrok-free.dev` (the user's ngrok account domain). The target is `oracle.tryalethea.com`.
+- *Why:* The team has no Oracle domain. The user owns `tryalethea.com`, but its DNS is at GoDaddy, and a free Cloudflare tunnel needs the domain's nameservers on Cloudflare. ngrok was already logged in on the demo Mac, so it gave a fixed link at once. Browsers see ngrok's one-time notice page; API clients such as claude.ai do not.
+- *Where:* `scripts/start.sh`, `.env.example`.
+
+**D-015: Remote MCP at `/mcp` is stateless and open while `ORACLE_API_KEY` is empty** · 2026-11-15 · Active
+- *Decision:* claude.ai connects to `<public link>/mcp` (Streamable HTTP, one server per request, added in the iOS merge). `ORACLE_API_KEY` stays empty for the demo, so `/mcp`, `/api/ask` and `/api/dev/*` accept anyone who has the link.
+- *Why:* A claude.ai custom connector can be added with just a URL. Setting the key would lock out the connector unless it can send the key. Accepted risk for a hackathon demo: anyone with the link could cast fake dev votes.
+- *Where:* `mcp/http.js`, `mcp/tools.js`, `requireKey` in `src/server.js`.
+
+**D-016: `GEO_BIAS` must be set in `.env`; live location beats a check-in** · 2026-11-15 · Active
+- *Decision:* Since the iOS merge, the ASU home area is no longer a code default. `.env` sets `GEO_BIAS=33.4242,-111.9281`; without it, place lookups are worldwide and no campus places are auto-imported. A phone's live location now overrides an earlier QR check-in (`setLocation` in `src/db/mongo.js`).
+- *Why:* The iPhone app is meant to work anywhere, so the area became configuration.
