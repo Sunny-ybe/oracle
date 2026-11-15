@@ -17,7 +17,9 @@ export const env = {
   telegramToken: process.env.TELEGRAM_TOKEN,
 
   geminiKey: process.env.GEMINI_API_KEY,
-  geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+  // Tried in order when the main model is overloaded or slow, e.g. "gemini-3.8-flash-lite".
+  geminiFallbacks: (process.env.GEMINI_FALLBACK_MODELS || "").split(",").map((s) => s.trim()).filter(Boolean),
   tinyfishKey: process.env.TINYFISH_API_KEY,
 
   solanaRpc: process.env.SOLANA_RPC || "https://api.devnet.solana.com",
@@ -43,7 +45,7 @@ export const RULES = {
   waitSeconds: 60,      // how long an asker waits before getting "pending"
   deadlineSeconds: 90,  // when an unanswered question falls back to the web
   photoMinutes: 5,      // how long a photo link stays valid
-  cacheMinutes: 10,     // an answer this fresh is served from memory
+  cacheMinutes: num(process.env.CACHE_MINUTES, 10),     // an answer this fresh is served from memory
   pingCooldownSec: num(process.env.PING_COOLDOWN, 10), // don't ping the same person more often than this
   graceSeconds: num(process.env.GRACE_SECONDS, 8),     // after consensus, wait this long for the rest of the room
   maxPings: num(process.env.MAX_PINGS, 25), // people pinged per question

@@ -363,7 +363,14 @@ async function maskedPhoto(L, body) {
   const base64 = String(body.image || "").replace(/^data:[^,]+,/, "");
   if (!base64) throw new Error("No photo received.");
   const p = findPlace(L.q.placeId);
-  const analysis = await analyzePhoto({ base64, mime: body.mime, place: p, question: L.q.question, options: L.q.options, sensor: L.q.sensor });
+  let analysis;
+  try {
+    analysis = await analyzePhoto({ base64, mime: body.mime, place: p, question: L.q.question, options: L.q.options || ["Low", "Medium", "High"], sensor: L.q.sensor });
+  } catch (e) {
+    // If the vision check is down, still take the photo but blur all of it, so nothing personal ever leaks.
+    console.error("Photo check failed, blurring the whole photo:", e.message);
+    analysis = { failed: true, shows_place: true, count: null, option: null, description: "Photo received (fully blurred for privacy).", pii_boxes: [[0, 0, 1000, 1000]] };
+  }
   if (!analysis.shows_place) throw new Error(`Not accepted: ${analysis.description || "that doesn't look like a photo of the place"}`);
   const { buffer, masked } = await maskPII(Buffer.from(base64, "base64"), analysis.pii_boxes || []);
   const photoId = await mongo.savePhoto({ questionId: L.q._id, placeId: L.q.placeId, buffer });
@@ -403,7 +410,11 @@ export async function submitReading(token, body) {
       shown = m.dataUrl;
       extra.photoId = m.photoId;
       extra.description = m.analysis.description;
-      if (sensor === "people_count") { value = Math.max(0, Math.round(Number(m.analysis.count) || 0)); option = bucket(value, L.q.thresholds); }
+      if (m.analysis.failed && !option) {
+        // The photo couldn't be read right now: don't guess. The person taps the answer instead.
+        return { ok: false, message: `Couldn't read the photo right now. Tap the answer that fits: ${(L.q.options || []).map((o, n) => `${n + 1} = ${o}`).join(", ")}.` };
+      }
+      if (sensor === "people_count" && !m.analysis.failed) { value = Math.max(0, Math.round(Number(m.analysis.count) || 0)); option = bucket(value, L.q.thresholds); }
       if (sensor === "photo" && !option) option = [1, 2, 3].includes(Number(m.analysis.option)) ? Number(m.analysis.option) : 2;
       emit("photo", { id: L.q._id, placeId: L.q.placeId, place: L.q.place, passed: true, masked: m.masked, reason: extra.text || m.analysis.description, image: m.dataUrl });
     }

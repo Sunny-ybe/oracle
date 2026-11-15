@@ -1,8 +1,25 @@
 // Gemini: turns any question into a one-tap poll, and checks dispute photos.
 import { env, PRESETS } from "../config.js";
 
-async function generate(parts) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${env.geminiModel}:generateContent?key=${env.geminiKey}`;
+// Tries the main model, then any fallbacks, when one is overloaded (429/5xx) or too slow.
+async function generate(parts, timeoutMs = 30000) {
+  const models = [env.geminiModel, ...env.geminiFallbacks];
+  let lastErr;
+  for (const model of models) {
+    try {
+      return await generateWith(model, parts, timeoutMs);
+    } catch (e) {
+      lastErr = e;
+      const retryable = /Gemini (429|5\d\d)|aborted|timeout|fetch failed/i.test(e.message);
+      if (!retryable) throw e;
+      if (models.length > 1) console.error(`Gemini ${model} unavailable (${e.message.slice(0, 60)}), trying next model`);
+    }
+  }
+  throw lastErr;
+}
+
+async function generateWith(model, parts, timeoutMs) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.geminiKey}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -10,12 +27,20 @@ async function generate(parts) {
       contents: [{ role: "user", parts }],
       generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
     }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  return JSON.parse(text);
+  // Newer models can return "thought" parts before the answer; use the answer text only.
+  const out = data.candidates?.[0]?.content?.parts || [];
+  const text = out.filter((x) => x.text && !x.thought).map((x) => x.text).join("").replace(/```(json)?/g, "").trim();
+  try {
+    return JSON.parse(text);
+  } catch {
+    const a = text.indexOf("{"), b = text.lastIndexOf("}");
+    if (a >= 0 && b > a) return JSON.parse(text.slice(a, b + 1));
+    throw new Error(`Gemini returned no JSON: ${text.slice(0, 120) || data.candidates?.[0]?.finishReason || "empty"}`);
+  }
 }
 
 function presetFor(text) {
@@ -61,7 +86,7 @@ Rules:
 - options: exactly 3, max 3 words each, ordered from lowest/least to highest/most.
 - If topic is line_length use ["0-5 min","5-15 min","15+ min"]; if crowd use ["Empty","Some space","Packed"]; if noise use ["Quiet","Chatty","Loud"].`,
       },
-    ]);
+    ], 8000);
     if (!plan?.topic || !Array.isArray(plan.options) || plan.options.length !== 3) return fallback();
     plan.topic = plan.topic.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 40);
     plan.sensor = ["noise", "people_count", "photo", "report"].includes(plan.sensor) ? plan.sensor : "poll";
@@ -90,7 +115,7 @@ Look at the photo. Return JSON:
  ${PII}}`,
     },
     { inline_data: { mime_type: mime || "image/jpeg", data: base64 } },
-  ]);
+  ], 20000);
 }
 
 
@@ -104,7 +129,9 @@ export async function analyzePhoto({ base64, mime, place, question, options, sen
   const ask =
     sensor === "people_count"
       ? `Count the people visible (estimate if it's a crowd).`
-      : `Answer from what you can see. Options: 1 = "${options[0]}", 2 = "${options[1]}", 3 = "${options[2]}".`;
+      : `Answer from what you can see. Options, from least to most: 1 = "${options[0]}", 2 = "${options[1]}", 3 = "${options[2]}".
+Judge against the size of the space, not the raw number of people: a large room that is mostly empty seats or open floor is option 1;
+roughly half full is option 2; packed, with few free seats or long lines, is option 3. Ignore people on a stage or behind a counter when judging crowding.`;
   return generate([
     {
       text: `A person at "${place.name}" took this photo just now to answer: "${question}"
