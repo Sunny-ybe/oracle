@@ -254,6 +254,54 @@
   body.focus .how { opacity: 0; transform: translateY(-8px); pointer-events: none; }
   @media (max-height: 860px) { .how ol { display: none; } }
   .nomap { position: fixed; inset: 0; display: grid; place-items: center; color: var(--haze); z-index: 1; }
+  /* ===== Responsive dashboard: the full layout is made for a projector (1280px+). Smaller windows get a tidier layout. ===== */
+  @media (max-width: 1360px) {
+    .rail { width: 360px; }
+    .invite, .locate { right: 400px; }
+    .how, .placecard { width: 360px; }
+    .stat { padding: 8px 14px; gap: 10px; } .stat b { font-size: 28px; } .stat span { font-size: 12px; }
+    .brand h1 { font-size: 34px; } .brand p { font-size: 13.5px; max-width: 260px; }
+    .placecard { bottom: 132px; }
+    .stats { max-width: calc(100vw - 420px); }
+    .locate { bottom: auto; top: 96px; }
+  }
+  /* The live panel can get tall (question + bars + answer); keep "Earlier" and the leaderboard visible */
+  @media (min-width: 901px) {
+    .now { flex: 0 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin; }
+    .earlier { flex: 1 1 120px; min-height: 120px; }
+    .top { flex: 0 0 auto; }
+  }
+  @media (max-width: 1100px) {
+    .how ol { display: none; }
+    .brand p { display: none; }
+    .how { top: 96px; width: 300px; }
+    .invite { font-size: 14px; padding: 11px 16px; }
+    .stats { flex-wrap: wrap; max-width: calc(100vw - 420px); }
+    .stat { flex: 1 1 140px; }
+    .stat + .stat { border-left: 0; }
+  }
+  /* Narrow windows and phones: one scrolling column (brand, join button, map, totals, live panel, how it works) */
+  @media (max-width: 900px) {
+    html, body { height: auto; overflow: auto; }
+    body { display: flex; flex-direction: column; gap: 14px; padding: 14px; }
+    #sky { display: none; }
+    .brand, .invite, .rail, .stats, .locate, .how, .placecard { position: static !important; inset: auto !important; width: auto !important; max-width: none !important; margin: 0 !important; transform: none; }
+    .brand { order: 1; }
+    .invite { order: 2; align-self: flex-start; }
+    #map { order: 3; position: relative; inset: auto; height: 56vh; min-height: 320px; border: 2.5px solid var(--char); border-radius: 22px; box-shadow: 6px 6px 0 var(--char); overflow: hidden; }
+    .locate { order: 4; align-self: flex-start; }
+    .stats { order: 5; flex-wrap: wrap; }
+    .placecard { order: 6; display: none; } .placecard.show { display: block; }
+    .rail { order: 7; }
+    .earlier { min-height: 220px; max-height: 360px; }
+    .how { order: 8; }
+    .how ol { display: grid; }
+    .stat { flex: 1 1 45%; }
+    .nomap { position: static; order: 3; padding: 40px 0; }
+    .join-inner { grid-template-columns: 1fr; gap: 24px; justify-items: center; text-align: left; }
+    .join h2 { font-size: 40px !important; }
+    .qrcard svg { width: min(70vw, 320px); }
+  }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   :focus-visible { outline: 2px solid var(--ask); outline-offset: 2px; }
 </style>
