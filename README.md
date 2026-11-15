@@ -11,7 +11,7 @@
 5. **Measurements beat taps.** A photo is read by Gemini (it counts people, reads the line, and blurs faces, badges, screens and plates before anything is stored). Noise is 10 seconds of microphone, and only the dB number leaves the phone. Wi-Fi is a 1 MB download. One real measurement stands even if nobody else answers. People can also type a number for "how many people" questions.
 6. **Few people → photo.** If only 1 or 2 people are nearby, 3 votes can't happen, so Oracle asks for one photo instead. A tap without a photo is reported as unverified and isn't paid.
 7. **Disagreement → photo.** After 5 split votes, the most trusted voter gets a link, takes a photo, and Gemini checks it. The page also checks GPS distance, so a photo from across campus is rejected.
-8. **Nobody there → past reports.** Oracle answers at once from the last report at that place, or the same topic at a similar place, or a Gemini estimate. Each is clearly labeled (`past_report`, `similar_place`, `estimate`) and none of them pays.
+8. **Nobody there → the official page, then past reports.** For hours, schedule and menu questions, TinyFish has already read the place's official page in the background, and Gemini answers from those facts, labeled `web`. For everything else Oracle answers at once from the last report at that place, or the same topic at a similar place, or a Gemini estimate. Each is clearly labeled (`past_report`, `similar_place`, `estimate`) and none of them pays.
 9. **Everyone who was right** gains trust and gets paid in devnet SOL: 0.001 for a matching tap, 0.01 for a verified photo. Wrong answers lose trust, so liars get quieter over time.
 10. **Every answer becomes data** in Tiger Data: trends, busiest hours, and instant future answers.
 11. **Spot scans.** In the Oracle app, earners tap *Scan this spot*: a Wi-Fi speed test (a 1 MB file served by Oracle), a 10-second loudness recording, and their floor. Scans per floor become "2nd floor is good, 3rd floor is bad", which agents read with `get_floor_report`.
@@ -24,9 +24,10 @@
 | People, places, questions | MongoDB Atlas (2dsphere geo index) |
 | Answers, trends, payouts | Tiger Data hypertables + continuous aggregate |
 | Questions, photo reading, people counting, face blurring, estimates | Gemini API |
-| When nobody answers | Past reports in Tiger Data, then a labeled Gemini estimate |
+| Official pages (hours, schedules, menus) | TinyFish Agent API, read in the background and stored |
+| When nobody answers | The official page for hours-type questions, then past reports in Tiger Data, then a labeled Gemini estimate |
 | Payouts | Solana devnet |
-| Hosting + domain | Vultr + GoDaddy Registry (section 8). The hackathon demo runs from a laptop behind a fixed public link (`npm run demo`) |
+| Hosting + domain | Vultr server at `https://oracle.tryalethea.com` (a GoDaddy domain), HTTPS by Caddy. Update it with `npm run deploy` |
 | Dashboard | Live map (Leaflet), live vote bars, trend chart, leaderboard, payouts |
 
 ## Team
@@ -85,6 +86,7 @@ Share one finished `.env` privately. **Never commit it.**
 | `TELEGRAM_TOKEN` | Rithwik | In Telegram, message **@BotFather** → `/newbot` → copy the token |
 | `GEMINI_API_KEY` | Sashikant | aistudio.google.com → **Get API key** |
 | `SOLANA_TREASURY_SECRET` | Sashikant | `npm run wallet` → paste the secret line into `.env` → fund the printed address at faucet.solana.com (Devnet) |
+| `TINYFISH_API_KEY` | anyone | agent.tinyfish.ai/api-keys. Optional: without it, official-page answers are off |
 | `SESSION_SECRET` | anyone | Any long random string. It signs app sign-ins and **must be the same on every machine** |
 | `GEO_BIAS` | anyone | `lat,lng` of your home area (ASU Tempe: `33.4242,-111.9281`). Place lookups prefer it; without it they are worldwide |
 

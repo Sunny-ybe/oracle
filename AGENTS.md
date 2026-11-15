@@ -9,8 +9,9 @@ Oracle: AI agents ask about real places, nearby people answer (tap/photo), trust
 2. **After every change, tell the user what changed and why** (files plus a one-line reason each).
 3. **Every architecture or product decision goes in [`docs/DECISIONS.md`](docs/DECISIONS.md)** as a new numbered entry. No decisions anywhere else. Don't re-ask anything recorded there.
 4. **Commit only when the user says so.** Branch `main`, remote `github.com/Sunny-ybe/oracle`.
-5. **Shared databases.** Mongo and Tiger are the team's live DBs, and real people are checked in near ASU. Test at a faraway place with `zz-test-` users, then delete them. Details: [`HANDOFF.md` § Testing](HANDOFF.md#testing).
-6. **Free tiers only.** Nothing may cost money.
+5. **Bots run only on the Vultr server.** Keep `TELEGRAM_TOKEN` and `DISCORD_TOKEN` out of a laptop `.env`. Don't deploy or restart the server while someone is demoing; a restart drops open questions.
+6. **Shared databases.** Mongo and Tiger are the team's live DBs, and real people are checked in near ASU. Test at a faraway place with `zz-test-` users, then delete them. Details: [`HANDOFF.md` § Testing](HANDOFF.md#testing).
+7. **Free tiers only.** Nothing may cost money.
 
 ## Where to look
 | Need | Go to |
@@ -24,7 +25,7 @@ Oracle: AI agents ask about real places, nearby people answer (tap/photo), trust
 | SQL schema (Tiger) | `schema.sql` |
 
 ## Run
-`npm run demo` starts the public link (fixed domain, see D-014) and the server, and rewrites `PUBLIC_URL` (`scripts/start.sh`). Plain `npm run dev` runs localhost:3000 only. To test without phones, use the `/api/dev/*` endpoints in `src/server.js`.
+`npm run demo` starts the public link (fixed domain, see D-014) and the server, and rewrites `PUBLIC_URL` (`scripts/start.sh`). Plain `npm run dev` runs localhost:3000 only. The live server is `https://oracle.tryalethea.com` on Vultr (D-021); `npm run deploy` updates it. To test without phones, use the `/api/dev/*` endpoints in `src/server.js`.
 
 ## Code map (one line per file; open only the one you need)
 **Server and brain**
@@ -46,7 +47,7 @@ Oracle: AI agents ask about real places, nearby people answer (tap/photo), trust
 
 **Web helpers**
 - `src/web/auth.js`: app sign-in tokens (`SESSION_SECRET`). `src/web/accounts.js`: register, login, OAuth.
-- `src/web/geo.js`: geocoding. `src/web/places-import.js`: bulk places. `src/web/tinyfish.js`: **unused** (see D-008).
+- `src/web/geo.js`: geocoding. `src/web/places-import.js`: bulk places. `src/web/tinyfish.js`: official-page answers through TinyFish (D-022).
 
 **Other**
 - `src/pay/solana.js`: devnet payouts.
