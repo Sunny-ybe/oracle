@@ -1,14 +1,13 @@
 // Oracle core: plan the question, check memory, ask people, weigh votes,
-// settle disputes with photos, fall back to the web, pay and remember.
+// settle disputes with photos, fall back to past reports, pay and remember.
 import { randomUUID, randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { RULES, env, findPlace, PLACES, PRESETS } from "./config.js";
 import * as mongo from "./db/mongo.js";
 import * as tiger from "./db/tiger.js";
-import { planQuestion, checkPhoto, analyzePhoto, summarizeReports } from "./ai/gemini.js";
+import { planQuestion, checkPhoto, analyzePhoto, summarizeReports, estimateAnswer } from "./ai/gemini.js";
 import { maskPII } from "./ai/privacy.js";
 import { geocode } from "./web/geo.js";
-import { webAnswer } from "./web/tinyfish.js";
 import { pay, solanaEnabled } from "./pay/solana.js";
 
 export const events = new EventEmitter();
@@ -134,7 +133,8 @@ export async function ask({ place, question, topic, askedBy = "agent", waitSecon
     else send(u, "sendTask", mine, url);
   }
 
-  L.deadline = setTimeout(() => onDeadline(L), RULES.deadlineSeconds * 1000);
+  // Nobody nearby: don't make the agent wait, answer from past reports now.
+  L.deadline = setTimeout(() => onDeadline(L), people.length ? RULES.deadlineSeconds * 1000 : 0);
 
   const result = await Promise.race([L.done, sleep(waitSeconds * 1000).then(() => null)]);
   return (
@@ -483,24 +483,7 @@ async function onDeadline(L) {
     return;
   }
 
-  if (L.q.votes.length === 0) {
-    const p = findPlace(L.q.placeId);
-    emit("web", { id: L.q._id, placeId: p.id, place: p.name, url: p.web?.url });
-    try {
-      const w = await webAnswer(p, L.q.question, L.q.options);
-      if (w?.option) {
-        await tiger.saveAnswer({
-          questionId: L.q._id, placeId: p.id, topic: L.q.topic, option: w.option,
-          answerText: L.q.options[w.option - 1], questionText: L.q.question, source: "web",
-        });
-        return settle(L, { source: "web", option: w.option, confidence: 0.5, evidence: w.evidence, source_url: w.source_url });
-      }
-      if (w) return settle(L, { source: "web", option: null, evidence: w.evidence, source_url: w.source_url, note: "The web had related info but no live answer." });
-    } catch (e) {
-      console.error("Web fallback failed:", e.message);
-    }
-    return settle(L, { source: "none", option: null, note: "No one nearby answered and the web had no live info." });
-  }
+  if (L.q.votes.length === 0) return answerFromHistory(L);
   if (L.q.sensor === "photo" && L.q.votes.some((v) => v.photoId)) return finalize(L);
 
   const t = tally(L.q.votes);
@@ -510,6 +493,47 @@ async function onDeadline(L) {
     source: "people", option: best.option, votes: best.n, confidence: round(best.weight / total),
     lowConfidence: true, note: "Low confidence: not enough people agreed.",
   });
+}
+
+// ---------------------------------------------------------------- nobody answered: past reports
+
+const ago = (t) => minutesAgo(t);
+
+// Nobody is there. Best to worst: what people reported here before, what people reported
+// at a similar place (plus an estimate), and finally a plain estimate. Each is labeled so the agent knows.
+async function answerFromHistory(L) {
+  const q = L.q, p = findPlace(q.placeId) || { id: q.placeId, name: q.place };
+  try {
+    const last = await tiger.lastAnswer(p.id, q.topic);
+    if (last) {
+      return settle(L, {
+        source: "past_report", option: last.option, answerText: last.answer_text || q.options[last.option - 1],
+        confidence: 0.4, as_of: last.time,
+        note: `Nobody is at ${p.name} right now. This is the last report from people here, ${ago(last.time)}.`,
+      });
+    }
+    const others = await tiger.sameTopicElsewhere(p.id, q.topic);
+    const known = others.map((r) => ({ r, place: findPlace(r.place_id) })).filter((x) => x.place);
+    const pick = known.find((x) => x.place.kind && x.place.kind === p.kind) || known[0];
+    const similar = pick && { place: pick.place.name, answer: pick.r.answer_text || q.options[pick.r.option - 1], ago: ago(pick.r.time) };
+    const est = await estimateAnswer({ place: p, question: q.question, options: q.options, similar }).catch(() => null);
+    const option = [1, 2, 3].includes(Number(est?.option)) ? Number(est.option) : similar ? pick.r.option : null;
+    if (similar) {
+      return settle(L, {
+        source: "similar_place", option, confidence: 0.25, similar_place: similar,
+        note: `Nobody has reported from ${p.name} yet. At ${similar.place}, people reported "${similar.answer}" ${similar.ago}, so this is an estimate.${est?.reason ? " " + est.reason : ""}`,
+      });
+    }
+    if (option) {
+      return settle(L, {
+        source: "estimate", option, confidence: 0.15,
+        note: `Nobody is at ${p.name} and nobody has reported on this before. This is an AI estimate, not a report.${est?.reason ? " " + est.reason : ""}`,
+      });
+    }
+  } catch (e) {
+    console.error("History fallback failed:", e.message);
+  }
+  return settle(L, { source: "none", option: null, note: `Nobody is at ${p.name} right now and there are no past reports.` });
 }
 
 // ---------------------------------------------------------------- settle, pay, remember
@@ -528,7 +552,7 @@ async function settle(L, r) {
     votes: r.votes ?? 0, total_votes: q.votes.length, confidence: r.confidence ?? null,
     answered_in_s: Math.round((Date.now() - q.createdAt.getTime()) / 1000),
   };
-  for (const k of ["evidence", "source_url", "note", "location_verified"]) if (r[k] !== undefined) result[k] = r[k];
+  for (const k of ["evidence", "source_url", "note", "location_verified", "as_of", "similar_place"]) if (r[k] !== undefined) result[k] = r[k];
   if (r.answerText) result.answer = r.answerText;
   const photos = q.votes.filter((v) => v.photoId).map((v) => v.photoId);
   if (photos.length) result.photos = photos.map((id) => `${env.publicUrl}/api/photos/${id}`);

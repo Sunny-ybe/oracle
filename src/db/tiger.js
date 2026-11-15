@@ -95,3 +95,23 @@ export const saveNoise = (a) =>
      VALUES ($1,$2,'noise',$3,$4,'How loud is it?',$5,$6,'people',$7)`,
     [a.questionId, a.placeId, a.option, a.answerText, a.userId, a.trust ?? 1, a.value]
   );
+
+// Fallback 1: the latest people answer for this place and topic, however old.
+export async function lastAnswer(placeId, topic) {
+  const [r] = await q(
+    `SELECT option, answer_text, value, source, time FROM answers
+     WHERE place_id = $1 AND topic = $2 AND source IN ('people','photo') AND option > 0
+     ORDER BY time DESC LIMIT 1`,
+    [placeId, topic]
+  );
+  return r || null;
+}
+
+// Fallback 2: the latest people answer on the same topic at each other place (newest first).
+export const sameTopicElsewhere = (placeId, topic) =>
+  q(
+    `SELECT DISTINCT ON (place_id) place_id, option, answer_text, value, time FROM answers
+     WHERE place_id <> $1 AND topic = $2 AND source IN ('people','photo') AND option > 0
+     ORDER BY place_id, time DESC`,
+    [placeId, topic]
+  ).then((rows) => rows.sort((a, b) => b.time - a.time));
