@@ -490,6 +490,8 @@ async function onDeadline(L) {
 
   if (L.q.votes.length === 0) return answerFromHistory(L);
   if (L.q.sensor === "photo" && L.q.votes.some((v) => v.photoId)) return finalize(L);
+  // A phone measured it (people counted in a photo, decibels, Mbps): that reading stands even if few answered.
+  if (["people_count", "noise", "wifi"].includes(L.q.sensor) && L.q.votes.some((v) => v.value != null)) return finalize(L);
 
   const t = tally(L.q.votes);
   const best = [...t].sort((a, b) => b.weight - a.weight)[0];
