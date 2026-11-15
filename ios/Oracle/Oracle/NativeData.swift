@@ -271,19 +271,12 @@ private enum SessionKey {
 
     private(set) var baseURL: String = UserDefaults.standard.string(forKey: "oracle.server") ?? ProcessInfo.processInfo.environment["ORACLE_API_BASE_URL"] ?? OracleSession.defaultServer
 
-    /// ⚠️ Before a TestFlight build: set this to your deployed server (Vultr + your domain), e.g. "https://oracle.example.com".
-    /// Testers' iPhones then connect automatically. Empty means testers must type the address in Settings.
-    static let productionServer = ""
+    /// The team's always-on server (Vultr). The app connects to it on first launch; Settings can point it elsewhere.
+    static let productionServer = "https://oracle.tryalethea.com"
 
-    /// The Simulator shares the Mac's network, so a server started with `npm run dev` is at localhost.
-    /// A real iPhone can't reach localhost, so it uses `productionServer`.
-    static var defaultServer: String {
-        #if targetEnvironment(simulator)
-        "http://localhost:3000"
-        #else
-        productionServer
-        #endif
-    }
+    /// Used until an address is saved in Settings. To develop against `npm run dev` on the Simulator, enter
+    /// http://localhost:3000 in Settings or launch with ORACLE_API_BASE_URL set.
+    static var defaultServer: String { productionServer }
     private(set) var state: State = .signedOut
     private(set) var account: OracleAccount?
     private(set) var server: ServerConfig?
