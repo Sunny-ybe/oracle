@@ -258,8 +258,8 @@ function finalize(L) {
   if (L.q.sensor === "photo") {
     const { top, confidence } = best(L);
     const few = L.q.fewPeople ? `Only ${L.q.fewPeople} ${L.q.fewPeople === 1 ? "person" : "people"} nearby, so Oracle asked for a photo. ` : "";
-    // A tap alone isn't proof; only a photo Gemini has read makes it a solid answer.
-    if (!L.q.votes.some((v) => v.photoId && v.option === top.option)) {
+    // With only 1-2 people, a tap alone isn't proof; only a photo Gemini has read makes it a solid answer.
+    if (L.q.fewPeople && !L.q.votes.some((v) => v.photoId && v.option === top.option)) {
       return settle(L, { source: "people", option: top.option, votes: top.n, confidence, lowConfidence: true, note: `${few}No photo came in, so this is one tap, unverified.` });
     }
     return settle(L, { source: "photo", option: top.option, votes: top.n, confidence, note: few ? `${few}Gemini read the photo.` : undefined });
@@ -583,8 +583,12 @@ async function settle(L, r) {
     if (!u) continue;
     if (v.option !== r.option) {
       send(u, "sendText", `🦉 Settled: ${q.place} is "${result.answer}". Others saw it differently this time.`);
+    } else if (v.disputePhoto) {
+      continue; // already paid the photo reward in submitPhoto
     } else if (solanaEnabled()) {
-      payUser(u, env.rewardVoteSol, "matching answer");
+      // A verified photo earns the photo reward; a tap earns the vote reward.
+      if (v.photoId) payUser(u, env.rewardPhotoSol, "verified photo");
+      else payUser(u, env.rewardVoteSol, "matching answer");
     } else {
       send(u, "sendText", `🦉 Settled: ${q.place} is "${result.answer}". You matched! Trust is now ${u.trust}.`);
     }
