@@ -17,6 +17,7 @@ Oracle: AI agents ask about real places, nearby people answer (tap/photo), trust
 |---|---|
 | Current status, open work, priorities | [`HANDOFF.md`](HANDOFF.md) |
 | Why something is the way it is | [`docs/DECISIONS.md`](docs/DECISIONS.md) |
+| What Telegram, Discord and the web app can each do | [`docs/CHANNELS.md`](docs/CHANNELS.md) |
 | Product pitch, setup, API list, demo script | [`README.md`](README.md) (262 lines, so read by section: `grep -n '^#' README.md`) |
 | Thresholds (votes, deadlines, trust, credits) | `RULES` in `src/config.js` |
 | Env keys | `env` in `src/config.js`, `.env.example` |

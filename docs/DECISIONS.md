@@ -97,3 +97,13 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 **D-016: `GEO_BIAS` must be set in `.env`; live location beats a check-in** · 2026-11-15 · Active
 - *Decision:* Since the iOS merge, the ASU home area is no longer a code default. `.env` sets `GEO_BIAS=33.4242,-111.9281`; without it, place lookups are worldwide and no campus places are auto-imported. A phone's live location now overrides an earlier QR check-in (`setLocation` in `src/db/mongo.js`).
 - *Why:* The iPhone app is meant to work anywhere, so the area became configuration.
+
+**D-017: Wi-Fi is a question type; bots hand off to the web app by link** · 2026-11-15 · Active
+- *Decision:* Gemini can plan a `wifi` question (Slow / Okay / Fast, thresholds 10 and 50 Mbps). The web app answers it with the 1 MB speed test. Telegram and Discord cannot measure a connection, so their message adds a personal link (`/app?q=…&t=…`) that opens the same request in the browser as that person. Discord sends the link by DM only. Noise readings take 10 seconds.
+- *Why:* The user wants Wi-Fi answered by a real measurement, like noise and people count. A bot cannot run code on a phone. The per-channel abilities are in `docs/CHANNELS.md`.
+- *Where:* `planQuestion` in `src/ai/gemini.js`, `submitReading` in `src/core.js`, `speedTest` in `public/app.html`, `sendTask` in the channel files.
+
+**D-018: A phone measurement stands at the deadline** · 2026-11-15 · Active
+- *Decision:* At the 90 s deadline, a people-count, noise or Wi-Fi question with at least one measured reading settles as a normal answer (and pays), even if fewer than `MIN_VOTES` people answered. Tap-only answers still need consensus.
+- *Why:* A count read from a photo or a measured speed is evidence in a way one tap is not. Without this, one person answering with a photo while others stayed silent gave "low confidence" and no payout.
+- *Where:* `onDeadline` in `src/core.js`.
