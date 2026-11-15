@@ -6,6 +6,7 @@ export const env = {
   port: num(process.env.PORT, 3000),
   publicUrl: (process.env.PUBLIC_URL || `http://localhost:${num(process.env.PORT, 3000)}`).replace(/\/$/, ""),
   apiKey: process.env.ORACLE_API_KEY || "",
+  sessionSecret: process.env.SESSION_SECRET || "", // signs app sign-in tokens; identical on every machine
 
   mongoUri: process.env.MONGODB_URI,
   mongoDb: process.env.MONGODB_DB || "oracle",
