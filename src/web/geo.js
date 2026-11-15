@@ -1,6 +1,7 @@
 // Look up any place by name or address (OpenStreetMap Nominatim, free, no key).
 // Results near GEO_BIAS are preferred, so "Trader Joe's on Mill Ave" finds the one in Tempe.
 import { env } from "../config.js";
+import { fetchNominatim } from "./place-search.js";
 
 const KIND = {
   cafe: "coffee", coffee_shop: "coffee", restaurant: "food", fast_food: "food", food_court: "food", bar: "food", pub: "food",
@@ -17,10 +18,7 @@ export async function geocode(query) {
   }
   for (const url of urls) {
     try {
-      const r = await fetch(url, {
-        headers: { "User-Agent": "Oracle/1.0 (place lookup)", "Accept-Language": "en" },
-        signal: AbortSignal.timeout(8000),
-      });
+      const r = await fetchNominatim(url);
       if (!r.ok) continue;
       const [hit] = await r.json();
       if (hit) {
