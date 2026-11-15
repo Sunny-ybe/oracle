@@ -644,11 +644,18 @@ export const answerRequest = (...a) => answerFromApp(...a);
 
 // One submit from the app: a tap answer, plus an optional photo and an optional 5-second noise reading.
 // Sensor questions (noise / people count / photo / report) go through the same path as the Telegram mini page.
+// Failures carry a `code` so clients can react without parsing text:
+//   already_answered (this person's answer is recorded), closed (settled or expired), not_for_you.
 export async function answerFromApp(userId, questionId, body = {}) {
   const L = live.get(questionId);
-  if (!L || L.settled) return { ok: false, message: "This request is already answered. Thanks anyway!" };
-  if (!L.pingedIds?.has(userId)) return { ok: false, message: "This request isn't for you." };
-  if (L.q.votes.some((v) => v.userId === userId)) return { ok: false, message: "You already answered this one." };
+  if (!L || L.settled) {
+    // A retry after a dropped connection: tell the person their first answer counted.
+    const saved = await mongo.getQuestion(questionId).catch(() => null);
+    if (saved?.votes?.some((v) => v.userId === userId)) return { ok: false, code: "already_answered", message: "You already answered this one." };
+    return { ok: false, code: "closed", message: "This request is already answered. Thanks anyway!" };
+  }
+  if (!L.pingedIds?.has(userId)) return { ok: false, code: "not_for_you", message: "This request isn't for you." };
+  if (L.q.votes.some((v) => v.userId === userId)) return { ok: false, code: "already_answered", message: "You already answered this one." };
 
   if (L.q.sensor !== "poll") {
     let token = [...L.tasks.entries()].find(([, t]) => t.userId === userId)?.[0];
@@ -714,6 +721,7 @@ export async function placeDetail(placeId) {
   return {
     ...all.find((x) => x.id === p.id),
     photo: photo ? `/api/photos/${photo._id}` : null,
+    photoAt: photo?.createdAt || null,
     history: history.map((h) => ({ question: h.question, answer: h.result.answer, source: h.result.source, votes: h.result.votes, at: h.resolvedAt })),
     trend,
   };

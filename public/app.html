@@ -593,22 +593,46 @@ function showMe(lat, lng) {
   else meMarker.setLngLat([lng, lat]);
   updateDots(); drawWalk(); map.once("idle", drawWalk);
 }
+// Send your position to Oracle so requests follow you as you move (not just the one time you tapped).
+// Skips very fuzzy fixes (Wi-Fi/IP guesses can be off by a kilometre) and tiny moves.
+const COARSE_M = 300;
+let lastSent = null, lastSentAt = 0, sending = false, lastPos = null;
+async function sendLocation(pos, force = false) {
+  const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+  if (!ME) return null;
+  if (!force && accuracy > COARSE_M) return null;
+  if (!force && lastSent && distM(lastSent, { lat, lng }) < 40 && Date.now() - lastSentAt < 120000) return null;
+  if (sending) return null;
+  sending = true;
+  try {
+    const r = await api("/api/app/checkin", { lat, lng, accuracy: Math.round(accuracy) });
+    lastSent = { lat, lng }; lastSentAt = Date.now();
+    if ((r?.place || null) !== (ME?.place || null)) refreshMe();
+    return r;
+  } catch { return null; } finally { sending = false; }
+}
 function watchMe() {
   if (watching || !navigator.geolocation) return; watching = true;
   navigator.geolocation.watchPosition((pos) => {
     showMe(pos.coords.latitude, pos.coords.longitude);
     if (firstFix) { firstFix = false; map?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 16.6, pitch: 52, duration: 2000 }); }
-  }, () => { watching = false; }, { enableHighAccuracy: true, maximumAge: 10000 });
+    lastPos = pos; sendLocation(pos);
+  }, () => { watching = false; }, { enableHighAccuracy: true, maximumAge: 5000 });
 }
 function locateMe() {
   if (!navigator.geolocation) return toast("Location isn't available on this device.");
+  if (!window.isSecureContext) return toast("📍 Location only works over <b>https://</b> (or on localhost). Open Oracle from its https address.");
   navigator.geolocation.getCurrentPosition(async (pos) => {
-    const { latitude: lat, longitude: lng } = pos.coords;
+    const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+    firstFix = false;
     showMe(lat, lng); watchMe(); map?.flyTo({ center: [lng, lat], zoom: 16.8, pitch: 55, duration: 1800 });
-    const r = await api("/api/app/checkin", { lat, lng }).catch(() => null);
-    toast(r?.place ? `📍 You're near <b>${esc(r.place)}</b>. Requests for places around you will come here.` : "📍 You're all set. Requests for places near you will come here.");
+    const r = await sendLocation(pos, true);
+    const fuzzy = accuracy > COARSE_M ? `<br><small>Your device only knows your spot to about ${accuracy >= 1000 ? (accuracy / 1000).toFixed(1) + " km" : Math.round(accuracy) + " m"}. Turn on Wi-Fi and precise location for a better fix; Oracle will update as it improves.</small>` : "";
+    toast((r?.place ? `📍 You're at <b>${esc(r.place)}</b>. Requests for places around you will come here.` : "📍 You're all set. Requests for places near you will come here.") + fuzzy);
     refreshMe();
-  }, () => toast("Allow location for this site: tap the icon next to the address bar, then Location → Allow."), { enableHighAccuracy: true, timeout: 10000 });
+  }, (err) => toast(err.code === err.TIMEOUT ? "📍 Couldn't get a location fix in time. Try again near a window or with Wi-Fi on."
+    : "Allow location for this site: tap the icon next to the address bar, then Location → Allow."),
+  { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 }
 // If location is already allowed, keep your dot live on the map.
 navigator.permissions?.query({ name: "geolocation" }).then((st) => { if (st.state === "granted") watchMe(); }).catch(() => {});
@@ -1202,13 +1226,16 @@ es.onmessage = async (m) => {
     loadPlaces();
   }
   if (e.type === "answer") { liveQuestions.delete(e.placeId); loadPlaces(); refreshMe(); if (current === "request" && draft.id === e.question_id && !$("reqCard").querySelector(".done-card")) toast("This request was just answered by people nearby."); }
+  if (e.type === "places") { loadPlaces(); if (me) drawWalk(); }
   if (e.type === "payout" && ME && e.name === ME.name) { toast(`💸 You earned <b>${e.amount} SOL</b>`); refreshMe(); }
 };
 
 (async () => {
   try { await refreshMe(); } catch { return; }
+  if (lastPos) sendLocation(lastPos);
   notifyState();
-  if (!ME.place) setTimeout(() => toast("📍 <b>Share your location</b> so requests find you wherever you are. Tap here.", locateMe), 800);
+  if (!window.isSecureContext) setTimeout(() => toast("⚠️ <b>Location is off on this address.</b> Phones only share location on <b>https://</b> pages. Open Oracle from its https link."), 800);
+  else if (!ME.place) setTimeout(() => toast("📍 <b>Share your location</b> so requests find you wherever you are. Tap here.", locateMe), 800);
   await loadPlaces(true);
   const q = params.get("q");
   if (q) openRequest(q);

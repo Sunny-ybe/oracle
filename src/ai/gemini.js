@@ -193,3 +193,9 @@ Return JSON: {"option": 1, 2 or 3, "reason": one short sentence, honest that thi
     },
   ], 15000);
 }
+
+export async function searchIntent(query) {
+  if (!env.geminiKey) return query;
+  const result = await generate([{ text: `Return JSON {"query":"place search terms"}. Convert this request to a short map search query. Preserve named venues, streets and cities. Do not invent venues, conditions, or coordinates. User input: ${JSON.stringify(query)}` }], 8000);
+  return typeof result.query === 'string' && result.query.trim() ? result.query.trim().slice(0, 250) : query;
+}
