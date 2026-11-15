@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0d110b" />
+<meta name="theme-color" content="#FFF6EC" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <title>Oracle · earn by being somewhere</title>
 <meta name="description" content="AI agents ask about a real place. People who are there answer in under 40 seconds and get paid in SOL." />
@@ -15,17 +15,17 @@
 <link rel="apple-touch-icon" href="/icon.png?s=180" />
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800;900&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800;900&family=Nunito:wght@600;700;800;900&display=swap" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    /* Dark + lime, matching the iPhone app (ios/Oracle/Preview.png). --green is the accent (lime); --on is text on it. */
-    --green: #d4f53c; --green-2: #b8e02a; --mint: rgba(212,245,60,.13); --mint-2: #1a2114; --on: #10140c;
-    --ink: #eef3e6; --muted: #9ba590; --line: #2a3224; --bg: #0d110b; --card: #171d13;
-    --purple: #c4b5ff; --red: #ff6b5b; --amber: #f5b83d; --blue: #6aa2ff;
-    --o1: #c6ec34; --o2: #f5b83d; --o3: #ff6b5b;
-    --r: 22px; --shadow: 0 10px 30px -14px rgba(0,0,0,.7);
+    /* Cream "ink" look, matching the iPhone app (ios/Oracle/Oracle/Theme.swift). --green is the accent (blue); --on is text on it. */
+    --green: #3052D6; --green-2: #2442b8; --mint: #D6DEFA; --mint-2: #FFF0BF; --on: #ffffff;
+    --ink: #212126; --muted: #5C5761; --line: #e7dccd; --bg: #FFF6EC; --card: #ffffff;
+    --purple: #3052D6; --red: #DB454D; --amber: #b9800a; --blue: #3052D6;
+    --o1: #2f9e5a; --o2: #e0a400; --o3: #DB454D;
+    --r: 22px; --shadow: 5px 5px 0 #212126;
     font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -340,6 +340,124 @@
   .hm-built { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .hm-built span { font-size: 12px; font-weight: 700; border-radius: 99px; padding: 5px 10px; background: var(--mint); color: var(--green); }
 
+
+  /* ===== Cream "ink" theme (matches the iPhone app's Theme.swift): cream paper with pink dots, charcoal outlines, solid offset shadows ===== */
+  :root { --fr: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, sans-serif; --char: #212126;
+    --pink: #F79EB8; --pinkSoft: #FDDEE8; --peri: #9EB0F5; --periSoft: #D6DEFA; --butter: #FDD96B; --butterSoft: #FFF0BF; --mintC: #94DBAB; --mintSoft: #D9F5E0; }
+  *, *::before, *::after { font-family: var(--fr) !important; }
+  html, body { background: var(--bg); }
+  .app, .gate { background-color: var(--bg); background-image: radial-gradient(rgba(242,168,191,.55) 1.5px, transparent 1.7px); background-size: 22px 22px; }
+  h1, h2, h3, .title, .q, .summary { color: var(--char); font-weight: 900 !important; letter-spacing: -.01em; }
+  .muted, .hm-row small, .note, .updated { color: var(--muted); }
+  /* cards: thick outline + offset shadow */
+  .card, .hm-card, .scanEntry, .notify, .toast, .pinbar, #home .wordmark, .done-card { background: #fff; color: var(--char); border: 2.5px solid var(--char) !important; box-shadow: 5px 5px 0 var(--char); }
+  .card, .hm-card { border-radius: 22px; }
+  .notify { background: var(--butterSoft); }
+  .notify .x { background: #fff; border: 2px solid var(--char); color: var(--char); }
+  .toast { background: #fff; }
+  .scanEntry { background: var(--mintSoft); }
+  .scanEntry .ic { background: #fff; border: 2px solid var(--char); }
+  .scanEntry .ic svg, .scanEntry .ic svg circle { stroke: var(--char); fill: none; }
+  .scanEntry .ic svg circle { fill: var(--char); }
+  .wallet { background: var(--butter) !important; color: var(--char) !important; border: 2.5px solid var(--char) !important; box-shadow: 5px 5px 0 var(--char); }
+  .pro { background: var(--periSoft) !important; color: var(--char) !important; border: 2.5px solid var(--char) !important; box-shadow: 5px 5px 0 var(--char); }
+  /* search and inputs */
+  .find { background: #fff !important; border: 2.5px solid var(--char) !important; border-radius: 18px !important; box-shadow: 4px 4px 0 var(--char); }
+  .find svg { color: var(--char); }
+  .find input::placeholder { color: var(--muted); }
+  textarea, .field input, .panel input, #pcount, #scPlace, .card input { background: #fff !important; color: var(--char) !important; border: 2px solid var(--char) !important; border-radius: 14px; }
+  /* buttons: chunky, press down onto their shadow */
+  .primary, .small, .hm-cta button, .opt, .sensor, .floors button, .adjust, .locate, .msbtn, .back, .iconbtn.ring { border: 2.5px solid var(--char) !important; }
+  .primary, .small, .hm-cta button, .adjust, .locate { box-shadow: 4px 4px 0 var(--char); transition: transform .08s, box-shadow .08s; }
+  .primary:active, .small:active, .hm-cta button:active, .opt:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--char); }
+  .primary, .small, .hm-cta .a, .opt.sel, .floors button.sel, .step.ok i, .notify button:not(.x) { background: var(--green) !important; color: #fff !important; }
+  .primary { border-radius: 18px; font-weight: 900; }
+  .primary:disabled { background: #cfc6bb !important; color: var(--muted) !important; box-shadow: 2px 2px 0 var(--char); opacity: 1; }
+  .small.ghost, .pw .eye { background: var(--periSoft) !important; color: var(--char) !important; }
+  .small:disabled { background: #eee6db !important; color: var(--muted) !important; opacity: 1; }
+  .hm-cta button { border-radius: 18px; }
+  .hm-cta .b { background: var(--mintC) !important; color: var(--char) !important; }
+  .opt, .sensor, .floors button { background: #fff; color: var(--char); border-width: 2px !important; border-radius: 16px; }
+  .opt.sel { border-color: var(--char) !important; }
+  .opt.sel::after { background: #fff; color: var(--green); }
+  .sensor.done { background: var(--mintSoft); color: var(--char); }
+  .sensor.need { box-shadow: 3px 3px 0 var(--char); background: var(--butterSoft); }
+  .adjust, .locate { background: #fff; color: var(--char); }
+  .adjust svg { color: var(--green); }
+  .hint { background: #fff; color: var(--muted); border: 2px solid var(--char); }
+  .hint b { color: var(--char); }
+  .mapwrap { border: 2.5px solid var(--char); box-shadow: 5px 5px 0 var(--char); }
+  .maplibregl-ctrl-attrib { background: rgba(255,255,255,.85) !important; color: var(--muted) !important; }
+  .maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+  .pin .lab { background: #fff; border: 2px solid var(--char); color: var(--char); }
+  /* chips, badges, tags */
+  .chip, .live-badge, .hm-built span, .scanEntry .chip, .perks span { background: var(--periSoft) !important; color: var(--char) !important; border: 1.5px solid var(--char); font-weight: 800; }
+  .live-badge { background: var(--pinkSoft) !important; }
+  .live-badge::before { background: var(--red); }
+  .scanEntry .chip { background: var(--butter) !important; }
+  .headline { background: var(--butterSoft); border: 2px solid var(--char); }
+  .headline b { color: var(--green); }
+  .conf b { color: var(--green); }
+  .hero { background: linear-gradient(135deg, var(--periSoft), var(--pinkSoft)); border-bottom: 2.5px solid var(--char); }
+  .hero .back { background: #fff; }
+  .tabs button.on { color: var(--green); border-color: var(--green); }
+  .reward .gc { background: var(--butterSoft); border: 2px solid var(--char); }
+  .v-good { background: var(--mintSoft); color: #1f7a44; } .v-okay { background: var(--butterSoft); color: #8a6200; } .v-bad { background: var(--pinkSoft); color: #b0303a; }
+  .sens .dot { background: #2f9e5a; } .sens .dot.off { background: #cfc6bb; }
+  .card a, .linkish { color: var(--green); }
+  .me-dot { border-color: #fff; }
+  .me-dot.manual { background: var(--green); box-shadow: 0 0 0 4px var(--periSoft); }
+  .viz { background: var(--butterSoft); }
+  /* tab bar: white card, the active tab is butter yellow */
+  .tabbar { background: #fff !important; border: 2.5px solid var(--char) !important; box-shadow: 5px 5px 0 var(--char) !important; }
+  .tabbar button { color: var(--char) !important; }
+  .tabbar button.on { background: var(--butter) !important; color: var(--char) !important; box-shadow: inset 0 0 0 2px var(--char); }
+  .badge { background: var(--red); border: 2px solid #fff; }
+  /* home */
+  #home .wordmark { border-radius: 20px; }
+  #home .wordmark .owl, .owl.logo { border-radius: 10px; border: 2px solid var(--char); object-fit: cover; background: #FFF0BF; }
+  .hm-area { color: var(--char); }
+  .hm-area svg, .hm-row svg { color: var(--green); }
+  .hm-hero { display: block; }
+  .hm-ora { display: grid; grid-template-columns: 128px 1fr; align-items: center; gap: 12px; margin: 4px 0 18px; }
+  .hm-ora-pic { width: 128px; height: 128px; border-radius: 50%; background: var(--periSoft); display: grid; place-items: center; overflow: visible; }
+  .hm-ora-pic img { width: 112%; max-width: none; margin-top: -10px; filter: drop-shadow(0 8px 10px rgba(33,33,38,.25)); animation: float 4s ease-in-out infinite; }
+  .bubble { position: relative; background: #fff; border: 2.5px solid var(--char); border-radius: 20px; padding: 12px 14px; font-size: 14.5px; line-height: 1.4; box-shadow: 4px 4px 0 var(--char); color: var(--char); }
+  .bubble b { display: block; font-size: 16px; }
+  .bubble::before { content: ""; position: absolute; left: -11px; top: 26px; width: 16px; height: 16px; background: #fff; border-left: 2.5px solid var(--char); border-bottom: 2.5px solid var(--char); transform: rotate(45deg); }
+  .hm-hero h2 { font-size: 34px !important; line-height: 1.05; margin: 0 0 10px; color: var(--char); }
+  .hm-hero h2 em { display: block; font-style: normal; color: var(--green); }
+  .hm-hero p { color: var(--muted); }
+  .hm-row { color: var(--char); border-top-color: var(--line); }
+  .hm-steps div { padding: 0; overflow: hidden; background: #fff; border: 2px solid var(--char); border-radius: 14px; box-shadow: 3px 3px 0 var(--char); }
+  .hm-steps b { margin: 0; padding: 6px 9px; color: var(--char); font-size: 11px; border-bottom: 2px solid var(--char); }
+  .hm-steps span { display: block; padding: 8px 9px 10px; color: var(--char); font-weight: 700; }
+  .hm-steps .t-pink b { background: var(--pink); } .hm-steps .t-peri b { background: var(--peri); } .hm-steps .t-mint b { background: var(--mintC); }
+  .ai-tabs { background: #F3E9DC; border: 2px solid var(--char); }
+  .ai-tabs button { color: var(--muted); }
+  .ai-tabs button.on { background: #fff; color: var(--char); box-shadow: inset 0 0 0 2px var(--char); }
+  .ai-steps, .ai-steps li { color: var(--char); }
+  /* manual location pin */
+  .pinbar { background: #fff; }
+  /* sign-in screen */
+  .gate { color: var(--char); }
+  .sheet { background: #fff !important; color: var(--char); border-top: 2.5px solid var(--char); }
+  .seg { background: #F3E9DC; border: 2px solid var(--char); }
+  .seg button.on { background: #fff; color: var(--char); box-shadow: inset 0 0 0 2px var(--char); }
+  .scene .street { stroke: var(--char); stroke-opacity: .14; }
+  .scene .street.main { stroke-opacity: .22; }
+  .scene .lbl { fill: var(--char); fill-opacity: .5; }
+  .scene .ring { stroke: var(--green); }
+  .scene .phone rect.body { fill: #fff; stroke: var(--char); stroke-opacity: 1; stroke-width: 1.6; }
+  .scene .phone rect.screen { fill: var(--periSoft); fill-opacity: 1; }
+  .scene .phone.hit rect.screen { fill: var(--butter); }
+  .scene .qb rect { fill: #fff; stroke: var(--char); stroke-width: 1.5; } .scene .qb text { fill: var(--char); }
+  .scene .earn { fill: var(--green); }
+  .scene .zz { fill: var(--char); }
+  /* desktop sidebar */
+  .tabbar .nav-brand b { color: var(--char); }
+  .tabbar .nav-foot { color: var(--muted); }
+  #explore .head .iconbtn { background: #fff; border: 2.5px solid var(--char); color: var(--char); box-shadow: 3px 3px 0 var(--char); }
   /* ===== Wide screens (640px and up: laptop, desktop, half-screen windows, tablets): sidebar navigation and a roomier layout. Phones keep the app layout above. ===== */
   .tabbar .nav-brand, .tabbar .nav-extra, .tabbar .nav-foot { display: none; }
   @media (min-width: 640px) {
@@ -367,10 +485,12 @@
     #home .wordmark { display: none; }
     #home .find { margin: 0 0 6px; max-width: 640px; }
     #home .hm-area { margin: 18px 0 0; }
-    #home .hm-hero { padding: 0; grid-template-columns: 1fr 340px; }
-    #home .hm-hero h2 { font-size: 76px; }
+    #home .hm-hero { padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 28px; }
+    #home .hm-ora { order: 2; margin: 0; }
+    #home .hm-hero h2 { font-size: 58px !important; }
     #home .hm-hero p { font-size: 21px; }
-    #home .hm-hero img { max-width: 300px; }
+    #home .hm-ora { grid-template-columns: 170px 1fr; }
+    #home .hm-ora-pic { width: 170px; height: 170px; }
     #home .hm-cta { padding: 8px 0 18px; max-width: 560px; }
     #home .hm-card { grid-column: span 1; margin: 0 0 18px; }
     #home .notify { margin: 8px 0; max-width: 640px; }
@@ -387,6 +507,7 @@
     /* Sign-in: scene on the left, form on the right */
     .gate { flex-direction: row; }
     .gate .sheet { width: 480px; max-height: none; border-radius: 0; overflow: auto; display: flex; flex-direction: column; justify-content: center; }
+    .gate .sheet { border-top: 0; border-left: 2.5px solid #212126; }
     .gate .scene { min-height: 0; }
   }
 
@@ -398,10 +519,11 @@
     .tabbar button { font-size: 14.5px; padding: 11px 12px; gap: 10px; }
     .screen { padding: 8px 20px 24px; }
     #home.screen.on { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; padding-top: 18px; }
-    #home .hm-hero { grid-template-columns: 1fr 210px; }
-    #home .hm-hero h2 { font-size: 50px; }
+    #home .hm-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+    #home .hm-hero h2 { font-size: 40px !important; }
     #home .hm-hero p { font-size: 17px; }
-    #home .hm-hero img { max-width: 200px; }
+    #home .hm-ora { grid-template-columns: 110px 1fr; }
+    #home .hm-ora-pic { width: 110px; height: 110px; }
     #home .hm-card:last-child { grid-column: 1 / -1; }
     #rewardsBody, #profileBody { grid-template-columns: 1fr; }
     #explore .find { margin: 18px 84px 14px 16px; }
@@ -412,9 +534,10 @@
   /* Narrow windows (640-899px): Home cards stack full width so nothing is squeezed */
   @media (min-width: 640px) and (max-width: 899px) {
     #home .hm-card { grid-column: 1 / -1; }
-    #home .hm-hero { grid-template-columns: 1fr 180px; }
-    #home .hm-hero h2 { font-size: 44px; }
-    #home .hm-hero img { max-width: 170px; }
+    #home .hm-hero { display: block; }
+    #home .hm-ora { margin: 0 0 14px; }
+    #home .hm-hero h2 { font-size: 38px !important; }
+    #home .hm-ora { grid-template-columns: 110px 1fr; }
   }
   :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -427,7 +550,7 @@
   <section class="screen on" id="home">
     <div class="wordmark">
       <button class="iconbtn" aria-label="Profile and settings" onclick="go('profile')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-      <svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg><b>Oracle</b>
+      <img class="owl logo" src="/img/mark.png" alt="" /><b>Oracle</b>
     </div>
     <div class="find" onclick="homeSearch()" style="cursor:pointer">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
@@ -436,8 +559,9 @@
     <div class="notify" id="notify0"><button class="x" aria-label="Dismiss" onclick="dismissNotify()">×</button><p id="notifyText0">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
     <button class="hm-area" onclick="homeLocate()"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 11l18-8-8 18-2-8z"/></svg><span id="hmArea">Choose your area</span></button>
     <div class="hm-hero">
-      <div><h2>The world, answered.</h2><p>Find out what's happening.<br>Help someone nearby.</p></div>
-      <img src="/img/ora.png" alt="Ora, Oracle's robot mascot, waving" />
+      <div class="hm-ora"><span class="hm-ora-pic"><img src="/img/ora.png" alt="Ora, Oracle's robot mascot, waving" /></span>
+        <div class="bubble"><b>hi there!!</b> I'm Ora. Ask about any real place and people nearby tell you what it's like right now.</div></div>
+      <div><h2>Know before you go. <em>Help someone nearby.</em></h2><p>Ask your AI about any place. Oracle gets the answer from people who are there.</p></div>
     </div>
     <div class="hm-cta">
       <button class="a" onclick="go('explore')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/></svg>Explore places</button>
@@ -445,7 +569,7 @@
     </div>
     <div class="hm-card">
       <h3>Start where you are</h3>
-      <button class="hm-row" onclick="homeLocate()"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M7 12l10-5-5 10-1-4z" fill="#10140c"/></svg><span>Use my location<small>Get requests for places around you</small></span></button>
+      <button class="hm-row" onclick="homeLocate()"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M7 12l10-5-5 10-1-4z" fill="#ffffff"/></svg><span>Use my location<small>Get requests for places around you</small></span></button>
       <button class="hm-row" onclick="homeSearch()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Search a city or venue<small>Any store, restaurant, park or address</small></span></button>
       <button class="hm-row" onclick="startPin()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Set my spot on the map<small>GPS off? Drag the map to where you are</small></span></button>
       <button class="hm-row" onclick="go('explore')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg><span>Try the ASU demo<small>Live answers from people on campus</small></span></button>
@@ -453,9 +577,9 @@
     <div class="hm-card">
       <h3>How Oracle works</h3>
       <div class="hm-steps">
-        <div><b>1 · Ask</b>You ask Claude, ChatGPT or Gemini; it asks Oracle</div>
-        <div><b>2 · Answer</b>People nearby tap, snap a photo or measure</div>
-        <div><b>3 · Earn</b>Matching answers earn points and SOL</div>
+        <div class="t-pink"><b>1 · Ask</b><span>You ask Claude, ChatGPT or Gemini; it asks Oracle</span></div>
+        <div class="t-peri"><b>2 · Answer</b><span>People nearby tap, snap a photo or measure</span></div>
+        <div class="t-mint"><b>3 · Earn</b><span>Matching answers earn points and SOL</span></div>
       </div>
       <div class="hm-built" aria-label="Built with"><span>Gemini</span><span>MongoDB</span><span>Tiger Data</span><span>TinyFish</span><span>Solana</span><span>Vultr</span><span>GoDaddy</span><span>MCP</span></div>
     </div>
@@ -489,7 +613,7 @@
   <!-- EXPLORE -->
   <section class="screen" id="explore">
     <div class="head">
-      <svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg>
+      <img class="owl logo" src="/img/mark.png" alt="" />
       <h1>Oracle</h1><div class="sp"></div>
       <button class="iconbtn" aria-label="Requests" onclick="go('contribute')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg>
@@ -504,7 +628,7 @@
     <div class="mapwrap">
       <div id="map"></div>
       <div class="hint" id="mapHint">Agents ask in Claude, ChatGPT or Gemini. <b>You answer here</b> and earn.</div>
-      <div class="pinpick" id="pinpick" aria-hidden="true"><svg width="44" height="56" viewBox="0 0 44 56"><path d="M22 2C11 2 3 10.4 3 21c0 14 19 33 19 33s19-19 19-33C41 10.4 33 2 22 2z" fill="#d4f53c" stroke="#10140c" stroke-width="3"/><circle cx="22" cy="21" r="7" fill="#10140c"/></svg><i></i></div>
+      <div class="pinpick" id="pinpick" aria-hidden="true"><svg width="44" height="56" viewBox="0 0 44 56"><path d="M22 2C11 2 3 10.4 3 21c0 14 19 33 19 33s19-19 19-33C41 10.4 33 2 22 2z" fill="#3052D6" stroke="#212126" stroke-width="3"/><circle cx="22" cy="21" r="7" fill="#ffffff"/></svg><i></i></div>
       <div class="pinbar" id="pinbar" role="dialog" aria-label="Set your location on the map">
         <b>Move the map so the pin is where you are</b>
         <span id="pinNote">Drag or zoom the map. Use this when your phone puts you in the wrong spot.</span>
@@ -555,7 +679,7 @@
   </section>
 
   <nav class="tabbar" aria-label="Main">
-    <div class="nav-brand"><svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg><b>Oracle</b></div>
+    <div class="nav-brand"><img class="owl logo" src="/img/mark.png" alt="" /><b>Oracle</b></div>
     <button class="on" data-tab="home" onclick="go('home')">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg>Home</button>
     <button data-tab="contribute" onclick="go('contribute')">
@@ -710,18 +834,18 @@ const MAP_STYLE = {
   glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
   sources: { omt: { type: "vector", url: "https://tiles.openfreemap.org/planet" } },
   layers: [
-    { id: "bg", type: "background", paint: { "background-color": "#0f140d" } },
-    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#141a11" } },
-    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#1a2a14" } },
-    { id: "grass", type: "fill", source: "omt", "source-layer": "landcover", filter: ["in", ["get", "class"], ["literal", ["grass", "wood", "farmland"]]], paint: { "fill-color": "#172312" } },
-    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#122130" } },
+    { id: "bg", type: "background", paint: { "background-color": "#FBF1E4" } },
+    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#F6EADB" } },
+    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#D9F0DF" } },
+    { id: "grass", type: "fill", source: "omt", "source-layer": "landcover", filter: ["in", ["get", "class"], ["literal", ["grass", "wood", "farmland"]]], paint: { "fill-color": "#E1F2E4" } },
+    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#CFE0F7" } },
     { id: "paths", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["path", "track", "service"]]],
-      paint: { "line-color": "#2b3424", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .6, 18, 3] } },
+      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .6, 18, 3] } },
     { id: "roads", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["minor", "tertiary", "secondary", "primary", "trunk"]]],
-      paint: { "line-color": "#2b3424", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 11] } },
-    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#3a4434", "line-width": 1.5, "line-dasharray": [3, 2] } },
+      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 11] } },
+    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#cdbfae", "line-width": 1.5, "line-dasharray": [3, 2] } },
     { id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13,
-      paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#1f271b", 30, "#262f21", 80, "#2e3828"],
+      paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#FFFDFA", 30, "#F4EADF", 80, "#E8DCCD"],
         "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": .95 } },
   ],
 };
@@ -756,30 +880,30 @@ function addPlaceLayers() {
   map.addLayer({ id: "walk-fill", type: "fill", source: "walk", paint: { "fill-color": "#2f6fe0", "fill-opacity": .07 } }, "buildings");
   map.addLayer({ id: "walk-edge", type: "line", source: "walk", paint: { "line-color": "#2f6fe0", "line-width": 2, "line-opacity": .6, "line-dasharray": [2, 2] } }, "buildings");
   map.addLayer({ id: "dot", type: "circle", source: "dots", paint: {
-    "circle-color": DOT_COLOR, "circle-stroke-color": "#0d110b", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2.5, 1.5],
+    "circle-color": DOT_COLOR, "circle-stroke-color": "#ffffff", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2.5, 1.5],
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["boolean", ["get", "near"], false], 4.5, 2.5], 17, ["case", ["boolean", ["get", "near"], false], 9, 6.5]] } });
   map.addLayer({ id: "dot-name-near", type: "symbol", source: "dots", filter: ["==", ["get", "near"], true], minzoom: 14,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, 1], "text-anchor": "top", "text-max-width": 9 },
-    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.6 } });
+    paint: { "text-color": "#212126", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
   map.addLayer({ id: "dot-name", type: "symbol", source: "dots", filter: ["==", ["get", "near"], false], minzoom: 15.8,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.8, 10.5, 18, 12.5], "text-offset": [0, .9], "text-anchor": "top", "text-max-width": 8 },
-    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.4 } });
+    paint: { "text-color": "#5C5761", "text-halo-color": "#ffffff", "text-halo-width": 1.4 } });
   // Every shop, café, restaurant and campus building from OpenStreetMap. Dots appear as you zoom in, then names fade in.
   const POI_COLOR = ["match", ["get", "class"], ["cafe"], "#7a4b2a", ["restaurant", "fast_food", "bar", "beer", "ice_cream", "bakery"], "#5b3fd6",
     ["shop", "grocery", "clothing_store", "alcohol_shop", "pharmacy", "mobile_phone", "books"], "#2f6fe0", ["library", "college", "school", "university"], "#1e6b46",
     ["sports", "stadium", "fitness", "swimming", "pitch"], "#d64545", ["cinema", "theatre", "music", "art_gallery", "museum", "attraction"], "#2f8a5c", ["parking"], "#66756c", "#4b5a52"];
   map.addLayer({ id: "poi-dot", type: "circle", source: "omt", "source-layer": "poi", minzoom: 14.5, filter: ["has", "name"],
-    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#0d110b", "circle-stroke-width": 1,
+    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1,
       "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1], "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1] } }, "dot");
   map.addLayer({ id: "poi-name", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 15.3, filter: ["has", "name"],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.3, 10.5, 18, 13],
       "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 8, "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.4, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
+    paint: { "text-color": "#5C5761", "text-halo-color": "#ffffff", "text-halo-width": 1.4, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
   // Inside your 5-minute-walk circle, names show from further out and in bold.
   map.addLayer({ id: "poi-name-near", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 13.8, filter: ["==", 1, 0],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 9,
       "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.6 } });
+    paint: { "text-color": "#212126", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
   const pickPoi = async (e) => {
     const f = e.features?.[0]; if (!f?.properties?.name) return;
     const [lng, lat] = f.geometry.coordinates;
@@ -1041,7 +1165,7 @@ function openRequest(id) {
   const needsPhoto = s === "photo" || s === "people_count";
   $("request").innerHTML = `
     <div class="lr-head"><button class="back" aria-label="Back" onclick="go('contribute')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg>
+      <img class="owl logo" src="/img/mark.png" alt="" />
       <b style="font-size:20px">Oracle</b></div>
     <div class="section"><div class="card" id="reqCard">
       <span class="live-badge">Live request</span>
@@ -1390,7 +1514,7 @@ function openScan() {
         <svg class="gauge" viewBox="0 -8 220 136" aria-hidden="true">
           <defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#d64545"/><stop offset=".45" stop-color="#c98a12"/><stop offset="1" stop-color="#2f8a5c"/></linearGradient></defs>
           <path class="track" d="M20 110 A90 90 0 0 1 200 110"/><path class="val" id="gVal" d="M20 110 A90 90 0 0 1 200 110" pathLength="100" stroke-dasharray="0 100"/>
-          <line class="needle" id="gNeedle" x1="110" y1="110" x2="110" y2="36" style="transform:rotate(-90deg)"/><circle cx="110" cy="110" r="6" fill="#eef3e6"/>
+          <line class="needle" id="gNeedle" x1="110" y1="110" x2="110" y2="36" style="transform:rotate(-90deg)"/><circle cx="110" cy="110" r="6" fill="#212126"/>
           <text x="17" y="126" text-anchor="middle">1</text><text x="84" y="6" text-anchor="middle">10</text><text x="200" y="50" text-anchor="middle">100</text><text x="203" y="126" text-anchor="middle">300</text></svg>
         <div class="readout"><b id="mbps">–</b> <span>Mbps</span><div class="muted" id="ping" style="font-size:13px">Downloads a 1 MB test file from Oracle</div></div>
       </div>

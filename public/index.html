@@ -11,7 +11,7 @@
 <link rel="icon" href="/icon.png?s=64" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Schibsted+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@600;700;800;900&family=Schibsted+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -20,11 +20,12 @@
 <style>
   /* Tempe at dusk. Green = people and answers. Amber = the AI's question. Coral = disagreement. */
   :root {
-    /* Dark + lime, matching the iPhone app. --mint (answers) is lime; --ask (the AI's question) is amber. */
-    --night: #0d110b; --dusk: #1a2015; --ridge: #2c3526; --haze: #9ba590; --moon: #eef3e6;
-    --mint: #c6ec34; --ask: #f5b83d; --coral: #ff6b5b; --violet: #b9a6ff; --you: #6aa2ff;
-    --o1: #c6ec34; --o2: #f5b83d; --o3: #ff6b5b;
-    --glass: rgba(20, 25, 17, .86); --edge: rgba(255, 255, 255, .08);
+    /* Cream "ink" look, matching the iPhone app (Theme.swift). --mint = answers (green), --ask = the AI's question (amber), --blue = brand. */
+    --night: #FFF6EC; --dusk: #FBF1E4; --ridge: #e7dccd; --haze: #5C5761; --moon: #212126;
+    --mint: #2f9e5a; --ask: #c48a00; --coral: #DB454D; --violet: #3052D6; --you: #3052D6; --blue: #3052D6;
+    --o1: #2f9e5a; --o2: #e0a400; --o3: #DB454D;
+    --glass: #ffffff; --edge: rgba(33, 33, 38, .12);
+    --char: #212126; --pink: #F79EB8; --pinkSoft: #FDDEE8; --peri: #9EB0F5; --periSoft: #D6DEFA; --butter: #FDD96B; --butterSoft: #FFF0BF; --mintC: #94DBAB; --mintSoft: #D9F5E0;
     --f: "Schibsted Grotesk", -apple-system, system-ui, sans-serif;
     --serif: "Instrument Serif", Georgia, serif;
   }
@@ -191,20 +192,47 @@
   .join-actions button { border: 0; border-radius: 999px; background: var(--ask); color: #2a1a00; font-weight: 800; font-size: 17px; padding: 14px 24px; cursor: pointer; }
   .join .hint { color: var(--haze); font-size: 14px; }
 
-  /* ===== Dark + lime overrides (match the iPhone app) ===== */
-  .glass { box-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 22px 50px -28px rgba(0,0,0,.8); }
-  .maplibregl-ctrl-attrib { background: rgba(13,17,11,.7) !important; }
-  .brand h1 { font: 900 40px/0.95 "Schibsted Grotesk", var(--f); letter-spacing: -.03em; }
-  .invite { background: var(--mint); color: #10140c; box-shadow: 0 12px 30px -12px rgba(198,236,52,.6); }
-  .phone { background: #0d110b; }
-  .you { border-color: #0d110b; }
-  .coin { text-shadow: 0 0 8px #000, 0 0 14px #000; }
-  .join { background: rgba(13,17,11,.95); }
-  .join li::before, .join-actions button { background: var(--mint); color: #10140c; }
-  .st.done .n { color: #10140c; }
-  .askbar button { color: var(--moon); }
-  .proof a { color: var(--mint); }
-  .row .a.memory::after { color: var(--mint); }
+  /* ===== Cream "ink" overrides (match the iPhone app): white cards, charcoal outlines, solid offset shadows, rounded type ===== */
+  :root { --fr: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, sans-serif; }
+  html, body, button, input, select { font-family: var(--fr); }
+  .glass { background: #fff; border: 2.5px solid var(--char); box-shadow: 6px 6px 0 var(--char); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .label, .now .head b, .earlier h3, .top h3, .how h3 { color: var(--char); font-weight: 900; }
+  .brand h1 { font: 900 40px/0.95 var(--fr); letter-spacing: -.02em; color: var(--char); }
+  .brand h1 i { color: var(--blue); }
+  #owl { filter: drop-shadow(2px 2px 0 var(--char)); }
+  .now h2, .placecard h3, .join h2 { font-family: var(--fr) !important; font-weight: 900 !important; letter-spacing: -.02em; color: var(--char); }
+  .now h2 { font-size: 28px; } .placecard h3 { font-size: 28px; } .join h2 { font-size: 64px; }
+  .idle h2 i, .join h2 i { font-style: normal; color: var(--blue); }
+  .answer, .stat b, .here b, .placecard .latest b { font-family: var(--fr) !important; font-weight: 900 !important; font-style: normal !important; }
+  .answer { font-size: 52px; }
+  .stat b { font-size: 34px; color: var(--char); }
+  .stat.people b { color: var(--mint); } .stat.sol b { color: var(--ask); }
+  .stat svg.i { color: var(--char); }
+  .invite { background: var(--blue); color: #fff; border: 2.5px solid var(--char); box-shadow: 4px 4px 0 var(--char); }
+  .invite:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--char); }
+  .locate { color: var(--char); }
+  .idle li { border: 2px dashed var(--char); border-color: rgba(33,33,38,.35); }
+  .idle li.hot { border-style: solid; border-color: var(--char); background: var(--butterSoft); }
+  .st .n { background: #fff; border-color: var(--char); color: var(--char); }
+  .st.on .n { border-color: var(--char); background: var(--butter); color: var(--char); box-shadow: none; }
+  .st.done .n { background: var(--mintC); border-color: var(--char); color: var(--char); }
+  .st::before { background: var(--char); opacity: .25; }
+  .track { background: #F3E9DC; border: 1.5px solid var(--char); height: 12px; }
+  .who span, .joiner { background: #fff; border: 1.5px solid var(--char); }
+  .row .a.memory::after { color: var(--blue); }
+  .proof a { color: var(--blue); }
+  .askbar select, .askbar input { background: #fff; border: 1.5px solid var(--char); color: var(--char); }
+  .askbar button { background: var(--periSoft); border: 1.5px solid var(--char); color: var(--char); }
+  .phone { background: #fff; border-color: var(--char); }
+  .you { border-color: #fff; box-shadow: 0 0 0 2px var(--char); }
+  .pin .tag2 { background: #fff; border: 2px solid var(--char); box-shadow: 3px 3px 0 var(--char); }
+  .coin { color: var(--char); text-shadow: 0 0 6px #fff, 0 0 12px #fff; font-family: var(--fr); font-style: normal; font-weight: 900; }
+  .join { background: rgba(255,246,236,.97); }
+  .qrcard { border: 2.5px solid var(--char); box-shadow: 8px 8px 0 var(--char); }
+  .join li::before, .join-actions button { background: var(--blue); color: #fff; border: 2px solid var(--char); }
+  .maplibregl-ctrl-attrib { background: rgba(255,255,255,.85) !important; }
+  .nomap { color: var(--haze); }
+  body { background-color: var(--night); background-image: radial-gradient(rgba(242,168,191,.55) 1.5px, transparent 1.7px); background-size: 22px 22px; }
 
   /* ===== How it works + Built with (top left, under the brand) ===== */
   .how { position: fixed; top: 112px; left: 22px; z-index: 9; width: 420px; padding: 16px 18px; animation: enterTop .8s cubic-bezier(.2,1,.3,1) .5s both; transition: opacity .3s, transform .3s; }
@@ -212,17 +240,17 @@
   .how h3 button { border: 0; background: none; color: var(--haze); cursor: pointer; font-size: 12.5px; font-weight: 700; }
   .how ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; counter-reset: h; }
   .how li { counter-increment: h; display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; font-size: 14px; line-height: 1.35; }
-  .how li::before { content: counter(h); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: #10140c; font-weight: 900; font-size: 12.5px; }
+  .how li::before { content: counter(h); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--butter); color: var(--char); border: 2px solid var(--char); font-weight: 900; font-size: 12.5px; }
   .how li b { font-weight: 800; }
   .how li small { color: var(--haze); font-size: 12.5px; }
   .built { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--edge); }
-  .built span { font-size: 12px; font-weight: 700; border-radius: 99px; padding: 4px 10px; background: rgba(198,236,52,.12); color: var(--mint); white-space: nowrap; }
-  .built span em { font-style: normal; color: var(--haze); font-weight: 600; }
+  .built span { font-size: 12px; font-weight: 800; border-radius: 99px; padding: 4px 10px; background: var(--periSoft); color: var(--char); border: 1.5px solid var(--char); white-space: nowrap; }
+  .built span em { font-style: normal; color: var(--haze); font-weight: 700; }
   .how.small ol, .how.small .tryq { display: none; }
   .how.small h3 { margin-bottom: 0; }
-  .by { display: inline-block; vertical-align: 1px; margin-left: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--mint); background: rgba(198,236,52,.12); border-radius: 99px; padding: 2px 7px; }
+  .by { display: inline-block; vertical-align: 1px; margin-left: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--char); background: var(--butter); border: 1.5px solid var(--char); border-radius: 99px; padding: 1px 7px; }
   .tryq { margin-top: 10px; font-size: 13px; color: var(--haze); }
-  .tryq b { color: var(--moon); }
+  .tryq b { color: var(--char); }
   body.focus .how { opacity: 0; transform: translateY(-8px); pointer-events: none; }
   @media (max-height: 860px) { .how ol { display: none; } }
   .nomap { position: fixed; inset: 0; display: grid; place-items: center; color: var(--haze); z-index: 1; }
@@ -249,10 +277,10 @@
 
 <header class="brand glass">
   <svg id="owl" viewBox="0 0 64 64" role="img" aria-label="Oracle">
-    <path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#d4f53c"/>
+    <path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#C8EE3C"/>
     <circle cx="23" cy="31" r="9" fill="#ffffff"/><circle cx="41" cy="31" r="9" fill="#ffffff"/>
     <circle id="pupL" cx="23" cy="31" r="4" fill="#10140c"/><circle id="pupR" cx="41" cy="31" r="4" fill="#10140c"/>
-    <rect class="lid" x="14" y="22" width="18" height="18" rx="9" fill="#d4f53c"/><rect class="lid" x="32" y="22" width="18" height="18" rx="9" fill="#d4f53c"/>
+    <rect class="lid" x="14" y="22" width="18" height="18" rx="9" fill="#C8EE3C"/><rect class="lid" x="32" y="22" width="18" height="18" rx="9" fill="#C8EE3C"/>
     <path d="M29 41h6l-3 6z" fill="#e39a0e"/>
   </svg>
   <div><h1>Oracle<i>.</i></h1><p>The bridge between your AI and the real world.</p></div>
@@ -317,7 +345,7 @@ const getJSON = (u) => fetch(u).then((r) => r.json()).catch(() => null);
 const words = (t) => esc(t).split(" ").map((w, i) => `<span class="w" style="animation-delay:${i * 45}ms">${w}</span>`).join(" ");
 const letters = (t) => [...String(t)].map((c, i) => `<span style="animation-delay:${i * 40}ms">${c === " " ? "&nbsp;" : esc(c)}</span>`).join("");
 const icon = (n) => `<svg class="i"><use href="#i-${n}"/></svg>`;
-const OPT = ["#c6ec34", "#f5b83d", "#ff6b5b"];
+const OPT = ["#2f9e5a", "#e0a400", "#DB454D"];
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 
@@ -359,21 +387,21 @@ const STYLE = {
   glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
   sources: { omt: { type: "vector", url: "https://tiles.openfreemap.org/planet" } },
   layers: [
-    { id: "bg", type: "background", paint: { "background-color": "#0d110b" } },
-    { id: "landcover", type: "fill", source: "omt", "source-layer": "landcover", paint: { "fill-color": "#121810", "fill-opacity": .9 } },
-    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#151b12" } },
-    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#1a2a14", "fill-opacity": .95 } },
-    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#11202c" } },
+    { id: "bg", type: "background", paint: { "background-color": "#FBF1E4" } },
+    { id: "landcover", type: "fill", source: "omt", "source-layer": "landcover", paint: { "fill-color": "#F4EADC", "fill-opacity": .9 } },
+    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#F6EADB" } },
+    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#D9F0DF", "fill-opacity": .95 } },
+    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#CFE0F7" } },
     { id: "paths", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["path", "track", "service"]]],
-      paint: { "line-color": "#2a3323", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .4, 18, 2], "line-dasharray": [2, 1.5] } },
+      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .4, 18, 2], "line-dasharray": [2, 1.5] } },
     { id: "minor", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "minor"],
-      paint: { "line-color": "#2a3323", "line-width": ["interpolate", ["linear"], ["zoom"], 13, .6, 18, 5] } },
+      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 13, .6, 18, 5] } },
     { id: "major", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["primary", "secondary", "tertiary", "trunk", "motorway"]]],
-      paint: { "line-color": "#38432f", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 10] } },
-    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#3a4434", "line-width": 1.6, "line-dasharray": [3, 2] } },
+      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 10] } },
+    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#cdbfae", "line-width": 1.6, "line-dasharray": [3, 2] } },
     { id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13,
       paint: {
-        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#1c2318", 15, "#222a1d", 40, "#2a3324", 80, "#343f2c"],
+        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#FFFDFA", 15, "#F7EEE3", 40, "#EEE2D4", 80, "#E2D4C3"],
         "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 13, 0, 14.5, ["coalesce", ["get", "render_height"], 8]],
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
         "fill-extrusion-opacity": .97, "fill-extrusion-vertical-gradient": true,
@@ -402,7 +430,7 @@ function circle([lng, lat], m) {
 }
 const halo = {};
 function haloData() {
-  return { type: "FeatureCollection", features: PLACES.filter((p) => pins[p.id]).map((p) => ({ type: "Feature", properties: { color: halo[p.id] || "#c6ec34" },
+  return { type: "FeatureCollection", features: PLACES.filter((p) => pins[p.id]).map((p) => ({ type: "Feature", properties: { color: halo[p.id] || "#2f9e5a" },
     geometry: { type: "Polygon", coordinates: [circle([p.lng, p.lat], Math.min(140, (p.radiusM || 120) * .55))] } })) };
 }
 function addHalos() {
@@ -485,32 +513,32 @@ function addPlaceLayers() {
   map.addLayer({ id: "walk-fill", type: "fill", source: "walk", paint: { "fill-color": "#4f8cff", "fill-opacity": .08 } }, "buildings");
   map.addLayer({ id: "walk-edge", type: "line", source: "walk", paint: { "line-color": "#4f8cff", "line-width": 2, "line-opacity": .7, "line-dasharray": [2, 2] } }, "buildings");
   map.addLayer({ id: "dot", type: "circle", source: "dots", paint: {
-    "circle-color": KIND_COLOR, "circle-stroke-color": "#0d110b", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2, 1],
+    "circle-color": KIND_COLOR, "circle-stroke-color": "#ffffff", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2, 1],
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["boolean", ["get", "near"], false], 4, 2], 17, ["case", ["boolean", ["get", "near"], false], 8, 5.5]],
     "circle-opacity": ["interpolate", ["linear"], ["zoom"], 13, .7, 16, 1] } });
   // Names fade in as you zoom; places near you are named from further out.
   map.addLayer({ id: "dot-name-near", type: "symbol", source: "dots", filter: ["==", ["get", "near"], true], minzoom: 13.5,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 13, "text-offset": [0, 1], "text-anchor": "top", "text-max-width": 9 },
-    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.8 } });
+    paint: { "text-color": "#212126", "text-halo-color": "#ffffff", "text-halo-width": 1.8 } });
   map.addLayer({ id: "dot-name", type: "symbol", source: "dots", filter: ["==", ["get", "near"], false], minzoom: 15.6,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.6, 10.5, 18, 13], "text-offset": [0, .9], "text-anchor": "top", "text-max-width": 8 },
-    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.6 } });
+    paint: { "text-color": "#5C5761", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
   // Every shop, café, restaurant and campus building from OpenStreetMap. Dots appear as you zoom in, then names fade in.
   const POI_COLOR = ["match", ["get", "class"], ["cafe"], "#8a5a2b", ["restaurant", "fast_food", "bar", "beer", "ice_cream", "bakery"], "#e07a3f",
     ["shop", "grocery", "clothing_store", "alcohol_shop", "pharmacy", "mobile_phone", "books"], "#2f6fe8", ["library", "college", "school", "university"], "#12925a",
     ["sports", "stadium", "fitness", "swimming", "pitch"], "#e2513c", ["cinema", "theatre", "music", "art_gallery", "museum", "attraction"], "#7556ec", ["parking"], "#7a8499", "#4b5875"];
   map.addLayer({ id: "poi-dot", type: "circle", source: "omt", "source-layer": "poi", minzoom: 14.5, filter: ["has", "name"],
-    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#0d110b", "circle-stroke-width": 1.2,
+    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1.2,
       "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1], "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1] } }, "dot");
   map.addLayer({ id: "poi-name", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 15.3, filter: ["has", "name"],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.3, 10.5, 18, 13],
       "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 8, "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.6, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
+    paint: { "text-color": "#5C5761", "text-halo-color": "#ffffff", "text-halo-width": 1.6, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
   // Inside your 5-minute-walk circle, names show from further out and in bold.
   map.addLayer({ id: "poi-name-near", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 13.8, filter: ["==", 1, 0],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 9,
       "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.8 } });
+    paint: { "text-color": "#212126", "text-halo-color": "#ffffff", "text-halo-width": 1.8 } });
   const pickPoi = async (e) => {
     const f = e.features?.[0]; if (!f?.properties?.name) return;
     const [lng, lat] = f.geometry.coordinates;
@@ -590,7 +618,7 @@ function openArc(qid, pid, color = "#e39a0e") {
   comet(g, color, false);
 }
 function recolorArc(qid, color) { document.getElementById(`arc-${qid}`)?.setAttribute("stroke", color); }
-function closeArc(qid, color = "#c6ec34", then) {
+function closeArc(qid, color = "#2f9e5a", then) {
   const g = document.getElementById(`arc-${qid}`);
   if (!g) return then?.();
   g.setAttribute("stroke", color);
@@ -600,7 +628,7 @@ function closeArc(qid, color = "#c6ec34", then) {
 function comet(path, color, back, done) {
   if (still) return done?.();
   const c = document.createElementNS("http://www.w3.org/2000/svg", "circle"), halo = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  c.setAttribute("r", 6); c.setAttribute("fill", color); c.setAttribute("stroke", "#0d110b"); c.setAttribute("stroke-width", "2.5"); halo.setAttribute("r", 16); halo.setAttribute("fill", color); halo.setAttribute("filter", "url(#soft)"); halo.setAttribute("opacity", .8);
+  c.setAttribute("r", 6); c.setAttribute("fill", color); c.setAttribute("stroke", "#ffffff"); c.setAttribute("stroke-width", "2.5"); halo.setAttribute("r", 16); halo.setAttribute("fill", color); halo.setAttribute("filter", "url(#soft)"); halo.setAttribute("opacity", .8);
   $("arcs").append(halo, c);
   const t0 = performance.now(), dur = 1300;
   const step = (t) => {
@@ -638,7 +666,7 @@ function coin(id, text) {
 function celebrate(id) {
   if (still || !window.confetti) return;
   const pt = placePoint(id);
-  confetti({ particleCount: 80, spread: 75, startVelocity: 30, scalar: .85, origin: pt ? { x: pt[0] / innerWidth, y: pt[1] / innerHeight } : { x: .35, y: .5 }, colors: ["#f5b83d", "#c6ec34", "#2f6fe8", "#e2513c"] });
+  confetti({ particleCount: 80, spread: 75, startVelocity: 30, scalar: .85, origin: pt ? { x: pt[0] / innerWidth, y: pt[1] / innerHeight } : { x: .35, y: .5 }, colors: ["#FDD96B", "#3052D6", "#F79EB8", "#94DBAB", "#2f6fe8", "#e2513c"] });
 }
 
 // The "Now" card shows status lines instead of a separate banner.
@@ -765,7 +793,7 @@ function onEvent(e) {
       overviewSoon();
     } else {
       settled.add(e.question_id); setLive(e.placeId, false); clearRingers(e.question_id); showAnswer(e);
-      closeArc(e.question_id, e.answer ? "#c6ec34" : "#ff6b5b", () => { if (e.answer) { setPlaceAnswer(e.placeId, e.answer, e.option); celebrate(e.placeId); showPlace(e.placeId); } overviewSoon(); });
+      closeArc(e.question_id, e.answer ? "#2f9e5a" : "#DB454D", () => { if (e.answer) { setPlaceAnswer(e.placeId, e.answer, e.option); celebrate(e.placeId); showPlace(e.placeId); } overviewSoon(); });
     }
     refresh();
   }
