@@ -112,6 +112,12 @@ export async function ask({ place, question, topic, askedBy = "agent", waitSecon
   const people = await mongo.pickResponders(p);
   L.pinged = people.length;
   L.pingedIds = new Set(people.map((u) => u._id));
+  // Too few people to reach a vote: one photo, read by Gemini, settles it instead.
+  if (q.sensor === "poll" && people.length > 0 && people.length < RULES.minVotes) {
+    q.sensor = "photo";
+    q.fewPeople = people.length;
+    await mongo.updateQuestion(q._id, { sensor: "photo", fewPeople: people.length });
+  }
   console.log(`Ask "${q.question}" @ ${p.name} (${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}): sent to ${people.length}` +
     (people.length ? ` -> ${people.map((u) => `${u.name} [${u.channel}]`).join(", ")}` : " (nobody nearby or active)"));
   emit("question", {
@@ -209,6 +215,7 @@ function checkConsensus(L) {
   if (L.q.sensor && L.q.sensor !== "poll") {
     const n = L.q.votes.length;
     if (everyoneAnswered && n > 0) return finalize(L);
+    if (L.q.fewPeople && L.q.votes.some((v) => v.photoId)) return finalize(L);
     if (n >= RULES.minVotes && !L.grace) {
       emit("consensus", { id: L.q._id, placeId: L.q.placeId, answer: `${n} readings in`, waiting: L.pinged - n, seconds: RULES.graceSeconds });
       L.grace = setTimeout(() => finalize(L), RULES.graceSeconds * 1000);
@@ -250,7 +257,12 @@ function finalize(L) {
   }
   if (L.q.sensor === "photo") {
     const { top, confidence } = best(L);
-    return settle(L, { source: "photo", option: top.option, votes: top.n, confidence });
+    const few = L.q.fewPeople ? `Only ${L.q.fewPeople} ${L.q.fewPeople === 1 ? "person" : "people"} nearby, so Oracle asked for a photo. ` : "";
+    // A tap alone isn't proof; only a photo Gemini has read makes it a solid answer.
+    if (!L.q.votes.some((v) => v.photoId && v.option === top.option)) {
+      return settle(L, { source: "people", option: top.option, votes: top.n, confidence, lowConfidence: true, note: `${few}No photo came in, so this is one tap, unverified.` });
+    }
+    return settle(L, { source: "photo", option: top.option, votes: top.n, confidence, note: few ? `${few}Gemini read the photo.` : undefined });
   }
   if (L.q.sensor && L.q.sensor !== "poll") {
     const values = L.q.votes.filter((v) => v.value != null).map((v) => v.value);
@@ -489,6 +501,7 @@ async function onDeadline(L) {
     }
     return settle(L, { source: "none", option: null, note: "No one nearby answered and the web had no live info." });
   }
+  if (L.q.sensor === "photo" && L.q.votes.some((v) => v.photoId)) return finalize(L);
 
   const t = tally(L.q.votes);
   const best = [...t].sort((a, b) => b.weight - a.weight)[0];
