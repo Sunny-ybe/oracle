@@ -702,7 +702,7 @@ let draft = {};
 function openRequest(id) {
   const r = REQS.find((x) => x.id === id);
   if (!r) { toast("That request was already answered by people nearby."); return go("contribute"); }
-  draft = { id, option: null, image: null, db: null, mbps: null, text: "" };
+  draft = { id, option: null, image: null, db: null, mbps: null, count: null, text: "" };
   const s = r.sensor || "poll";
   const needsPhoto = s === "photo" || s === "people_count";
   $("request").innerHTML = `
@@ -713,9 +713,10 @@ function openRequest(id) {
       <span class="live-badge">Live request</span>
       <div class="where">📍 ${esc(r.place)}</div>
       <p class="q">${esc(r.question)}</p>
-      ${s !== "poll" && s !== "report" ? `<div class="muted" style="font-size:13.5px;margin:-6px 0 8px">Tap an answer${needsPhoto ? ", and add a photo for 5 points" : s === "noise" ? ", or measure the noise for an exact reading" : s === "wifi" ? ", or run the speed test for an exact reading" : ""}:</div>` : ""}
+      ${s !== "poll" && s !== "report" ? `<div class="muted" style="font-size:13.5px;margin:-6px 0 8px">Tap an answer${needsPhoto ? (s === "people_count" ? ", type a number, or add a photo for 5 points" : ", and add a photo for 5 points") : s === "noise" ? ", or measure the noise for an exact reading" : s === "wifi" ? ", or run the speed test for an exact reading" : ""}:</div>` : ""}
       ${(r.options || []).map((o, i) => `<button class="opt" data-o="${i + 1}">${esc(o)}</button>`).join("")}
       ${s === "report" ? `<textarea id="rtext" placeholder="What did you find out?"></textarea>` : ""}
+      ${s === "people_count" ? `<input id="pcount" type="number" inputmode="numeric" min="0" max="9999" placeholder="Or type the number of people you see" style="width:100%;margin:6px 0 2px;padding:13px 14px;border:1.5px solid #d5ddd8;border-radius:14px;font:inherit;box-sizing:border-box">` : ""}
       <img class="shot" id="shot" alt="Your photo">
       <div class="sensors">
         ${s === "noise" ? `<button class="sensor wide need" id="noiseBtn">🎙️ Measure noise<small>10 seconds · only a number is sent</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
@@ -731,6 +732,7 @@ function openRequest(id) {
     draft.option = Number(b.dataset.o); ready(); tg?.HapticFeedback?.selectionChanged?.();
   });
   $("rtext")?.addEventListener("input", (e) => { draft.text = e.target.value; ready(); });
+  $("pcount")?.addEventListener("input", (e) => { const n = parseInt(e.target.value, 10); draft.count = Number.isFinite(n) && n >= 0 ? n : null; ready(); });
   $("cam")?.addEventListener("change", onPhoto);
   $("noiseBtn")?.addEventListener("click", measure);
   $("wifiBtn")?.addEventListener("click", speedTest);
@@ -741,7 +743,7 @@ function openRequest(id) {
 function ready() {
   const s = draft.sensor;
   // A tap is always enough; a photo, noise reading or written report makes it precise.
-  const ok = !!draft.option || (s === "noise" ? draft.db != null : s === "wifi" ? draft.mbps != null : s === "report" ? draft.text.trim().length > 0 : !!draft.image);
+  const ok = !!draft.option || draft.count != null || (s === "noise" ? draft.db != null : s === "wifi" ? draft.mbps != null : s === "report" ? draft.text.trim().length > 0 : !!draft.image);
   $("submitBtn").disabled = !ok;
 }
 async function onPhoto(e) {
@@ -803,7 +805,7 @@ async function speedTest() {
 }
 async function submit() {
   const b = $("submitBtn"); b.disabled = true; b.textContent = draft.image ? "Blurring and checking…" : "Sending…";
-  const body = { option: draft.option, db: draft.db, mbps: draft.mbps, text: draft.text, ...(draft.image && { image: draft.image, mime: "image/jpeg" }) };
+  const body = { option: draft.option, db: draft.db, mbps: draft.mbps, count: draft.count, text: draft.text, ...(draft.image && { image: draft.image, mime: "image/jpeg" }) };
   const r = await api(`/api/app/answer/${draft.id}`, body).catch((e) => ({ ok: false, message: e.message }));
   if (!r.ok) { b.disabled = false; b.textContent = "Submit"; return toast(`🦉 ${esc(r.message || r.error)}`); }
   tg?.HapticFeedback?.notificationOccurred?.("success");

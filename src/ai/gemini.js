@@ -43,9 +43,10 @@ async function generateWith(model, parts, timeoutMs) {
   }
 }
 
+const HEADCOUNT = /how many (people|students|persons|folks|guests|customers|attendees|hackers)|head ?count|number of (people|students)|people count/i;
 function presetFor(text) {
   const s = (text || "").toLowerCase();
-  if (/(how many people|headcount|head count|number of people|count)/.test(s)) return "people_count";
+  if (HEADCOUNT.test(s) || /count/.test(s)) return "people_count";
   if (/(sunny|sun|sky|dark|cloud|rain|haboob|dust|storm|weather|smoke|look like|show me|photo|picture|open|closed|parking|shelf)/.test(s)) return "look";
   if (/(staff|ask them|in stock|available|do they have|special|menu)/.test(s)) return "ask_staff";
   if (/(line|queue|wait)/.test(s)) return "line_length";
@@ -74,7 +75,7 @@ Rules:
 - sensor: how phones should answer.
   "noise": how loud/quiet it is (the phone's microphone measures it).
   "wifi": how fast or good the Wi-Fi / internet is (each phone downloads a 1 MB test file and measures the speed).
-  "people_count": how many people are there (each phone takes a photo; people are counted).
+  "people_count": how many people are there. ANY "how many people / students / customers" question is people_count, never a crowd poll (people tap a range, type a number, or take a photo that is counted).
   "photo": anything better answered by looking (sky, weather, dust storm/haboob, how full shelves are, is it open, what's on the menu board, what it looks like).
   "report": anything someone has to go and find out or ask a person (ask the staff, check if something is in stock, is a room booked, what's today's special).
   "poll": simple things a person standing there can answer with one tap (line length, is there pizza, are there free seats).
@@ -93,6 +94,14 @@ Rules:
     if (!plan?.topic || !Array.isArray(plan.options) || plan.options.length !== 3) return fallback();
     plan.topic = plan.topic.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 40);
     plan.sensor = ["noise", "wifi", "people_count", "photo", "report"].includes(plan.sensor) ? plan.sensor : "poll";
+    // "How many people ...?" must be answerable with a number: numeric ranges, never "Some space".
+    if (HEADCOUNT.test(text)) { plan.sensor = "people_count"; plan.topic = "people_count"; }
+    if (plan.sensor === "people_count") {
+      const numeric = plan.options.filter((o) => /\d/.test(String(o))).length === 3;
+      const th = Array.isArray(plan.thresholds) && plan.thresholds.length === 2 && plan.thresholds.every((n) => Number.isFinite(Number(n))) && Number(plan.thresholds[0]) < Number(plan.thresholds[1]);
+      if (!numeric || !th) { plan.options = PRESETS.people_count.options; plan.thresholds = PRESETS.people_count.thresholds; }
+      else plan.thresholds = plan.thresholds.map(Number);
+    }
     if (plan.sensor !== "poll" && !(Array.isArray(plan.thresholds) && plan.thresholds.length === 2)) {
       plan.thresholds = PRESETS[plan.sensor === "noise" ? "noise" : plan.sensor === "wifi" ? "wifi" : "people_count"].thresholds;
     }
