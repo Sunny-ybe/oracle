@@ -59,19 +59,33 @@ export const checkIn = (id, placeId) =>
   col("users").updateOne({ _id: id }, { $set: { placeId, checkedInAt: new Date() } });
 
 // Live location: store it and work out the nearest place with a geo query.
-export async function setLocation(id, lat, lng) {
+// `accuracy` (metres, from the phone) gives a little slack so a fuzzy fix inside a building still counts.
+export async function setLocation(id, lat, lng, accuracy = 0) {
   const point = { type: "Point", coordinates: [lng, lat] };
-  const near = await col("places").findOne({
-    location: { $nearSphere: { $geometry: point, $maxDistance: 600 } },
-  });
-  let placeId = null;
-  if (near) {
-    const [plng, plat] = near.location.coordinates;
-    if (distanceM(lat, lng, plat, plng) <= (near.radiusM || 250)) placeId = near._id;
+  const slack = Math.min(Number(accuracy) || 0, 75);
+  // Look at every place close by, not just the nearest centre: you can be inside a big
+  // building whose centre is farther away than a small café next door.
+  const candidates = await col("places")
+    .find({ location: { $nearSphere: { $geometry: point, $maxDistance: 600 } } })
+    .limit(25).toArray();
+  let placeId = null, best = Infinity;
+  for (const p of candidates) {
+    const [plng, plat] = p.location.coordinates;
+    const d = distanceM(lat, lng, plat, plng);
+    const over = d - (p.radiusM || 250) - slack;   // <= 0 means you're inside it
+    if (over <= 0 && d < best) { best = d; placeId = p._id; }
   }
   const before = await getUser(id);
-  await col("users").updateOne({ _id: id }, { $set: { location: point, locationAt: new Date(), placeId: placeId ?? before?.placeId ?? null } });
+  // Your live location wins: if it puts you away from every place, you're no longer "at" the old one.
+  const set = { location: point, locationAt: new Date(), placeId };
+  if (placeId !== before?.placeId) set.checkedInAt = null;
+  await col("users").updateOne({ _id: id }, { $set: set });
   return { placeId, changed: Boolean(placeId) && placeId !== before?.placeId, first: !before?.locationAt };
+}
+
+// Is any known place within `m` metres of this point?
+export async function hasPlaceWithin(lat, lng, m) {
+  return Boolean(await col("places").findOne({ location: { $nearSphere: { $geometry: { type: "Point", coordinates: [lng, lat] }, $maxDistance: m } } }));
 }
 
 function distanceM(lat1, lng1, lat2, lng2) {
@@ -158,6 +172,26 @@ export async function addPush(id, sub) {
   await col("users").updateOne({ _id: id }, { $push: { push: sub } });
 }
 export const removePush = (id, endpoint) => col("users").updateOne({ _id: id }, { $pull: { push: { endpoint } } });
+
+// Delete an account: the person's record goes; names on past answers become "Deleted user".
+export async function deleteUser(id) {
+  await col("questions").updateMany({ "votes.userId": id }, { $set: { "votes.$[v].name": "Deleted user" } }, { arrayFilters: [{ "v.userId": id }] });
+  await col("users").deleteOne({ _id: id });
+}
+
+// Crowd Guess (the in-app game): recent settled questions with a definite answer.
+export const gameRounds = (limit = 15) =>
+  col("questions")
+    .find({ status: "resolved", "result.option": { $in: [1, 2, 3] }, "options.2": { $exists: true } },
+      { projection: { place: 1, placeId: 1, question: 1, options: 1, result: 1, resolvedAt: 1 } })
+    .sort({ resolvedAt: -1 }).limit(limit).toArray();
+
+// iPhone app device tokens for Apple Push. `sandbox` is true for builds run from Xcode.
+export async function addApns(id, token, sandbox) {
+  await col("users").updateMany({ "apns.token": token }, { $pull: { apns: { token } } }); // one account per device
+  await col("users").updateOne({ _id: id }, { $push: { apns: { token, sandbox: Boolean(sandbox), at: new Date() } } });
+}
+export const removeApns = (id, token) => col("users").updateOne({ _id: id }, { $pull: { apns: { token } } });
 
 // ---------- rewards ----------
 

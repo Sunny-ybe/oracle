@@ -63,3 +63,23 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Decision:* Any matching vote that carries a Gemini-read photo earns `REWARD_PHOTO_SOL` (0.01). A tap earns `REWARD_VOTE_SOL` (0.001). The dispute photo is paid once, in `submitPhoto`. The "a tap alone isn't proof" rule from D-007 applies only to few-people questions. Normal photo questions still settle on 3 matching taps.
 - *Why:* Photos had been paid like taps, and the D-007 rule had accidentally marked every tap-only photo question unverified.
 - *Where:* `finalize` and `settle` in `src/core.js`.
+
+**D-014: Native iPhone app in the same repository** · 2026-11-15 · Active
+- *Decision:* Keep the SwiftUI app under `ios/Oracle`, with the backend at the root. Prepare the integration on `native-ios`; merge into main after team review. TestFlight distribution uses Xcode/App Store Connect, with signing credentials and environment files excluded from Git.
+- *Why:* The client and backend share one product and API contract. The user explicitly requested the same-repo native branch push.
+- *Where:* `ios/Oracle`, `NATIVE.md`.
+
+**D-015: Worldwide places and evidence-gated Crowd Guess** · 2026-11-15 · Active
+- *Decision:* Native discovery uses live location or manual city/venue search; ASU is an example, not the audience boundary. Crowd Guess requires eight distinct photo-backed resolved crowd/headcount reports within 3 km of the selected area, with matching answer evidence and timestamps. No unrelated practice rounds are substituted.
+- *Why:* Answers and game photos must correspond to the chosen place and have inspectable evidence.
+- *Where:* `src/web/native.js`, `src/web/game.js`, `scripts/test-game.js`, `ios/Oracle/Oracle/CrowdGuess.swift`.
+
+**D-016: Assistant setup reuses the MCP tools with explicit provider approval** · 2026-11-15 · Active
+- *Decision:* Expose the original five MCP tools through Streamable HTTP at `/mcp`, retaining stdio compatibility. Native setup uses two swipeable provider pages, a prefilled Claude connector link, and ChatGPT Plugins setup. Public HTTPS is required. No silent plugin installation or unverified Connected status; API-key-only ChatGPT setup needs compatible OAuth.
+- *Why:* Reuse the existing agent capability while respecting each assistant's setup and authentication flow.
+- *Where:* `mcp/`, `/api/app/config`, `ios/Oracle/Oracle/Settings.swift`.
+
+**D-017: Consistent mascot, two-second loading view, optional interface sounds** · 2026-11-15 · Active
+- *Decision:* Use the face-only app icon in the wordmark/loading view, show the loading animation for two seconds, and provide short locally generated interface tones with a persistent Settings switch. Respect Reduce Motion and Silent Mode; suppress tones while recording.
+- *Why:* The user requested consistent branding, more time to see the loader, and subtle sound effects.
+- *Where:* `ios/Oracle/Oracle/ContentView.swift`, `Theme.swift`, `Voice.swift`, `Settings.swift`.

@@ -3,3 +3,18 @@ node_modules
 .DS_Store
 .vapid.json
 public/speedtest.bin
+
+# Native app build products, local Xcode state, and credentials
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+*.xcresult/
+*.ipa
+*.dSYM/
+*.dSYM.zip
+*.p8
+*.p12
+*.mobileprovision
+.env.*
+!.env.example
