@@ -21,6 +21,7 @@ Start at [`AGENTS.md`](AGENTS.md) for the map and rules. Decisions live in [`doc
 - Leftovers from the previous session: questions `c0a480bc` and `3cc23545`, plus the place `merrill-cazier-library-fcdb`, are still in Mongo.
 
 ## Priorities (in order)
+0. **Vultr cutover (D-021).** The server at `YOUR_SERVER_IP` runs the current code with bots off. Left to do: the user adds a GoDaddy A record `oracle` → the IP; add `oracle.tryalethea.com` to `/etc/caddy/Caddyfile` and set `PUBLIC_URL`; move the bot tokens from the Mac to the server; set `MIN_VOTES=3` there for the live demo (it was copied as 1); update the claude.ai connector address.
 1. **Add the connector in claude.ai** (user): Settings → Connectors → Add custom connector → `https://swarm-exemplify-verbalize.ngrok-free.dev/mcp`. The endpoint is verified from the public link.
 2. **Bots on this Mac.** Harshitha is asleep. Before uncommenting `TELEGRAM_TOKEN` and `DISCORD_TOKEN`, make sure her laptop isn't running them (D-004).
 3. **Photo path on a real phone** (camera, upload, GPS). The API path is verified. The dispute photo at `/verify/:token` is still untested.
