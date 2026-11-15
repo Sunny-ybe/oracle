@@ -194,6 +194,19 @@
   .panel input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px var(--mint); }
   .linkish { display: block; margin: 14px auto 0; border: 0; background: none; color: var(--green); font-weight: 700; font-size: 14.5px; cursor: pointer; padding: 6px; }
   .err { color: var(--red); font-size: 13.5px; min-height: 18px; margin: -6px 0 8px; }
+  .sheet { max-height: 82dvh; overflow: auto; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: #e6eee8; border-radius: 14px; padding: 4px; margin-bottom: 16px; }
+  .seg button { border: 0; background: transparent; border-radius: 11px; padding: 11px; font-weight: 800; font-size: 15px; color: var(--muted); cursor: pointer; transition: background .2s, color .2s; }
+  .seg button.on { background: #fff; color: var(--green); box-shadow: 0 2px 8px -3px rgba(19,36,27,.3); }
+  .gate.sleep .seg, .gate.sleep .sso { display: none; }
+  .gt { display: block; } .gate.sleep .gt { display: none; }
+  h2.gt { font: 800 30px/1.02 "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.025em; margin: 0 0 8px; color: #0b2618; }
+  p.lead.gt { color: var(--muted); line-height: 1.45; margin: 0 0 16px; font-size: 15.5px; }
+  .gwrap[hidden] { display: none; }
+  .sso { margin-bottom: 4px; } .gwrap { display: flex; justify-content: center; min-height: 44px; margin-bottom: 8px; }
+  .msbtn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid #dadce0; background: #fff; border-radius: 999px; padding: 11px; font-weight: 600; font-size: 15px; cursor: pointer; }
+  .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 14px 0 10px; } .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .pw { position: relative; } .pw input { padding-right: 70px; }
   .pw .eye { position: absolute; right: 8px; top: 13px; border: 0; background: var(--mint); color: var(--green); font-weight: 700; font-size: 13px; border-radius: 10px; padding: 7px 10px; cursor: pointer; }
   .perks { display: flex; gap: 8px; margin: 0 0 18px; flex-wrap: wrap; }
@@ -333,30 +346,40 @@
         </g>
       </svg>
     </div>
-    <div class="sheet">
+    <div class="sheet" id="sheet">
+      <div class="seg" role="tablist" id="seg">
+        <button type="button" role="tab" data-go="new">Create account</button>
+        <button type="button" role="tab" data-go="code">Log in</button>
+      </div>
+      <h2 class="gt" id="gTitle">Be the eyes AI doesn't have.</h2>
+      <p class="lead gt" id="gLead">When an AI agent asks about a place near you, you get one quick question. Answer it, earn points.</p>
+      <div class="sso" id="sso" hidden>
+        <div id="gBtn" class="gwrap"></div>
+        <button type="button" class="msbtn" id="msBtn" hidden><svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true"><path fill="#f25022" d="M1 1h9v9H1z"/><path fill="#7fba00" d="M11 1h9v9h-9z"/><path fill="#00a4ef" d="M1 11h9v9H1z"/><path fill="#ffb900" d="M11 11h9v9h-9z"/></svg>Continue with Microsoft</button>
+        <div class="or"><span>or with a username</span></div>
+      </div>
       <form class="panel" data-panel="new" id="signup">
-        <h2>Be the eyes AI doesn't have.</h2>
-        <p class="lead">When an AI agent asks about a place near you, you get one quick question. Answer it, earn points.</p>
-        <div class="perks"><span>🎁 Gift cards</span><span>◎ Solana</span><span>🔒 Faces blurred</span></div>
+        <div class="two">
+          <div><label for="suFirst">First name</label><input id="suFirst" autocomplete="given-name" required maxlength="40"></div>
+          <div><label for="suLast">Last name</label><input id="suLast" autocomplete="family-name" required maxlength="40"></div>
+        </div>
         <label for="suUser">Username</label>
-        <input id="suUser" autocomplete="username" autocapitalize="off" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_.]{3,20}">
+        <input id="suUser" autocomplete="username" autocapitalize="off" spellcheck="false" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_.]{3,20}" placeholder="letters, numbers, dots or underscores">
         <label for="suPass">Password</label>
-        <div class="pw"><input id="suPass" type="password" autocomplete="new-password" required minlength="6"><button type="button" class="eye" aria-label="Show password" data-for="suPass">Show</button></div>
+        <div class="pw"><input id="suPass" type="password" autocomplete="new-password" required minlength="6" placeholder="At least 6 characters"><button type="button" class="eye" aria-label="Show password" data-for="suPass">Show</button></div>
+        <label for="suPass2">Confirm password</label>
+        <div class="pw"><input id="suPass2" type="password" autocomplete="new-password" required minlength="6"><button type="button" class="eye" aria-label="Show password" data-for="suPass2">Show</button></div>
         <div class="err" id="suErr" role="alert"></div>
         <button class="primary" type="submit" id="suBtn">Create account</button>
         <p class="muted" id="suPlace" style="text-align:center;font-size:13px;margin:10px 0 0"></p>
-        <button class="linkish" type="button" onclick="showGate('code')">I already have an account</button>
       </form>
       <form class="panel" data-panel="code" id="signin">
-        <h2>Welcome back.</h2>
-        <p class="lead">Sign in to get requests for places near you.</p>
         <label for="siUser">Username</label>
         <input id="siUser" autocomplete="username" autocapitalize="off" spellcheck="false" required>
         <label for="siPass">Password</label>
         <div class="pw"><input id="siPass" type="password" autocomplete="current-password" required><button type="button" class="eye" aria-label="Show password" data-for="siPass">Show</button></div>
         <div class="err" id="siErr" role="alert"></div>
-        <button class="primary" type="submit" id="siBtn">Sign in</button>
-        <button class="linkish" type="button" onclick="showGate('new')">Create an account</button>
+        <button class="primary" type="submit" id="siBtn">Log in</button>
       </form>
       <div class="panel" data-panel="out">
         <h2>You're signed out.</h2>
@@ -666,7 +689,8 @@ function openRequest(id) {
       <span class="live-badge">Live request</span>
       <div class="where">📍 ${esc(r.place)}</div>
       <p class="q">${esc(r.question)}</p>
-      ${s === "poll" ? r.options.map((o, i) => `<button class="opt" data-o="${i + 1}">${esc(o)}</button>`).join("") : ""}
+      ${s !== "poll" && s !== "report" ? `<div class="muted" style="font-size:13.5px;margin:-6px 0 8px">Tap an answer${needsPhoto ? ", and add a photo for 5 points" : s === "noise" ? ", or measure the noise for an exact reading" : ""}:</div>` : ""}
+      ${(r.options || []).map((o, i) => `<button class="opt" data-o="${i + 1}">${esc(o)}</button>`).join("")}
       ${s === "report" ? `<textarea id="rtext" placeholder="What did you find out?"></textarea>` : ""}
       <img class="shot" id="shot" alt="Your photo">
       <div class="sensors">
@@ -690,7 +714,8 @@ function openRequest(id) {
 }
 function ready() {
   const s = draft.sensor;
-  const ok = s === "poll" ? !!draft.option : s === "noise" ? draft.db != null : s === "report" ? draft.text.trim().length > 0 : !!draft.image;
+  // A tap is always enough; a photo, noise reading or written report makes it precise.
+  const ok = !!draft.option || (s === "noise" ? draft.db != null : s === "report" ? draft.text.trim().length > 0 : !!draft.image);
   $("submitBtn").disabled = !ok;
 }
 async function onPhoto(e) {
@@ -772,12 +797,14 @@ function renderProfile() {
       <div style="margin-top:12px"><div class="kv"><span>Trust</span><b>${ME.trust}</b></div><div class="kv"><span>Answers</span><b>${ME.answered}</b></div>
       <div class="kv"><span>Matched the crowd</span><b>${acc}%</b></div><div class="kv"><span>SOL earned</span><b>${(ME.earnedSol || 0).toFixed(3)}</b></div></div>
       <button class="small ghost" style="margin-top:12px;width:100%" onclick="locateMe()">📍 Update my location</button></div>
-    ${ME.hasPassword
-      ? `<div class="card"><b>Account</b><div class="kv"><span>Username</span><b>@${esc(ME.username)}</b></div>
-          <p class="muted" style="font-size:13.5px;line-height:1.45;margin:6px 0 0">Sign in on any device with your username and password.</p>
+    ${ME.hasPassword || ME.oauth
+      ? `<div class="card"><b>Account</b><div class="kv"><span>Name</span><b>${esc(ME.name)}</b></div>${ME.username ? `<div class="kv"><span>Username</span><b>@${esc(ME.username)}</b></div>` : ""}
+          <p class="muted" style="font-size:13.5px;line-height:1.45;margin:6px 0 0">${ME.oauth ? `You sign in with ${ME.oauth.startsWith("google") ? "Google" : "Microsoft"}.` : "Log in on any device with your username and password."}</p>
           <button class="small" style="margin-top:12px;width:100%;background:#fbe4e4;color:var(--red)" onclick="signOut()">Sign out</button></div>`
       : `<div class="card"><b>Secure your account</b>
           <p class="muted" style="font-size:13.5px;line-height:1.45;margin:6px 0 4px">Add a username and password so you can sign in on any device and never lose your points.</p>
+          <div class="two"><input id="acFirst" placeholder="First name" style="border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:6px 0 0;min-width:0">
+          <input id="acLast" placeholder="Last name" style="border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:6px 0 0;min-width:0"></div>
           <input id="acUser" placeholder="Username" autocapitalize="off" spellcheck="false" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:6px 0">
           <input id="acPass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:0 0 8px">
           <button class="small" style="width:100%" onclick="saveAccount()">Save</button>
@@ -803,6 +830,9 @@ const lastUser = () => { try { return JSON.parse(localStorage.getItem("oracleLas
 
 function showGate(panel) {
   panel = panel || (lastUser() ? "out" : "new");
+  document.querySelectorAll("#seg button").forEach((b) => b.classList.toggle("on", b.dataset.go === panel));
+  $("gTitle").textContent = panel === "code" ? "Welcome back." : "Be the eyes AI doesn't have.";
+  $("gLead").textContent = panel === "code" ? "Log in to get requests for places near you." : "When an AI agent asks about a place near you, you get one quick question. Answer it, earn points.";
   const g = $("gate");
   g.classList.add("on");
   g.classList.toggle("sleep", panel === "out");
@@ -840,6 +870,38 @@ document.querySelectorAll(".eye").forEach((b) => b.onclick = () => {
   const i = $(b.dataset.for), show = i.type === "password"; i.type = show ? "text" : "password";
   b.textContent = show ? "Hide" : "Show"; b.setAttribute("aria-label", show ? "Hide password" : "Show password");
 });
+document.querySelectorAll("#seg button").forEach((b) => (b.onclick = () => showGate(b.dataset.go)));
+// "Continue with Google / Microsoft" appear once their client IDs are set in .env.
+const loadScript = (src) => new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+async function finishSso(r) {
+  if (!r?.token) { toast(`🦉 ${esc(r?.error || "Sign-in didn't work. Try again.")}`); return; }
+  localStorage.setItem("oracleToken", r.token); localStorage.removeItem("oracleLast");
+  wake(() => location.replace("/app?welcome=1"));
+}
+fetch("/api/app/auth-config").then((r) => r.json()).then(async (c) => {
+  if (!c.google && !c.microsoft) return;
+  $("sso").hidden = false;
+  if (c.google) {
+    try {
+      await loadScript("https://accounts.google.com/gsi/client");
+      google.accounts.id.initialize({ client_id: c.google, callback: async (res) => finishSso(await post("/api/app/oauth/google", { credential: res.credential, place: joinPlace })) });
+      google.accounts.id.renderButton($("gBtn"), { theme: "outline", size: "large", shape: "pill", text: "continue_with", width: Math.min(340, $("sheet")?.clientWidth - 44 || 320) });
+    } catch { $("gBtn").hidden = true; }
+  } else $("gBtn").hidden = true;
+  if (c.microsoft) {
+    $("msBtn").hidden = false;
+    $("msBtn").onclick = async () => {
+      try {
+        if (!window.msal) await loadScript("https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js");
+        const app = new msal.PublicClientApplication({ auth: { clientId: c.microsoft, authority: "https://login.microsoftonline.com/common", redirectUri: location.origin + "/app" }, cache: { cacheLocation: "sessionStorage" } });
+        if (app.initialize) await app.initialize();
+        const res = await app.loginPopup({ scopes: ["User.Read"], prompt: "select_account" });
+        finishSso(await post("/api/app/oauth/microsoft", { accessToken: res.accessToken, place: joinPlace }));
+      } catch (e) { if (!/user_cancelled|popup_window_error/i.test(String(e?.errorCode || e))) toast("🦉 Microsoft sign-in didn't work. Try again."); }
+    };
+  }
+}).catch(() => {});
+
 async function post(path, body) {
   const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json().catch(() => ({ error: "Something went wrong. Try again." }));
@@ -847,21 +909,23 @@ async function post(path, body) {
 $("signup").addEventListener("submit", async (e) => {
   e.preventDefault(); $("suErr").textContent = "";
   $("suBtn").disabled = true; $("suBtn").textContent = "Creating your account…";
-  const r = await post("/api/app/register", { username: $("suUser").value, password: $("suPass").value, place: joinPlace });
+  if ($("suPass").value !== $("suPass2").value) { $("suBtn").disabled = false; $("suBtn").textContent = "Create account"; $("suErr").textContent = "The two passwords don't match."; return; }
+  const r = await post("/api/app/register", { firstName: $("suFirst").value, lastName: $("suLast").value, username: $("suUser").value,
+    password: $("suPass").value, confirm: $("suPass2").value, place: joinPlace });
   if (!r.token) { $("suBtn").disabled = false; $("suBtn").textContent = "Create account"; $("suErr").textContent = r.error || "Couldn't create the account. Try again."; return; }
   localStorage.setItem("oracleToken", r.token); localStorage.removeItem("oracleLast");
   wake(() => location.replace("/app?welcome=1"));
 });
 $("signin").addEventListener("submit", async (e) => {
   e.preventDefault(); $("siErr").textContent = "";
-  $("siBtn").disabled = true; $("siBtn").textContent = "Signing in…";
+  $("siBtn").disabled = true; $("siBtn").textContent = "Logging in…";
   const r = await post("/api/app/login", { username: $("siUser").value, password: $("siPass").value });
-  if (!r.token) { $("siBtn").disabled = false; $("siBtn").textContent = "Sign in"; $("siErr").textContent = r.error || "Couldn't sign in."; return; }
+  if (!r.token) { $("siBtn").disabled = false; $("siBtn").textContent = "Log in"; $("siErr").textContent = r.error || "Couldn't sign in."; return; }
   localStorage.setItem("oracleToken", r.token); localStorage.removeItem("oracleLast");
   wake(() => location.replace("/app"));
 });
 async function saveAccount() {
-  const r = await api("/api/app/account", { username: $("acUser").value, password: $("acPass").value }).catch((e) => ({ error: e.message }));
+  const r = await api("/api/app/account", { firstName: $("acFirst").value, lastName: $("acLast").value, username: $("acUser").value, password: $("acPass").value }).catch((e) => ({ error: e.message }));
   toast(r.ok ? `🔐 Saved. Sign in anywhere as <b>${esc(r.username)}</b>.` : `🦉 ${esc(r.error)}`);
   if (r.ok) refreshMe().then(renderProfile);
 }

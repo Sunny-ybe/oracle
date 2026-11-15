@@ -2,6 +2,7 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import * as mongo from "../db/mongo.js";
 import { linkToken } from "./auth.js";
+import { env } from "../config.js";
 
 const USERNAME = /^[a-z0-9_.]{3,20}$/;
 const hash = (password, salt = randomBytes(16).toString("hex")) => `${salt}:${scryptSync(password, salt, 32).toString("hex")}`;
@@ -25,14 +26,45 @@ function limit(key) {
   t.push(now); tries.set(key, t);
 }
 
-export async function register({ username, password }) {
+const nameOk = (x) => String(x || "").trim().slice(0, 40);
+const fullName = (first, last) => [first, last].filter(Boolean).join(" ");
+
+export async function register({ firstName, lastName, username, password, confirm }) {
+  const first = nameOk(firstName), last = nameOk(lastName);
+  if (!first || !last) throw new Error("Add your first and last name.");
   username = clean(username); check(username, password);
+  if (confirm !== undefined && confirm !== password) throw new Error("The two passwords don't match.");
   if (await mongo.col("users").findOne({ username })) throw new Error("That username is taken. Try another.");
-  const u = await mongo.getOrCreateUser({ channel: "app", channelUserId: username, name: username });
+  const u = await mongo.getOrCreateUser({ channel: "app", channelUserId: username, name: fullName(first, last) });
   try {
-    await mongo.col("users").updateOne({ _id: u._id }, { $set: { username, passHash: hash(password) } });
+    await mongo.col("users").updateOne({ _id: u._id }, { $set: { username, passHash: hash(password), firstName: first, lastName: last, name: fullName(first, last) } });
   } catch { throw new Error("That username is taken. Try another."); }
-  return { user: u, token: linkToken(u._id) };
+  return { user: { ...u, name: fullName(first, last) }, token: linkToken(u._id) };
+}
+
+// Google and Microsoft: the provider vouches for who you are, so no password is needed.
+async function oauthUser(provider, id, { first, last, email }) {
+  const key = `${provider}:${id}`;
+  let u = await mongo.col("users").findOne({ oauth: key });
+  if (!u) {
+    u = await mongo.getOrCreateUser({ channel: "app", channelUserId: `${provider}-${id}`, name: fullName(first, last) || email || "Oracle user" });
+    await mongo.col("users").updateOne({ _id: u._id }, { $set: { oauth: key, firstName: first || null, lastName: last || null, email: email || null } });
+  }
+  return { user: u, token: linkToken(u._id), name: u.name };
+}
+export async function googleSignIn({ credential }) {
+  if (!env.googleClientId) throw new Error("Google sign-in isn't set up.");
+  const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential || "")}`, { signal: AbortSignal.timeout(8000) });
+  const t = await r.json().catch(() => ({}));
+  if (!r.ok || t.aud !== env.googleClientId || !/accounts\.google\.com$/.test(t.iss || "") || String(t.email_verified) !== "true") throw new Error("Google sign-in didn't work. Try again.");
+  return oauthUser("google", t.sub, { first: t.given_name, last: t.family_name, email: t.email });
+}
+export async function microsoftSignIn({ accessToken }) {
+  if (!env.microsoftClientId) throw new Error("Microsoft sign-in isn't set up.");
+  const r = await fetch("https://graph.microsoft.com/v1.0/me", { headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(8000) });
+  const m = await r.json().catch(() => ({}));
+  if (!r.ok || !m.id) throw new Error("Microsoft sign-in didn't work. Try again.");
+  return oauthUser("microsoft", m.id, { first: m.givenName, last: m.surname, email: m.mail || m.userPrincipalName });
 }
 
 export async function login({ username, password }, ip) {
@@ -45,10 +77,13 @@ export async function login({ username, password }, ip) {
 }
 
 // People who joined before passwords existed can secure their account from Profile.
-export async function setCredentials(user, { username, password }) {
+export async function setCredentials(user, { username, password, firstName, lastName }) {
   username = clean(username); check(username, password);
+  const first = nameOk(firstName), last = nameOk(lastName);
   const other = await mongo.col("users").findOne({ username });
   if (other && other._id !== user._id) throw new Error("That username is taken. Try another.");
-  await mongo.col("users").updateOne({ _id: user._id }, { $set: { username, passHash: hash(password) } });
+  const set = { username, passHash: hash(password) };
+  if (first && last) Object.assign(set, { firstName: first, lastName: last, name: fullName(first, last) });
+  await mongo.col("users").updateOne({ _id: user._id }, { $set: set });
   return { ok: true, username };
 }

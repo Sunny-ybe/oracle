@@ -2,7 +2,7 @@
 // answer one-tap polls, and spend points on gift cards or SOL. Plain Bot API, no library.
 import { env, PLACES, findPlace, RULES, REWARDS } from "../config.js";
 import * as mongo from "../db/mongo.js";
-import { ask, recordVote, registerChannel, announceJoin, cashOut, redeemReward, answerRequest, findRequestFor } from "../core.js";
+import { ask, recordVote, registerChannel, announceJoin, cashOut, redeemReward, answerRequest, findRequestFor, resolvePlace } from "../core.js";
 import { explorerAddress, isValidAddress, solanaEnabled } from "../pay/solana.js";
 import { loudnessDb } from "../ai/audio.js";
 
@@ -31,7 +31,16 @@ const replyFor = (m) => (m.reply_to_message ? replyTo.get(`${m.chat.id}:${m.repl
 // Deep link that opens the bot and checks the person in at a place in one tap.
 export const telegramJoinLink = (placeId) => (botUsername ? `https://t.me/${botUsername}?start=${placeId || "join"}` : null);
 
-const placeKeyboard = () => ({ inline_keyboard: PLACES.filter((p) => !p.dynamic).slice(0, 8).map((p) => [{ text: p.name, callback_data: `place:${p.id}` }]) });
+// Places to pick from: nearest to you first once you've shared a location, otherwise the main campus spots.
+const distM = (a, b) => Math.hypot((a.lat - b.lat) * 110540, (a.lng - b.lng) * 111320 * Math.cos((a.lat * Math.PI) / 180));
+const fmtDist = (m) => (m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1609.34).toFixed(1)} mi`);
+function nearest(user, list = PLACES, n = 8) {
+  const c = user?.location?.coordinates;
+  if (!c) return list.filter((p) => !p.dynamic).slice(0, n).map((p) => ({ p, d: null }));
+  const me = { lat: c[1], lng: c[0] };
+  return list.map((p) => ({ p, d: distM(me, p) })).sort((a, b) => a.d - b.d).slice(0, n);
+}
+const placeKeyboard = (user, list) => ({ inline_keyboard: nearest(user, list).map(({ p, d }) => [{ text: d == null ? p.name : `${p.name} · ${fmtDist(d)}`, callback_data: `place:${p.id}`.slice(0, 64) }]) });
 const locationKeyboard = {
   keyboard: [[{ text: "📍 Share my location", request_location: true }]],
   resize_keyboard: true, one_time_keyboard: true,
@@ -103,16 +112,30 @@ export async function startTelegram() {
   }
 }
 
+// Typed a place name: show the matching places (nearest first), or look it up on the map.
+async function searchPlaces(m, user, text) {
+  const q = text.trim().toLowerCase();
+  if (q.length < 2) return say(m.chat.id, HELP);
+  let hits = PLACES.filter((p) => p.name.toLowerCase().includes(q) || p.aliases?.some((a) => a.includes(q)));
+  if (!hits.length) {
+    const p = await resolvePlace(text).catch(() => null);
+    if (p) hits = [p];
+  }
+  if (!hits.length) return say(m.chat.id, `🦉 I couldn't find "${esc(text)}". Try the full name, or add the street.`);
+  return say(m.chat.id, `🔎 <b>${hits.length === 1 ? "Found it." : `${Math.min(hits.length, 8)} places match.`}</b> Tap the one you're in:`, { reply_markup: placeKeyboard(user, hits) });
+}
+
 async function onLocation(m, quiet) {
   const user = await userFrom(m.from);
   const { latitude, longitude } = m.location;
   const { placeId, changed, first } = await mongo.setLocation(user._id, latitude, longitude);
   if (changed || first) announceJoin(user, placeId).catch(() => {});
-  if (!quiet && first) {
-    return say(m.chat.id, `📍 You're all set. When an AI agent asks about anywhere within ${env.answerRadiusMiles} miles of you, you'll get a one-tap question here. Nearest places come first.`, { reply_markup: { remove_keyboard: true } });
-  }
-  if (changed && !quiet) return say(m.chat.id, `📍 You're near <b>${esc(findPlace(placeId).name)}</b>.`, { reply_markup: { remove_keyboard: true } });
-  if (!quiet) return say(m.chat.id, "📍 Location updated.", { reply_markup: { remove_keyboard: true } });
+  if (quiet) return;
+  const fresh = await mongo.getUser(user._id);
+  await say(m.chat.id, first
+    ? `📍 You're all set. When an AI agent asks about anywhere within ${env.answerRadiusMiles} miles of you, you'll get a one-tap question here.`
+    : changed ? `📍 You're near <b>${esc(findPlace(placeId)?.name || "campus")}</b>.` : "📍 Location updated.", { reply_markup: { remove_keyboard: true } });
+  return say(m.chat.id, "<b>Places near you.</b> Tap the one you're in, or type any place name to find it.", { reply_markup: placeKeyboard(fresh) });
 }
 
 async function handle(u) {
@@ -126,6 +149,7 @@ async function handle(u) {
     let text = cq.message.text;
     if (kind === "place") {
       const p = findPlace(a);
+      if (!p) { await api("answerCallbackQuery", { callback_query_id: cq.id, text: "That place is gone. Type its name to find it again." }); return; }
       await mongo.checkIn(user._id, p.id);
       announceJoin(user, p.id).catch(() => {});
       text = `🦉 You're checked in at ${p.name}. I'll send you quick one-tap questions about it.`;
@@ -152,7 +176,8 @@ async function handle(u) {
     const user = await userFrom(m.from);
     const kind = m.photo ? "photo" : m.voice || m.audio ? "voice" : "text";
     const qid = replyFor(m) || findRequestFor(user._id, kind);
-    if (!qid) return say(m.chat.id, kind === "text" ? HELP : "🦉 Thanks! There's no open request for that right now.");
+    if (!qid && kind === "text") return searchPlaces(m, user, m.text);
+    if (!qid) return say(m.chat.id, "🦉 Thanks! There's no open request for that right now.");
     let body;
     try {
       if (kind === "photo") {
@@ -194,7 +219,7 @@ async function handle(u) {
     await say(m.chat.id,
       "📍 Share your location so questions find you wherever you are. For all day: 📎 → Location → <b>Share My Live Location</b>.",
       { reply_markup: locationKeyboard });
-    return say(m.chat.id, "Or pick where you are right now:", { reply_markup: placeKeyboard() });
+    return say(m.chat.id, "Or tap where you are right now (you can also type any place name):", { reply_markup: placeKeyboard(user) });
   }
 
   if (cmd === "/start") {
@@ -204,7 +229,7 @@ async function handle(u) {
   }
 
   if (cmd === "/where" || cmd === "/checkin") {
-    await say(m.chat.id, "🦉 Where are you right now?", { reply_markup: placeKeyboard() });
+    await say(m.chat.id, "🦉 Where are you right now? Tap a place, or type any place name.", { reply_markup: placeKeyboard(user) });
     return say(m.chat.id, "Or share your location and I'll work it out.", { reply_markup: locationKeyboard });
   }
 

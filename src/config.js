@@ -16,6 +16,8 @@ export const env = {
   discordChannelId: process.env.DISCORD_CHANNEL_ID,
   telegramToken: process.env.TELEGRAM_TOKEN,
 
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  microsoftClientId: process.env.MICROSOFT_CLIENT_ID || "",
   geminiKey: process.env.GEMINI_API_KEY,
   geminiModel: process.env.GEMINI_MODEL || "gemini-3.8-flash",
   // Tried in order when the main model is overloaded or slow, e.g. "gemini-3.8-flash-lite".

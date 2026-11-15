@@ -18,7 +18,7 @@ import { startDiscord } from "./channels/discord.js";
 import { startTelegram, telegramJoinLink } from "./channels/telegram.js";
 import { treasuryInfo } from "./pay/solana.js";
 import { ensureSpeedFile, saveScan, floorReport } from "./scan.js";
-import { register, login, setCredentials } from "./web/accounts.js";
+import { register, login, setCredentials, googleSignIn, microsoftSignIn } from "./web/accounts.js";
 import { importPlaces } from "./web/places-import.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -109,6 +109,15 @@ app.post("/api/app/register", wrap(async (req) => {
   return { token };
 }));
 app.post("/api/app/login", wrap((req) => login(req.body, req.ip)));
+app.get("/api/app/auth-config", (_req, res) => res.json({ google: env.googleClientId || null, microsoft: env.microsoftClientId || null }));
+const oauthJoin = (fn) => wrap(async (req) => {
+  const r = await fn(req.body);
+  if (findPlace(req.body.place)) { await mongo.checkIn(r.user._id, findPlace(req.body.place).id); announceJoin(r.user, findPlace(req.body.place).id).catch(() => {}); }
+  else announceJoin(r.user, null).catch(() => {});
+  return { token: r.token, name: r.name };
+});
+app.post("/api/app/oauth/google", oauthJoin(googleSignIn));
+app.post("/api/app/oauth/microsoft", oauthJoin(microsoftSignIn));
 app.post("/api/app/account", appUser, wrap(async (req) => setCredentials(await mongo.getUser(req.user._id), req.body)));
 app.get("/api/app/push-key", (_req, res) => res.json({ key: vapidPublicKey() }));
 app.post("/api/app/push", appUser, wrap(async (req) => {
