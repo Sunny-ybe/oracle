@@ -9,7 +9,11 @@ val() { grep -E "^$1=" .env | tail -1 | cut -d= -f2- | tr -d '"'"'"; }
 TUNNEL_TOKEN=$(val TUNNEL_TOKEN); PUBLIC_DOMAIN=$(val PUBLIC_DOMAIN); NGROK_DOMAIN=$(val NGROK_DOMAIN)
 PORT=$(val PORT); PORT=${PORT:-3000}
 
-lsof -ti :"$PORT" | xargs kill 2>/dev/null
+# Stop older copies of this launcher and their idle watchers. A leftover watcher would start a second
+# server on the next restart, and a second Telegram bot loses votes.
+for p in $(pgrep -f "scripts/start.sh"); do [ "$p" != "$$" ] && [ "$p" != "$PPID" ] && kill "$p" 2>/dev/null; done
+pkill -f "node --watch src/server.js" 2>/dev/null
+lsof -ti :"$PORT" -sTCP:LISTEN | xargs kill 2>/dev/null
 pkill -f "cloudflared tunnel" 2>/dev/null
 pkill -f "ngrok http" 2>/dev/null
 LOG=/tmp/oracle-tunnel.log
