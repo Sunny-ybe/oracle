@@ -54,8 +54,8 @@ export const RULES = {
   minVotes: num(process.env.MIN_VOTES, 3),                                  // at least this many matching votes...
   minWeight: num(process.env.MIN_WEIGHT, num(process.env.MIN_VOTES, 3) - 0.5), // ...whose trust adds up to at least this
   disputeAt: num(process.env.DISPUTE_AT, 5), // this many votes with no consensus -> ask for a photo
-  waitSeconds: 60,      // how long an asker waits before getting "pending"
-  deadlineSeconds: 90,  // when an unanswered question falls back to the web
+  waitSeconds: 45,      // how long an asker waits before getting "pending" (longer than the deadline, so it rarely happens)
+  deadlineSeconds: num(process.env.DEADLINE_SECONDS, 40), // every question settles by now: nobody waits a minute for an answer
   photoMinutes: 5,      // how long a photo link stays valid
   cacheMinutes: num(process.env.CACHE_MINUTES, 10),     // an answer this fresh is served from memory
   pingCooldownSec: num(process.env.PING_COOLDOWN, 10), // don't ping the same person more often than this
