@@ -21,7 +21,8 @@ const near = (a, b, m) => {
   return Math.hypot(dLat, dLng) < m;
 };
 
-export async function importPlaces({ radiusM = Number(process.env.PLACES_RADIUS_M || 3000), lat = env.geoBias[0], lng = env.geoBias[1] } = {}) {
+export async function importPlaces({ radiusM = Number(process.env.PLACES_RADIUS_M || 3000), lat = env.geoBias?.[0], lng = env.geoBias?.[1] } = {}) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error("Set GEO_BIAS (lat,lng) to import places around a home area.");
   const around = `(around:${radiusM},${lat},${lng})`;
   const q = `[out:json][timeout:90];(
     nwr["amenity"~"^(cafe|restaurant|fast_food|food_court|ice_cream|bar|pub|library|pharmacy|cinema|theatre|arts_centre|community_centre|parking)$"]["name"]${around};

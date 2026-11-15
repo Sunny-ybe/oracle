@@ -9,13 +9,16 @@ const KIND = {
 };
 
 export async function geocode(query) {
-  const [lat, lng] = env.geoBias;
-  const d = 0.3; // about 20 miles each way
   const base = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`;
-  for (const url of [`${base}&viewbox=${lng - d},${lat + d},${lng + d},${lat - d}&bounded=1`, base]) {
+  const urls = [base];
+  if (env.geoBias) {
+    const [lat, lng] = env.geoBias, d = 0.3; // about 20 miles each way
+    urls.unshift(`${base}&viewbox=${lng - d},${lat + d},${lng + d},${lat - d}&bounded=1`);
+  }
+  for (const url of urls) {
     try {
       const r = await fetch(url, {
-        headers: { "User-Agent": "Oracle/1.0 (SunHacks 2026 demo)", "Accept-Language": "en" },
+        headers: { "User-Agent": "Oracle/1.0 (place lookup)", "Accept-Language": "en" },
         signal: AbortSignal.timeout(8000),
       });
       if (!r.ok) continue;

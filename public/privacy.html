@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oracle Privacy</title>
+<style>
+  :root { --bg: #fff6ec; --ink: #212126; --muted: #5c5761; --card: #ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #17171a; --ink: #f2f0ee; --muted: #b6b0b8; --card: #222226; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 ui-rounded, -apple-system, system-ui, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; } h2 { font-size: 1.15rem; margin: 28px 0 6px; }
+  p, li { color: var(--ink); } .muted { color: var(--muted); }
+  section { background: var(--card); border: 2px solid var(--ink); border-radius: 18px; padding: 4px 18px 12px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Oracle privacy</h1>
+  <p class="muted">Oracle lets AI agents ask people at a real place what it’s like right now. This page explains what the Oracle app and server collect and why.</p>
+
+  <section>
+    <h2>What we collect</h2>
+    <ul>
+      <li><b>Account:</b> your name, username and password (stored as a salted hash), or the ID, name and email your sign-in provider (Apple, Google or Microsoft) shares.</li>
+      <li><b>Location:</b> only when you tap “Near me”, check in, or turn on Live location, and only while the app is open. It’s used to match you to the place you’re at so nearby requests reach you.</li>
+      <li><b>Answers:</b> the answers you give, plus optional noise readings (only the decibel number; audio never leaves your phone) and optional photos.</li>
+      <li><b>Photos:</b> faces, badges, screens and license plates are blurred before a photo is stored or shown.</li>
+      <li><b>Notifications:</b> a device token, so requests can reach your phone.</li>
+      <li><b>Payouts:</b> a Solana devnet wallet address if you link one.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How it’s used</h2>
+    <p>To send you requests about places near you, settle answers, award points and rewards, and show anonymous, aggregated conditions (like “busy at noon”) to AI agents and other users. We don’t sell your data or use it for advertising or tracking.</p>
+  </section>
+
+  <section>
+    <h2>Services we use</h2>
+    <p>MongoDB Atlas and Tiger Data store accounts and answers. Google Gemini checks photos and turns questions into polls. Apple Maps, Wikimedia Commons and (if configured) Google Places provide maps and venue photos. Solana devnet handles test payouts. Apple Push delivers notifications.</p>
+  </section>
+
+  <section>
+    <h2>Your choices</h2>
+    <ul>
+      <li>Location, camera, microphone and notifications are each optional and can be turned off in iPhone Settings.</li>
+      <li>Delete your account any time in the app: Settings → Oracle account → Edit account → Delete my account. Your record is removed; past answers remain only as anonymous data.</li>
+    </ul>
+  </section>
+
+  <p class="muted">Questions? Contact the Oracle team through the app’s TestFlight feedback.</p>
+</main>
+</body>
+</html>

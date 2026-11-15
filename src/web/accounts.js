@@ -1,5 +1,5 @@
 // Username + password accounts for the Oracle app. Passwords are hashed with scrypt and a random salt.
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes, scryptSync, timingSafeEqual, createPublicKey, verify } from "node:crypto";
 import * as mongo from "../db/mongo.js";
 import { linkToken } from "./auth.js";
 import { env } from "../config.js";
@@ -53,10 +53,12 @@ async function oauthUser(provider, id, { first, last, email }) {
   return { user: u, token: linkToken(u._id), name: u.name };
 }
 export async function googleSignIn({ credential }) {
-  if (!env.googleClientId) throw new Error("Google sign-in isn't set up.");
+  if (!env.googleClientId && !env.googleIosClientId) throw new Error("Google sign-in isn't set up.");
   const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential || "")}`, { signal: AbortSignal.timeout(8000) });
   const t = await r.json().catch(() => ({}));
-  if (!r.ok || t.aud !== env.googleClientId || !/accounts\.google\.com$/.test(t.iss || "") || String(t.email_verified) !== "true") throw new Error("Google sign-in didn't work. Try again.");
+  // The web app and the iPhone app use different Google client IDs; accept a token issued to either.
+  const audiences = [env.googleClientId, env.googleIosClientId].filter(Boolean);
+  if (!r.ok || !audiences.includes(t.aud) || !/accounts\.google\.com$/.test(t.iss || "") || String(t.email_verified) !== "true") throw new Error("Google sign-in didn't work. Try again.");
   return oauthUser("google", t.sub, { first: t.given_name, last: t.family_name, email: t.email });
 }
 export async function microsoftSignIn({ accessToken }) {
@@ -65,6 +67,35 @@ export async function microsoftSignIn({ accessToken }) {
   const m = await r.json().catch(() => ({}));
   if (!r.ok || !m.id) throw new Error("Microsoft sign-in didn't work. Try again.");
   return oauthUser("microsoft", m.id, { first: m.givenName, last: m.surname, email: m.mail || m.userPrincipalName });
+}
+
+// Sign in with Apple (iPhone app). Apple signs an identity token (RS256 JWT); its public keys are at
+// appleid.apple.com/auth/keys. Apple only shares the name on the very first sign-in, so the app sends it along.
+let appleKeys = { at: 0, keys: [] };
+async function appleKey(kid) {
+  if (Date.now() - appleKeys.at > 6 * 3600e3 || !appleKeys.keys.some((k) => k.kid === kid)) {
+    const r = await fetch("https://appleid.apple.com/auth/keys", { signal: AbortSignal.timeout(8000) });
+    if (r.ok) appleKeys = { at: Date.now(), keys: (await r.json()).keys || [] };
+  }
+  const jwk = appleKeys.keys.find((k) => k.kid === kid);
+  return jwk ? createPublicKey({ key: jwk, format: "jwk" }) : null;
+}
+export async function appleSignIn({ identityToken, firstName, lastName }) {
+  const fail = () => new Error("Sign in with Apple didn't work. Try again.");
+  const [h, p, s] = String(identityToken || "").split(".");
+  if (!h || !p || !s) throw fail();
+  let header, claims;
+  try { header = JSON.parse(Buffer.from(h, "base64url")); claims = JSON.parse(Buffer.from(p, "base64url")); } catch { throw fail(); }
+  const key = header.alg === "RS256" ? await appleKey(header.kid) : null;
+  const signed = key && verify("RSA-SHA256", Buffer.from(`${h}.${p}`), key, Buffer.from(s, "base64url"));
+  if (!signed || claims.iss !== "https://appleid.apple.com" || claims.aud !== env.apnsBundleId || !claims.sub || claims.exp * 1000 < Date.now()) throw fail();
+  return oauthUser("apple", claims.sub, { first: nameOk(firstName) || null, last: nameOk(lastName) || null, email: claims.email || null });
+}
+
+// Account deletion (App Store guideline 5.1.1(v)): removes the person. Past answers stay as anonymous data.
+export async function deleteAccount(user) {
+  await mongo.deleteUser(user._id);
+  return { ok: true };
 }
 
 export async function login({ username, password }, ip) {
@@ -77,12 +108,17 @@ export async function login({ username, password }, ip) {
 }
 
 // People who joined before passwords existed can secure their account from Profile.
+// Also used by Edit account: leaving the password empty keeps the current one (if there is one).
 export async function setCredentials(user, { username, password, firstName, lastName }) {
-  username = clean(username); check(username, password);
+  username = clean(username || user.username);
+  const keepPassword = !password && Boolean(user.passHash);
+  if (!keepPassword) check(username, password);
+  else if (!USERNAME.test(username)) throw new Error("Usernames are 3–20 characters: letters, numbers, dots or underscores.");
   const first = nameOk(firstName), last = nameOk(lastName);
   const other = await mongo.col("users").findOne({ username });
   if (other && other._id !== user._id) throw new Error("That username is taken. Try another.");
-  const set = { username, passHash: hash(password) };
+  const set = { username };
+  if (!keepPassword) set.passHash = hash(password);
   if (first && last) Object.assign(set, { firstName: first, lastName: last, name: fullName(first, last) });
   await mongo.col("users").updateOne({ _id: user._id }, { $set: set });
   return { ok: true, username };
