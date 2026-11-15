@@ -266,8 +266,8 @@ process.on("uncaughtException", (e) => console.error("Uncaught:", e?.message || 
 for (const [name, value] of [["MONGODB_URI", env.mongoUri], ["TIGER_DATABASE_URL", env.tigerUrl]]) {
   if (!value) { console.error(`${name} is required. Copy .env.example to .env and set it (run npm run check for details).`); process.exit(1); }
 }
-if (!env.apiKey && !env.telegramToken) {
-  console.warn("WARNING: neither ORACLE_API_KEY nor TELEGRAM_TOKEN is set, so app sessions are signed with a public development secret. Set ORACLE_API_KEY before exposing this server.");
+if (!env.sessionSecret && !env.apiKey && !env.telegramToken) {
+  console.warn("WARNING: none of SESSION_SECRET, ORACLE_API_KEY or TELEGRAM_TOKEN is set, so app sessions are signed with a public development secret. Set SESSION_SECRET before exposing this server.");
 }
 if (!env.apiKey) console.warn("WARNING: ORACLE_API_KEY is empty, so /api/ask, /mcp and /api/dev/* accept anyone.");
 await connectMongo().catch((e) => { console.error("MongoDB connection failed:", e.message); process.exit(1); });
