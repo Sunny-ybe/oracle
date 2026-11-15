@@ -108,6 +108,7 @@ struct OracleRequest: Codable, Identifiable, Hashable {
         case "photo": "Photo"
         case "people_count": "Headcount photo"
         case "report": "Find out"
+        case "wifi": "Wi-Fi speed"
         default: nil
         }
     }

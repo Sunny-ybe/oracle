@@ -255,6 +255,36 @@ struct MeasureNoiseScreen: View {
     }
 }
 
+// MARK: - Wi-Fi speed test
+
+enum WifiLevel: Int, CaseIterable, Identifiable {
+    case slow, okay, fast
+    init(mbps: Double) { self = mbps < 10 ? .slow : (mbps <= 50 ? .okay : .fast) }
+    var id: Int { rawValue }
+    var title: String { ["Slow", "Okay", "Fast"][rawValue] }
+    var soft: Color { [Ink.pinkSoft, Ink.butterSoft, Ink.mintSoft][rawValue] }
+}
+
+/// Downloads the server's 1 MB test file twice and keeps the faster run, like the web app.
+/// It measures this iPhone's current connection to the Oracle server (Wi-Fi or mobile data).
+@MainActor enum SpeedTest {
+    static func run(session: OracleSession) async throws -> Double {
+        var best = 0.0
+        for _ in 0..<2 {
+            // A random query string and no local cache, so every run is a real download.
+            guard let url = session.absoluteURL("/speedtest.bin?r=\(Double.random(in: 0..<1))") else { throw APIError.notConfigured }
+            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 30)
+            request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+            let started = Date()
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let seconds = Date().timeIntervalSince(started)
+            guard (response as? HTTPURLResponse)?.statusCode == 200, !data.isEmpty, seconds > 0 else { throw APIError.badResponse }
+            best = max(best, Double(data.count) * 8 / seconds / 1e6)
+        }
+        return (best * 10).rounded() / 10
+    }
+}
+
 // MARK: - Earnings (kept on this iPhone for the Rewards summary)
 
 struct EarningEntry: Codable, Identifiable {
@@ -344,6 +374,7 @@ struct Contribution: Identifiable {
     var isSample = false
     var photo: UIImage?
     var headcount: Int?
+    var mbps: Double?
     var detail: String?
 }
 
@@ -375,6 +406,10 @@ struct ContributionSuccessView: View {
                             if let db = contribution.noiseDb {
                                 let level = NoiseLevel(db: Double(db))
                                 row("waveform", level.soft, "Noise: \(level.title) (\(db) dB)")
+                            }
+                            if let mbps = contribution.mbps {
+                                let level = WifiLevel(mbps: mbps)
+                                row("wifi", level.soft, "Wi-Fi: \(level.title) (\(mbps.formatted()) Mbps)")
                             }
                             if let count = contribution.headcount { row("person.2.fill", Ink.mintSoft, "Counted about \(count) people") }
                             if let answer = contribution.answer { row("person.3.fill", Ink.periSoft, "Your answer: \(answer)") }
