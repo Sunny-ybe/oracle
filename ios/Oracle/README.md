@@ -6,14 +6,14 @@ Open Oracle.xcodeproj in Xcode, select an iPhone Simulator, and run. Continue as
 
 - Home offers Explore places, Answer & earn, location, city/venue search, the optional ASU demo, and AI assistant setup.
 - Explore uses MapKit and real venue search. Selecting a place opens its reports, source, timestamp and votes, a Google Maps link, and an explicit check-in button.
-- Requests shows questions assigned by Oracle to your account and refreshes every 15 seconds while visible. The live poll uses the server's options and submits a one-based answer. A successful response shows the server's message and points. Photo and sensor requests open the existing Oracle web capture flow, where a separate web sign-in may be required.
+- Requests shows questions assigned by Oracle to your account and refreshes every 15 seconds while visible. The live poll uses the server's options and submits a one-based answer. A successful response shows the server's message and points. Photo, noise, Wi-Fi and headcount requests are answered in the app: a tap always works, and a photo, a 10-second noise reading, a Wi-Fi speed test (two 1 MB downloads of `/speedtest.bin`, faster run sent as `mbps`) or a typed number of people (sent as `count`) can stand in for it on the matching request type.
 - Rewards reads your server points, trust, and available gift cards. Gift-card redemption records a manual fulfillment request. Wallet linking uses the existing backend. Solana payouts remain devnet.
 
 ## Connect the backend
 
 The backend lives at the repository root, two folders above this directory. Install its dependencies with npm ci, configure its .env using .env.example, and run npm start. MongoDB and Tiger Data are required by that server. Deploy it behind an HTTPS address accessible from the iPhone.
 
-In the iPhone app, open Settings → Sign in to Oracle and enter that HTTPS server address. Save it, then create an Oracle username/password account or sign in to an existing one. The session token is stored in the iPhone Keychain. Sign in with Apple from the earlier welcome screen remains a local entry option and does not create an Oracle server account.
+The app starts connected to the team's live server, `https://oracle.tryalethea.com` (`OracleSession.productionServer`), on both the Simulator and a real iPhone. To use another server, open Settings → Sign in to Oracle and enter its HTTPS address (`http://localhost:3000` works on the Simulator only), or launch with `ORACLE_API_BASE_URL` set. Then create an Oracle username/password account or sign in to an existing one. The session token is stored in the iPhone Keychain. Sign in with Apple from the earlier welcome screen remains a local entry option and does not create an Oracle server account.
 
 Search, venue photos, requests, and rewards use that server after configuration. MapKit search also works before sign-in. Check-in happens only when the person taps “I’m here”. Searching or selecting a venue does not check them in.
 

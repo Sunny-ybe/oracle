@@ -208,7 +208,7 @@ struct AccountScreen: View {
                         Text(integrations(info)).font(.soft(.caption)).foregroundStyle(Ink.muted)
                     }
                 }
-                Text("This is where your Oracle backend (the Node server) is running. On the Simulator, use http://localhost:3000. On a real iPhone, localhost won’t work: use your server’s https:// link, like your tunnel or domain.")
+                Text("This is where your Oracle backend (the Node server) is running. It starts on the team’s server, \(OracleSession.productionServer). To use your own, enter its https:// link (http://localhost:3000 works on the Simulator only).")
                     .font(.soft(.caption)).foregroundStyle(Ink.muted)
             }
         }
