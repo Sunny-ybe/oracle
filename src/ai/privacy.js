@@ -1,10 +1,14 @@
 // Privacy masking: blur faces, name badges, screens and plates before any photo is stored or shown.
 // The original photo is never saved. Re-encoding also strips EXIF data (including GPS).
 import sharp from "sharp";
+import { detectFaces } from "../aws.js";
 
 // boxes: [[ymin, xmin, ymax, xmax], ...] normalized 0-1000 (Gemini's box format)
 export async function maskPII(buffer, boxes = []) {
   const base = await sharp(buffer).rotate().resize({ width: 1280, height: 1280, fit: "inside", withoutEnlargement: true }).jpeg().toBuffer();
+  // Amazon Rekognition (when AWS is set up) adds the faces it finds to Gemini's boxes.
+  const faces = await detectFaces(base);
+  if (faces?.length) boxes = [...boxes, ...faces];
   const { width: W, height: H } = await sharp(base).metadata();
   const composites = [];
   for (const b of boxes) {
