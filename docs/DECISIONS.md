@@ -133,3 +133,24 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Why:* The app should work without typing a server address, and it lacked the two answer types the web app has (D-017, D-020).
 - *Watch out:* signing in from the Simulator now touches the live shared data, and UI tests that don't set `ORACLE_API_BASE_URL` reach the live server.
 - *Where:* `OracleSession` in `NativeData.swift`, `SpeedTest` in `Contribute.swift`, `LivePoll` in `NativeScreens.swift`.
+
+
+**D-024: The web matches the iPhone app's dark + lime look** · 2026-11-15 · Active
+- *Decision:* The earner web app (`/app`), the dashboard (`/`) and the join page (`/join`) use the iPhone app's dark background, lime accent and robot mascot Ora (`public/img/ora.png`, `public/img/mark.png`, from `ios/Oracle`). `/app` gets a Home tab like the iPhone app ("The world, answered.", Explore places / Answer & earn, Start where you are, How Oracle works, Ask from Claude with the `/mcp` address), and its tabs are Home, Requests, Explore, Rewards; Profile opens from the Home menu button. The dashboard gets a collapsible "How Oracle works" panel with a "Built with" strip naming each sponsor and what it does; the panel hides while a place card is open on short screens. `/icon.png` now serves Ora's face. The theme lives in CSS variables plus one override block per page, so it is easy to revert. No logic, API or data changes.
+- *Why:* The user wants the website and the iPhone app to look like one product for judging, and judges need to see each sponsor's role on screen.
+- *Where:* `public/app.html`, `public/index.html`, `public/join.html`, `public/manifest.webmanifest`, `public/img/`, `/icon.png` in `src/server.js`.
+
+**D-025: People can set their own spot on the map when GPS is wrong** · 2026-11-15 · Active
+- *Decision:* In the web app (Explore → "Wrong spot?", Home → "Set my spot on the map", Profile, or by tapping the fuzzy-location toast), a person drags the map under a fixed pin and taps "Set my location here". It is sent to the existing `/api/app/checkin` with `accuracy: 10` and `manual: true` (the server ignores `manual` for now). While a hand-set pin is active, live GPS updates are not sent, so they don't overwrite it. The pin ends after 3 hours, when a good GPS fix (≤100 m) shows the person has moved more than 1.9 km away, or when they tap "share my location" again. Guard: if the phone has a decent fix (≤1 km accuracy), the pin must be within 1.5 km of it; with no fix or a fuzzy one, any spot is allowed, like a QR check-in.
+- *Why:* Indoors or on Wi-Fi, phones often put people a building or a block off, so they get the wrong requests. The 1.5 km guard lets people fix a wrong spot without teleporting to collect requests elsewhere. Dispute photos still check real GPS on `/verify`.
+- *Where:* `startPin`, `savePin`, `manualActive` and `watchMe` in `public/app.html`.
+
+**D-026: The web app shows how to connect Claude, ChatGPT and Gemini** · 2026-11-15 · Active
+- *Decision:* The Home tab's "Ask from your AI" card shows one copyable `/mcp` address and setup steps for Claude (Settings → Connectors → Add custom connector), ChatGPT (Developer mode → Apps & Connectors → Create, no authentication) and Gemini (Settings → Connected Apps → Add a custom app). The dashboard says "Claude, ChatGPT or Gemini" wherever it named only Claude. The server is unchanged: all three use the same open Streamable HTTP endpoint (D-015).
+- *Why:* The user wants Oracle presented as working with all three assistants. ChatGPT and Gemini both accept a remote MCP URL, with plan and region limits noted in the card. Not yet tested end to end with ChatGPT or Gemini.
+- *Where:* `#home` in `public/app.html`, `public/index.html`.
+
+**D-027: The dashboard names the sponsor at the moment it does the work** · 2026-11-15 · Active
+- *Decision:* Small lime tags appear where each sponsor acts: "Gemini" on a checked photo, "TinyFish" when Oracle reads an official page, "Tiger Data" on the 24-hour trend and on instant answers from memory, and "See it on Solana Explorer" on the latest payout. `/app`, `/` and `/join` have a description, a favicon and a link-preview image (`og:image`). No GitHub link: the repo is private.
+- *Why:* Sponsor judges look for their own technology; the demo should show it on screen at the moment it is used, not only in a list.
+- *Where:* `public/index.html` (`tags`, `photo`, `web`, `showPlace`, `refresh`), `<head>` of `public/app.html`, `public/index.html`, `public/join.html`.

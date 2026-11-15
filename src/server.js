@@ -126,10 +126,14 @@ app.get("/join", (_req, res) => res.sendFile(path.join(root, "public", "join.htm
 
 // ---- app icon, drawn from the owl
 const OWL_SVG = (s) => `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1e6b46"/><path d="M14 18l7 6h22l7-6-2 21c0 11-7 17-16 17s-16-6-16-17z" fill="#e7f3eb"/><circle cx="25" cy="33" r="7.5" fill="#fff"/><circle cx="39" cy="33" r="7.5" fill="#fff"/><circle cx="25" cy="33" r="3.4" fill="#13241b"/><circle cx="39" cy="33" r="3.4" fill="#13241b"/><path d="M29.5 41h5l-2.5 5z" fill="#f2b33d"/></svg>`;
+// The app icon is Ora, the robot from the iPhone app (public/img/mark.png); the owl SVG is the fallback.
 app.get("/icon.png", async (req, res) => {
   const size = Math.min(1024, Math.max(32, Number(req.query.s) || 192));
-  res.set("Content-Type", "image/png").set("Cache-Control", "public, max-age=604800")
-    .send(await sharp(Buffer.from(OWL_SVG(size))).png().toBuffer());
+  let img;
+  try { img = sharp(path.join(root, "public", "img", "mark.png")).resize(size, size); }
+  catch { img = sharp(Buffer.from(OWL_SVG(size))); }
+  res.set("Content-Type", "image/png").set("Cache-Control", "public, max-age=86400")
+    .send(await img.png().toBuffer().catch(() => sharp(Buffer.from(OWL_SVG(size))).png().toBuffer()));
 });
 
 // ---- app sign-up and notifications

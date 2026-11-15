@@ -4,6 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Oracle · live</title>
+<meta name="description" content="Oracle is the bridge between your AI and the real world: ask Claude, ChatGPT or Gemini about a place, and people who are there answer in under 40 seconds and get paid in SOL." />
+<meta property="og:title" content="Oracle · The world, answered." />
+<meta property="og:description" content="Ask your AI about any place. Oracle gets the answer from people who are there." />
+<meta property="og:image" content="https://oracle.tryalethea.com/img/ora.png" />
 <link rel="icon" href="/icon.png?s=64" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,10 +20,11 @@
 <style>
   /* Tempe at dusk. Green = people and answers. Amber = the AI's question. Coral = disagreement. */
   :root {
-    --night: #e9edf3; --dusk: #f3f5f9; --ridge: #dfe5ee; --haze: #5d6880; --moon: #111a2c;
-    --mint: #12925a; --ask: #e39a0e; --coral: #e2513c; --violet: #7556ec; --you: #2f6fe8;
-    --o1: #12925a; --o2: #e39a0e; --o3: #e2513c;
-    --glass: rgba(255, 255, 255, .9); --edge: rgba(17, 26, 44, .07);
+    /* Dark + lime, matching the iPhone app. --mint (answers) is lime; --ask (the AI's question) is amber. */
+    --night: #0d110b; --dusk: #1a2015; --ridge: #2c3526; --haze: #9ba590; --moon: #eef3e6;
+    --mint: #c6ec34; --ask: #f5b83d; --coral: #ff6b5b; --violet: #b9a6ff; --you: #6aa2ff;
+    --o1: #c6ec34; --o2: #f5b83d; --o3: #ff6b5b;
+    --glass: rgba(20, 25, 17, .86); --edge: rgba(255, 255, 255, .08);
     --f: "Schibsted Grotesk", -apple-system, system-ui, sans-serif;
     --serif: "Instrument Serif", Georgia, serif;
   }
@@ -185,6 +190,41 @@
   .join-actions { margin-top: 26px; display: flex; align-items: center; gap: 14px; }
   .join-actions button { border: 0; border-radius: 999px; background: var(--ask); color: #2a1a00; font-weight: 800; font-size: 17px; padding: 14px 24px; cursor: pointer; }
   .join .hint { color: var(--haze); font-size: 14px; }
+
+  /* ===== Dark + lime overrides (match the iPhone app) ===== */
+  .glass { box-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 22px 50px -28px rgba(0,0,0,.8); }
+  .maplibregl-ctrl-attrib { background: rgba(13,17,11,.7) !important; }
+  .brand h1 { font: 900 40px/0.95 "Schibsted Grotesk", var(--f); letter-spacing: -.03em; }
+  .invite { background: var(--mint); color: #10140c; box-shadow: 0 12px 30px -12px rgba(198,236,52,.6); }
+  .phone { background: #0d110b; }
+  .you { border-color: #0d110b; }
+  .coin { text-shadow: 0 0 8px #000, 0 0 14px #000; }
+  .join { background: rgba(13,17,11,.95); }
+  .join li::before, .join-actions button { background: var(--mint); color: #10140c; }
+  .st.done .n { color: #10140c; }
+  .askbar button { color: var(--moon); }
+  .proof a { color: var(--mint); }
+  .row .a.memory::after { color: var(--mint); }
+
+  /* ===== How it works + Built with (top left, under the brand) ===== */
+  .how { position: fixed; top: 112px; left: 22px; z-index: 9; width: 420px; padding: 16px 18px; animation: enterTop .8s cubic-bezier(.2,1,.3,1) .5s both; transition: opacity .3s, transform .3s; }
+  .how h3 { margin: 0 0 10px; font-size: 14px; letter-spacing: .02em; display: flex; align-items: center; justify-content: space-between; }
+  .how h3 button { border: 0; background: none; color: var(--haze); cursor: pointer; font-size: 12.5px; font-weight: 700; }
+  .how ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; counter-reset: h; }
+  .how li { counter-increment: h; display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; font-size: 14px; line-height: 1.35; }
+  .how li::before { content: counter(h); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--mint); color: #10140c; font-weight: 900; font-size: 12.5px; }
+  .how li b { font-weight: 800; }
+  .how li small { color: var(--haze); font-size: 12.5px; }
+  .built { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--edge); }
+  .built span { font-size: 12px; font-weight: 700; border-radius: 99px; padding: 4px 10px; background: rgba(198,236,52,.12); color: var(--mint); white-space: nowrap; }
+  .built span em { font-style: normal; color: var(--haze); font-weight: 600; }
+  .how.small ol, .how.small .tryq { display: none; }
+  .how.small h3 { margin-bottom: 0; }
+  .by { display: inline-block; vertical-align: 1px; margin-left: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--mint); background: rgba(198,236,52,.12); border-radius: 99px; padding: 2px 7px; }
+  .tryq { margin-top: 10px; font-size: 13px; color: var(--haze); }
+  .tryq b { color: var(--moon); }
+  body.focus .how { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+  @media (max-height: 860px) { .how ol { display: none; } }
   .nomap { position: fixed; inset: 0; display: grid; place-items: center; color: var(--haze); z-index: 1; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   :focus-visible { outline: 2px solid var(--ask); outline-offset: 2px; }
@@ -209,14 +249,28 @@
 
 <header class="brand glass">
   <svg id="owl" viewBox="0 0 64 64" role="img" aria-label="Oracle">
-    <path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#2f8a5c"/>
+    <path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#d4f53c"/>
     <circle cx="23" cy="31" r="9" fill="#ffffff"/><circle cx="41" cy="31" r="9" fill="#ffffff"/>
-    <circle id="pupL" cx="23" cy="31" r="4" fill="#10142a"/><circle id="pupR" cx="41" cy="31" r="4" fill="#10142a"/>
-    <rect class="lid" x="14" y="22" width="18" height="18" rx="9" fill="#2f8a5c"/><rect class="lid" x="32" y="22" width="18" height="18" rx="9" fill="#2f8a5c"/>
+    <circle id="pupL" cx="23" cy="31" r="4" fill="#10140c"/><circle id="pupR" cx="41" cy="31" r="4" fill="#10140c"/>
+    <rect class="lid" x="14" y="22" width="18" height="18" rx="9" fill="#d4f53c"/><rect class="lid" x="32" y="22" width="18" height="18" rx="9" fill="#d4f53c"/>
     <path d="M29 41h6l-3 6z" fill="#e39a0e"/>
   </svg>
-  <div><h1>Oracle<i>.</i></h1><p>AI agents ask about a place. People who are there answer.</p></div>
+  <div><h1>Oracle<i>.</i></h1><p>The bridge between your AI and the real world.</p></div>
 </header>
+<section class="how glass" id="how" aria-label="How Oracle works">
+  <h3>How Oracle works <button type="button" id="howToggle">Hide steps</button></h3>
+  <ol>
+    <li><span><b>You ask your AI</b> about a real place<br><small>"How long is the food line?" in Claude, ChatGPT or Gemini. Your AI asks Oracle through MCP</small></span></li>
+    <li><span><b>Gemini plans the question</b><br><small>3 options, plus how phones answer: tap, photo, count, noise or Wi-Fi</small></span></li>
+    <li><span><b>People nearby get pinged</b><br><small>Telegram, Discord, the web app or the iPhone app, within 5 miles</small></span></li>
+    <li><span><b>Trust-weighted consensus</b> settles it in under 40 s<br><small>Photos are read by Gemini, with faces and plates blurred</small></span></li>
+    <li><span><b>Right answers get paid</b> in SOL and remembered<br><small>Ask again and the answer comes back instantly</small></span></li>
+  </ol>
+  <div class="built" aria-label="Built with">
+    <span>Gemini <em>· questions, photos</em></span><span>MongoDB <em>· people, places</em></span><span>Tiger Data <em>· answers, trends</em></span>
+    <span>TinyFish <em>· official pages</em></span><span>Solana <em>· payouts</em></span><span>Vultr <em>· hosting</em></span><span>GoDaddy <em>· domain</em></span><span>MCP <em>· Claude, ChatGPT, Gemini</em></span>
+  </div>
+</section>
 <button class="invite" id="inviteBtn" type="button"><svg class="i"><use href="#i-qr"/></svg>Join from your phone</button>
 
 <aside class="rail" aria-label="What's happening">
@@ -263,8 +317,19 @@ const getJSON = (u) => fetch(u).then((r) => r.json()).catch(() => null);
 const words = (t) => esc(t).split(" ").map((w, i) => `<span class="w" style="animation-delay:${i * 45}ms">${w}</span>`).join(" ");
 const letters = (t) => [...String(t)].map((c, i) => `<span style="animation-delay:${i * 40}ms">${c === " " ? "&nbsp;" : esc(c)}</span>`).join("");
 const icon = (n) => `<svg class="i"><use href="#i-${n}"/></svg>`;
-const OPT = ["#12925a", "#e39a0e", "#e2513c"];
+const OPT = ["#c6ec34", "#f5b83d", "#ff6b5b"];
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+
+/* ---------------- How it works panel: collapsible, hidden while a place card is open ---------------- */
+(() => {
+  const how = $("how"), btn = $("howToggle");
+  const set = (small) => { how.classList.toggle("small", small); btn.textContent = small ? "Show steps" : "Hide steps"; try { localStorage.setItem("oracleHowSmall", small ? "1" : ""); } catch {} };
+  try { set(Boolean(localStorage.getItem("oracleHowSmall"))); } catch {}
+  btn.onclick = () => set(!how.classList.contains("small"));
+  const pc = $("placecard");
+  new MutationObserver(() => document.body.classList.toggle("focus", pc.classList.contains("show") && innerHeight < 1000)).observe(pc, { attributes: true, attributeFilter: ["class"] });
+})();
 
 /* ---------------- owl ---------------- */
 const owl = $("owl");
@@ -294,21 +359,21 @@ const STYLE = {
   glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
   sources: { omt: { type: "vector", url: "https://tiles.openfreemap.org/planet" } },
   layers: [
-    { id: "bg", type: "background", paint: { "background-color": "#e9edf3" } },
-    { id: "landcover", type: "fill", source: "omt", "source-layer": "landcover", paint: { "fill-color": "#e1e9e3", "fill-opacity": .9 } },
-    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#e5e9f2" } },
-    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#cfe8d6", "fill-opacity": .95 } },
-    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#c3dbf1" } },
+    { id: "bg", type: "background", paint: { "background-color": "#0d110b" } },
+    { id: "landcover", type: "fill", source: "omt", "source-layer": "landcover", paint: { "fill-color": "#121810", "fill-opacity": .9 } },
+    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#151b12" } },
+    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#1a2a14", "fill-opacity": .95 } },
+    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#11202c" } },
     { id: "paths", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["path", "track", "service"]]],
-      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .4, 18, 2], "line-dasharray": [2, 1.5] } },
+      paint: { "line-color": "#2a3323", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .4, 18, 2], "line-dasharray": [2, 1.5] } },
     { id: "minor", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "minor"],
-      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 13, .6, 18, 5] } },
+      paint: { "line-color": "#2a3323", "line-width": ["interpolate", ["linear"], ["zoom"], 13, .6, 18, 5] } },
     { id: "major", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["primary", "secondary", "tertiary", "trunk", "motorway"]]],
-      paint: { "line-color": "#fbfcfe", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 10] } },
-    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#b9c1d0", "line-width": 1.6, "line-dasharray": [3, 2] } },
+      paint: { "line-color": "#38432f", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 10] } },
+    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#3a4434", "line-width": 1.6, "line-dasharray": [3, 2] } },
     { id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13,
       paint: {
-        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#fdfdfe", 15, "#eef1f6", 40, "#dde3ee", 80, "#c9d2e2"],
+        "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#1c2318", 15, "#222a1d", 40, "#2a3324", 80, "#343f2c"],
         "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 13, 0, 14.5, ["coalesce", ["get", "render_height"], 8]],
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
         "fill-extrusion-opacity": .97, "fill-extrusion-vertical-gradient": true,
@@ -337,7 +402,7 @@ function circle([lng, lat], m) {
 }
 const halo = {};
 function haloData() {
-  return { type: "FeatureCollection", features: PLACES.filter((p) => pins[p.id]).map((p) => ({ type: "Feature", properties: { color: halo[p.id] || "#12925a" },
+  return { type: "FeatureCollection", features: PLACES.filter((p) => pins[p.id]).map((p) => ({ type: "Feature", properties: { color: halo[p.id] || "#c6ec34" },
     geometry: { type: "Polygon", coordinates: [circle([p.lng, p.lat], Math.min(140, (p.radiusM || 120) * .55))] } })) };
 }
 function addHalos() {
@@ -420,32 +485,32 @@ function addPlaceLayers() {
   map.addLayer({ id: "walk-fill", type: "fill", source: "walk", paint: { "fill-color": "#4f8cff", "fill-opacity": .08 } }, "buildings");
   map.addLayer({ id: "walk-edge", type: "line", source: "walk", paint: { "line-color": "#4f8cff", "line-width": 2, "line-opacity": .7, "line-dasharray": [2, 2] } }, "buildings");
   map.addLayer({ id: "dot", type: "circle", source: "dots", paint: {
-    "circle-color": KIND_COLOR, "circle-stroke-color": "#ffffff", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2, 1],
+    "circle-color": KIND_COLOR, "circle-stroke-color": "#0d110b", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2, 1],
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["boolean", ["get", "near"], false], 4, 2], 17, ["case", ["boolean", ["get", "near"], false], 8, 5.5]],
     "circle-opacity": ["interpolate", ["linear"], ["zoom"], 13, .7, 16, 1] } });
   // Names fade in as you zoom; places near you are named from further out.
   map.addLayer({ id: "dot-name-near", type: "symbol", source: "dots", filter: ["==", ["get", "near"], true], minzoom: 13.5,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 13, "text-offset": [0, 1], "text-anchor": "top", "text-max-width": 9 },
-    paint: { "text-color": "#111a2c", "text-halo-color": "#ffffff", "text-halo-width": 1.8 } });
+    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.8 } });
   map.addLayer({ id: "dot-name", type: "symbol", source: "dots", filter: ["==", ["get", "near"], false], minzoom: 15.6,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.6, 10.5, 18, 13], "text-offset": [0, .9], "text-anchor": "top", "text-max-width": 8 },
-    paint: { "text-color": "#3e4a62", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
+    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.6 } });
   // Every shop, café, restaurant and campus building from OpenStreetMap. Dots appear as you zoom in, then names fade in.
   const POI_COLOR = ["match", ["get", "class"], ["cafe"], "#8a5a2b", ["restaurant", "fast_food", "bar", "beer", "ice_cream", "bakery"], "#e07a3f",
     ["shop", "grocery", "clothing_store", "alcohol_shop", "pharmacy", "mobile_phone", "books"], "#2f6fe8", ["library", "college", "school", "university"], "#12925a",
     ["sports", "stadium", "fitness", "swimming", "pitch"], "#e2513c", ["cinema", "theatre", "music", "art_gallery", "museum", "attraction"], "#7556ec", ["parking"], "#7a8499", "#4b5875"];
   map.addLayer({ id: "poi-dot", type: "circle", source: "omt", "source-layer": "poi", minzoom: 14.5, filter: ["has", "name"],
-    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1.2,
+    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#0d110b", "circle-stroke-width": 1.2,
       "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1], "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1] } }, "dot");
   map.addLayer({ id: "poi-name", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 15.3, filter: ["has", "name"],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.3, 10.5, 18, 13],
       "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 8, "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#3e4a62", "text-halo-color": "#ffffff", "text-halo-width": 1.6, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
+    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.6, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
   // Inside your 5-minute-walk circle, names show from further out and in bold.
   map.addLayer({ id: "poi-name-near", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 13.8, filter: ["==", 1, 0],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 9,
       "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#111a2c", "text-halo-color": "#ffffff", "text-halo-width": 1.8 } });
+    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.8 } });
   const pickPoi = async (e) => {
     const f = e.features?.[0]; if (!f?.properties?.name) return;
     const [lng, lat] = f.geometry.coordinates;
@@ -525,7 +590,7 @@ function openArc(qid, pid, color = "#e39a0e") {
   comet(g, color, false);
 }
 function recolorArc(qid, color) { document.getElementById(`arc-${qid}`)?.setAttribute("stroke", color); }
-function closeArc(qid, color = "#12925a", then) {
+function closeArc(qid, color = "#c6ec34", then) {
   const g = document.getElementById(`arc-${qid}`);
   if (!g) return then?.();
   g.setAttribute("stroke", color);
@@ -535,7 +600,7 @@ function closeArc(qid, color = "#12925a", then) {
 function comet(path, color, back, done) {
   if (still) return done?.();
   const c = document.createElementNS("http://www.w3.org/2000/svg", "circle"), halo = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  c.setAttribute("r", 6); c.setAttribute("fill", color); c.setAttribute("stroke", "#fff"); c.setAttribute("stroke-width", "2.5"); halo.setAttribute("r", 16); halo.setAttribute("fill", color); halo.setAttribute("filter", "url(#soft)"); halo.setAttribute("opacity", .8);
+  c.setAttribute("r", 6); c.setAttribute("fill", color); c.setAttribute("stroke", "#0d110b"); c.setAttribute("stroke-width", "2.5"); halo.setAttribute("r", 16); halo.setAttribute("fill", color); halo.setAttribute("filter", "url(#soft)"); halo.setAttribute("opacity", .8);
   $("arcs").append(halo, c);
   const t0 = performance.now(), dur = 1300;
   const step = (t) => {
@@ -573,7 +638,7 @@ function coin(id, text) {
 function celebrate(id) {
   if (still || !window.confetti) return;
   const pt = placePoint(id);
-  confetti({ particleCount: 80, spread: 75, startVelocity: 30, scalar: .85, origin: pt ? { x: pt[0] / innerWidth, y: pt[1] / innerHeight } : { x: .35, y: .5 }, colors: ["#e39a0e", "#12925a", "#2f6fe8", "#e2513c"] });
+  confetti({ particleCount: 80, spread: 75, startVelocity: 30, scalar: .85, origin: pt ? { x: pt[0] / innerWidth, y: pt[1] / innerHeight } : { x: .35, y: .5 }, colors: ["#f5b83d", "#c6ec34", "#2f6fe8", "#e2513c"] });
 }
 
 // The "Now" card shows status lines instead of a separate banner.
@@ -596,7 +661,7 @@ function idle() {
   $("now").className = "now glass idle";
   $("now").innerHTML = `<div class="head"><b><span class="livedot"></span>NOW</b></div>
     <h2>Waiting for an AI agent to <i>ask</i> about a place.</h2>
-    <div class="label" style="margin-bottom:8px">Try asking Claude</div>
+    <div class="label" style="margin-bottom:8px">Try asking Claude, ChatGPT or Gemini</div>
     <ul><li>How long is the line at the Starbucks in the MU?</li><li>Which floor of Hayden is quietest right now?</li><li>Show me how crowded the Student Pavilion is.</li></ul>`;
 }
 // Gently highlight one example at a time while waiting.
@@ -634,7 +699,7 @@ function addNote(e, ic, html, img) {
   $("now").querySelector(".notes").insertAdjacentHTML("beforeend", `<div class="note">${icon(ic)}<div>${html}${img ? `<img src="${img}" alt="Photo with faces blurred">` : ""}</div></div>`);
 }
 function showAnswer(e) {
-  const tags = { people: "people agreed", photo: "settled by a photo", web: "from the web, nobody nearby", sensor: "measured by phones", memory: "instant, from memory" };
+  const tags = { people: "people agreed", photo: "settled by a photo, read by Gemini", web: "from the official page (TinyFish + Gemini), nobody nearby", sensor: "measured by phones", memory: "instant, from memory in Tiger Data" };
   if (cur && cur.id === e.question_id) {
     stepState(4);
     $("waitNote").textContent = e.answer ? `${tags[e.source] || e.source}${e.votes ? ` · ${e.votes} ${e.votes === 1 ? "person" : "people"}` : ""}${e.answered_in_s != null ? ` · ${e.answered_in_s}s` : ""}` : (e.note || "Nobody could answer in time");
@@ -661,7 +726,7 @@ async function showPlace(id) {
   const fl = floors?.floors?.length ? [...floors.floors].sort((a, b) => (b.confirmed - a.confirmed) || (b.score - a.score)).slice(0, 3) : [];
   $("placecard").innerHTML = `<div class="label">${icon("pin")} In focus</div><h3>${esc(p.name)}</h3>
     <div class="latest">${latest ? `<b style="color:${OPT[(latest.option || 1) - 1]}">${esc(latest.answer)}</b><span class="muted">${ago(latest.at)}</span>` : `<span class="muted">No answers yet. This is the first question here.</span>`}</div>
-    ${topic ? `<div class="label" style="margin-top:8px">${esc(topic.replace(/_/g, " "))}, last 24 hours</div><div class="spark"><canvas id="spark"></canvas></div>` : ""}
+    ${topic ? `<div class="label" style="margin-top:8px">${esc(topic.replace(/_/g, " "))}, last 24 hours <span class="by">Tiger Data</span></div><div class="spark"><canvas id="spark"></canvas></div>` : ""}
     ${fl.length ? `<div class="floors"><div class="label" style="margin-bottom:4px">Floors right now, from people's Wi-Fi and noise scans</div>
       ${fl.map((f) => `<div class="floor"><div class="fl v-${f.verdict}">${f.floor === 0 ? "B" : f.floor}</div><div>${esc(f.name)} <small>${f.db != null ? `${f.db} dB` : ""}${f.db != null && f.mbps != null ? " · " : ""}${f.mbps != null ? `${f.mbps} Mbps` : ""}${f.confirmed ? "" : " · unconfirmed"}</small></div>
         <span class="pill v-${f.verdict}">${f.verdict === "good" ? "Good" : f.verdict === "bad" ? "Bad" : "Okay"}</span></div>`).join("")}</div>` : ""}`;
@@ -690,8 +755,8 @@ function onEvent(e) {
   if (e.type === "consensus" && cur?.id === e.id) $("waitNote").textContent = `${e.answer} is winning. Giving ${e.waiting} more ${e.waiting === 1 ? "person" : "people"} ${e.seconds}s.`;
   if (e.type === "vote") { addVote(e); lightRinger(e.id, e.option); coin(e.placeId, "+1"); replay("blink"); }
   if (e.type === "dispute") { addNote(e, "alert", `People disagree. <b>${esc(e.name)}</b>, the most trusted person nearby, is taking a photo to settle it.`); setLive(e.placeId, true, "disputed"); recolorArc(e.id, "#e2513c"); }
-  if (e.type === "photo") addNote(e, "camera", e.passed ? `Photo checked by Gemini: ${esc(e.reason)}${e.masked ? ". Faces blurred." : ""}` : `Photo rejected: ${esc(e.reason)}`, e.passed ? e.image : null);
-  if (e.type === "web") { addNote(e, "globe", `Nobody answered nearby, so Oracle is reading ${esc(e.url || "the place's website")}.`); recolorArc(e.id, "#7556ec"); }
+  if (e.type === "photo") addNote(e, "camera", e.passed ? `Photo checked by Gemini: ${esc(e.reason)}${e.masked ? ". Faces blurred." : ""} <span class="by">Gemini</span>` : `Photo rejected: ${esc(e.reason)}`, e.passed ? e.image : null);
+  if (e.type === "web") { addNote(e, "globe", `Nobody answered nearby, so Oracle is reading ${esc(e.url || "the place's website")} <span class="by">TinyFish</span>`); recolorArc(e.id, "#7556ec"); }
   if (e.type === "answer") {
     if (e.source === "memory") {
       focusPlace(e.placeId); showPlace(e.placeId); setPlaceAnswer(e.placeId, e.answer, e.option); replay("glow");
@@ -700,7 +765,7 @@ function onEvent(e) {
       overviewSoon();
     } else {
       settled.add(e.question_id); setLive(e.placeId, false); clearRingers(e.question_id); showAnswer(e);
-      closeArc(e.question_id, e.answer ? "#12925a" : "#e2513c", () => { if (e.answer) { setPlaceAnswer(e.placeId, e.answer, e.option); celebrate(e.placeId); showPlace(e.placeId); } overviewSoon(); });
+      closeArc(e.question_id, e.answer ? "#c6ec34" : "#ff6b5b", () => { if (e.answer) { setPlaceAnswer(e.placeId, e.answer, e.option); celebrate(e.placeId); showPlace(e.placeId); } overviewSoon(); });
     }
     refresh();
   }
@@ -756,7 +821,7 @@ async function refresh() {
   if (Array.isArray(leaders) && leaders.length) $("leaders").innerHTML = leaders.slice(0, 3).map((u, i) =>
     `<div class="rep"><span class="r">${i + 1}</span><span>${esc(u.name)} <small>· right ${u.correct} of ${u.answered}</small></span><small>trust ${u.trust}</small></div>`).join("");
   if (Array.isArray(pays) && pays.length) { const p = pays[0];
-    $("proof").innerHTML = `${icon("coin")}<span>Latest: ${p.amount_sol} SOL to ${esc(String(p.user_id).split(":").pop().slice(0, 14))}</span><a href="${p.url}" target="_blank" rel="noopener">See it on Solana</a>`; }
+    $("proof").innerHTML = `${icon("coin")}<span>Latest: ${p.amount_sol} SOL to ${esc(String(p.user_id).split(":").pop().slice(0, 14))}</span><a href="${p.url}" target="_blank" rel="noopener">See it on Solana Explorer ↗</a>`; }
   if (Array.isArray(status)) for (const s of status) if (s.latest) setPlaceAnswer(s.id, s.latest.at ? `${s.latest.answer} · ${ago(s.latest.at)}` : s.latest.answer, s.latest.option);
 }
 
