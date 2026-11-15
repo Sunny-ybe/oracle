@@ -1,277 +1,222 @@
-# 🦉 Oracle
+<p align="center">
+  <img src="public/img/ora.png" alt="Ora, Oracle’s smiling green mascot with a location-pin badge" width="200" />
+</p>
 
-**Eyes on the ground for AI agents.** AI can read the whole internet but can't see the room it's in. Oracle lets any agent ask about a real place ("how long is the food line?", "is there still pizza?") and gets the answer from the people standing there, in under 40 seconds. They earn credits, trust and SOL for it.
+<h1 align="center">Oracle</h1>
+
+<p align="center"><strong>AI agents know the internet. Oracle connects them to people who know what’s happening nearby.</strong></p>
+
+<p align="center">
+  <a href="https://oracle.tryalethea.com/app">Open Oracle</a> ·
+  <a href="https://oracle.tryalethea.com">Live dashboard</a> ·
+  <a href="ios/Oracle/README.md">iPhone app</a>
+</p>
+
+## Why we built it
+
+An AI agent can find a café’s opening hours. It usually can’t tell you how long the line is right now. Someone already there can.
+
+Oracle connects those two sides. An agent asks about a place, people nearby answer, and useful answers earn points. ASU is our starting point for testing, but Oracle is built for cafés, libraries, airports, parks, and other real places.
+
+## What Oracle does
+
+- **Ask about a place.** AI assistants use Oracle’s MCP tools to send questions and read answers.
+- **Answer nearby questions.** People can respond through Telegram, Discord, the website, or the native iPhone app.
+- **Share more than a guess.** Responses can include polls, photos, people counts, noise readings, and connection-speed tests.
+- **Compare reports.** Oracle uses agreement, trust scores, photo checks, and location checks to help assess answers.
+- **Reuse recent answers.** Fresh reports can answer another question without asking everyone again.
+- **Explore places.** The website has a street map, worldwide place search, and Oracle reports where people have contributed.
+- **Earn rewards.** People collect points, request gift cards, and try Solana devnet payouts.
+
+Finding a place does not mean Oracle has a live report from it. The app shows when a report is missing instead of treating missing information as an answer.
 
 ## How it works
 
-1. **An agent asks** through MCP (`ask_place`). Gemini turns any free-text question into a request with 3 ordered options and picks how phones should answer it: a one-tap **poll**, a **photo**, a **people count**, a **noise** reading, a **Wi-Fi** speed test, or a **report** (go and find out).
-2. **Memory first.** If people answered the same thing at that place in the last 10 minutes, Tiger Data returns it instantly.
-3. **People nearby get pinged** on Telegram, Discord, the Oracle web app or the iPhone app: everyone checked in at the place or within 5 miles of it, up to 25 people.
-4. **Trust-weighted consensus.** 3 matching votes with combined trust ≥ 2.5 settle it. Every question settles within 40 seconds, so the agent gets its answer in one call.
-5. **Measurements beat taps.** A photo is read by Gemini (it counts people, reads the line, and blurs faces, badges, screens and plates before anything is stored). Noise is 10 seconds of microphone, and only the dB number leaves the phone. Wi-Fi is a 1 MB download. One real measurement stands even if nobody else answers. People can also type a number for "how many people" questions.
-6. **Few people → photo.** If only 1 or 2 people are nearby, 3 votes can't happen, so Oracle asks for one photo instead. A tap without a photo is reported as unverified and isn't paid.
-7. **Disagreement → photo.** After 5 split votes, the most trusted voter gets a link, takes a photo, and Gemini checks it. The page also checks GPS distance, so a photo from across campus is rejected.
-8. **Nobody there → the official page, then past reports.** For hours, schedule and menu questions, TinyFish has already read the place's official page in the background, and Gemini answers from those facts, labeled `web`. For everything else Oracle answers at once from the last report at that place, or the same topic at a similar place, or a Gemini estimate. Each is clearly labeled (`past_report`, `similar_place`, `estimate`) and none of them pays.
-9. **Everyone who was right** gains trust and gets paid in devnet SOL: 0.001 for a matching tap, 0.01 for a verified photo. Wrong answers lose trust, so liars get quieter over time.
-10. **Every answer becomes data** in Tiger Data: trends, busiest hours, and instant future answers.
-11. **Spot scans.** In the Oracle app, earners tap *Scan this spot*: a Wi-Fi speed test (a 1 MB file served by Oracle), a 10-second loudness recording, and their floor. Scans per floor become "2nd floor is good, 3rd floor is bad", which agents read with `get_floor_report`.
+1. **An agent asks a question.** For example: “How long is the coffee line at this café?”
+2. **Oracle checks recent reports.** If a suitable answer is still fresh, it returns that answer first.
+3. **People nearby receive the request.** Oracle matches the place with people who have checked in or shared their location.
+4. **They answer.** Depending on the question, they can tap an option, send a photo, type a reply, or take a measurement.
+5. **Oracle compares the responses.** Matching answers and trust scores help settle the question. Disagreements can lead to a photo check.
+6. **The agent gets the result.** Oracle returns the answer with its source and supporting details, then saves the report for later use.
 
-| Layer | Tech |
-|---|---|
-| Agent interface | MCP server with 5 tools: `ask_place`, `get_answer`, `get_live_status`, `get_place_insights`, `get_floor_report`. Local for Claude Desktop (`mcp/oracle-mcp.js`) and remote at `/mcp` for claude.ai on web and phone (`mcp/http.js`) |
-| People | Telegram bot, Discord bot (buttons + `/checkin` `/ask` `/me` `/leaderboard`), installable web app with push notifications, native iPhone app. What each can do: [`docs/CHANNELS.md`](docs/CHANNELS.md) |
-| Brain | Node.js + Express (`src/core.js`) |
-| People, places, questions | MongoDB Atlas (2dsphere geo index) |
-| Answers, trends, payouts | Tiger Data hypertables + continuous aggregate |
-| Questions, photo reading, people counting, face blurring, estimates | Gemini API |
-| Official pages (hours, schedules, menus) | TinyFish Agent API, read in the background and stored |
-| When nobody answers | The official page for hours-type questions, then past reports in Tiger Data, then a labeled Gemini estimate |
-| Payouts | Solana devnet |
-| Hosting + domain | Vultr server at `https://oracle.tryalethea.com` (a GoDaddy domain), HTTPS by Caddy. Update it with `npm run deploy` |
-| Dashboard | Live map (Leaflet), live vote bars, trend chart, leaderboard, payouts |
+When nobody can answer, Oracle can use an official webpage, an older report, a similar place, or an AI estimate. These sources are labeled so they are not confused with a fresh answer from someone there. Fallback answers do not earn responder payouts.
 
-## Team
+The default request deadline is 40 seconds. An answer may still be unverified or based on a fallback; a fast response is not a guarantee that someone nearby confirmed it.
 
-| Person | Owns |
-|---|---|
-| Harshitha | `src/core.js`, `src/db/`, `mcp/`, Tiger Data, MongoDB |
-| Rithwik | `src/channels/discord.js`, `src/channels/telegram.js` |
-| Sashikant | `public/` (dashboard + photo page), `src/ai/gemini.js`, `src/pay/solana.js` |
+## Choose how to participate
 
-For working on the code (people or AI agents), start at [`AGENTS.md`](AGENTS.md). Decisions and their reasons are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+| Channel | What you can do |
+| --- | --- |
+| **Telegram** | Receive questions in chat. Answer with buttons, text, photos, or voice notes. Share your location to receive nearby requests. |
+| **Discord** | Check in with `/checkin` or set an area with `/location`. Receive requests in DMs and answer with buttons or messages. |
+| **Website** | Browse the map, answer requests, run spot scans, and manage rewards. Web notifications need permission and browser support. |
+| **iPhone app** | Use the native SwiftUI app for Home, Explore, Requests, Rewards, and Settings. Remote notifications need APNs setup on the backend. |
 
----
+Bots link to the website for connection-speed tests because they cannot run those tests inside a chat. A browser test measures the current connection to the Oracle server; it cannot always tell Wi-Fi from mobile data.
 
-# Setup (macOS)
+See [channel details](docs/CHANNELS.md) for the differences between each option.
 
-## 1. Tools (everyone)
+## Points, gift cards, and Solana
 
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"   # skip if brew works
-brew install node git
-node --version   # 20 or newer
-```
+Points are managed by Oracle’s backend. They are not a new cryptocurrency.
 
-## 2. Code
+When a person has enough points, they can request a gift card. The backend checks the balance, deducts points, and records an anonymous redemption ID in a Solana devnet memo transaction. The website shows the transaction status and a Solana Explorer link.
 
-Harshitha, once:
+The redemption flow includes duplicate-request checks, wallet ownership verification, retries, and cancellation for eligible failed requests. The website supports a signed wallet challenge; choosing an address alone does not prove ownership.
 
-```bash
-cd ~/Desktop && unzip oracle.zip && cd oracle
-git init && git add . && git commit -m "Oracle"
-# create an empty private repo "oracle" on github.com, then:
-git remote add origin https://github.com/<you>/oracle.git
-git branch -M main && git push -u origin main
-```
+**Gift cards are fulfilled manually.** A confirmed blockchain transaction records the request—it does not buy or deliver the gift card. Solana payouts in this project use **devnet**, and devnet SOL has no monetary value.
 
-Add Rithwik and Sashikant as collaborators. Then everyone:
+Reward thresholds and payout amounts are configured in [src/config.js](src/config.js).
 
-```bash
-git clone https://github.com/<you>/oracle.git && cd oracle   # (Harshitha: already there)
-npm install
-cp .env.example .env
-```
+## Photos and location
 
-Share one finished `.env` privately. **Never commit it.**
+Oracle’s photo pipeline blurs detected faces and personal details before storing photos. Detection can miss things, so people should avoid photographing private information in the first place.
 
-## 3. Accounts and keys (split them up, ~30 min total)
+Location helps Oracle send relevant requests and check supporting evidence. Browsing a distant venue does not check someone in there. When GPS is wrong, the app provides a way to correct the location on the map.
 
-| Key | Who | Steps |
-|---|---|---|
-| `MONGODB_URI` | Harshitha | mongodb.com/atlas → free M0 cluster → **Database Access**: add a user → **Network Access**: allow `0.0.0.0/0` → **Connect → Drivers** → copy the string, put the password in |
-| `TIGER_DATABASE_URL` | Harshitha | tigerdata.com → create a free service → **Connect** → copy the string. Open its **SQL editor**, paste all of `schema.sql`, run |
-| `DISCORD_TOKEN` | Rithwik | discord.com/developers → **New Application** "Oracle" → **Bot** → **Reset Token**. Set an owl avatar |
-| bot invite | Rithwik | **OAuth2 → URL Generator** → scopes `bot` + `applications.commands` → permissions **View Channels, Send Messages, Read Message History, Embed Links** → open the URL → add to your test server |
-| `DISCORD_GUILD_ID`, `DISCORD_CHANNEL_ID` | Rithwik | Discord **Settings → Advanced → Developer Mode**. Create `#oracle`. Right-click the server icon → Copy Server ID; right-click `#oracle` → Copy Channel ID |
-| `TELEGRAM_TOKEN` | Rithwik | In Telegram, message **@BotFather** → `/newbot` → copy the token |
-| `GEMINI_API_KEY` | Sashikant | aistudio.google.com → **Get API key** |
-| `SOLANA_TREASURY_SECRET` | Sashikant | `npm run wallet` → paste the secret line into `.env` → fund the printed address at faucet.solana.com (Devnet) |
-| `TINYFISH_API_KEY` | anyone | agent.tinyfish.ai/api-keys. Optional: without it, official-page answers are off |
-| `SESSION_SECRET` | anyone | Any long random string. It signs app sign-ins and **must be the same on every machine** |
-| `GEO_BIAS` | anyone | `lat,lng` of your home area (ASU Tempe: `33.4242,-111.9281`). Place lookups prefer it; without it they are worldwide |
+## What we used
 
-Every key is optional except MongoDB and Tiger Data. Missing keys just switch that feature off. `npm run check` validates your `.env` without printing any secrets.
+| Part | Technology |
+| --- | --- |
+| Backend and HTTP API | Node.js and Express |
+| AI assistant tools | Model Context Protocol (MCP) |
+| Accounts, places, and requests | MongoDB |
+| Report history, trends, and payouts | Tiger Data |
+| Question planning and photo interpretation | Gemini |
+| Official-page fallback | TinyFish |
+| Chat channels | Telegram and Discord |
+| Native iPhone app | SwiftUI |
+| Web maps and worldwide search | MapLibre, OpenStreetMap, and Nominatim |
+| Test payouts and redemption records | Solana devnet |
+| Existing hosted backend | Vultr |
 
-## 4. Run
+Features depend on the credentials and services configured on the server. Code in this repository does not mean every integration is enabled or verified on every deployment.
+
+## Run it locally
+
+You need Node.js 22 or newer, npm, and access to MongoDB and Tiger Data.
 
 ```bash
-npm run dev     # localhost only
-npm run demo    # demo day: public HTTPS link + server, and the Mac stays awake
+git clone https://github.com/Sunny-ybe/oracle.git
+cd oracle
+npm ci
+
+# Create a local environment file if you do not already have one.
+test -f .env || cp .env.example .env
 ```
 
-Open **http://localhost:3000**. `#oracle` gets the check-in panel; `/checkin`, `/ask`, `/me` and `/leaderboard` appear in Discord. Message your Telegram bot `/start`.
+Fill in `.env` using [.env.example](.env.example) as the reference. Do not commit this file.
 
-> **Only one machine runs the bots at a time.** Teammates who are coding leave `DISCORD_TOKEN` and `TELEGRAM_TOKEN` empty in their own `.env`.
+| Setting | Purpose |
+| --- | --- |
+| `MONGODB_URI`, `MONGODB_DB` | MongoDB connection and database name |
+| `TIGER_DATABASE_URL` | Tiger Data connection; initialize its tables using [schema.sql](schema.sql) |
+| `SESSION_SECRET` | Signs account sessions. Keep it stable for servers that share those sessions. |
+| `PUBLIC_URL` | The backend’s public HTTPS address; use the local address while developing |
+| `ORACLE_API_KEY` | Optional key for agent and operator routes. If empty, those routes do not require a key. |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | Gemini features |
+| `TINYFISH_API_KEY` | Official-page fallback |
+| `SOLANA_RPC`, `SOLANA_TREASURY_SECRET` | Solana devnet connection and treasury |
+| `APNS_KEY`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID` | Native iPhone push notifications |
+| `DISCORD_INVITE_URL` | Public Discord join link |
+| `GEO_BIAS` | Optional preferred area for agent place lookups; leave empty for no preferred area |
+| `AUTO_IMPORT_PLACES=0` | Disables automatic place imports during local or preview startup |
 
-## 5. Test without phones
+Other settings, including bot credentials, OAuth clients, and reward rules, are listed in `.env.example` and `src/config.js`.
+
+**Keep `TELEGRAM_TOKEN` and `DISCORD_TOKEN` unset on development laptops.** The team’s bots run on the existing Vultr server. Running another copy can interfere with request delivery.
+
+Check the configuration and start the server:
 
 ```bash
-# five fake people at the Student Pavilion
-for n in ana ben cal dee eve; do
-  curl -s -X POST localhost:3000/api/dev/checkin -H "Content-Type: application/json" \
-    -d "{\"name\":\"$n\",\"place\":\"pavilion\"}"; echo
-done
+npm run check
+npm run dev
 ```
 
-Ask on the dashboard ("How long is the line?"), then:
+Then open:
 
-```bash
-QID=$(curl -s localhost:3000/api/dev/open | node -pe "JSON.parse(require('fs').readFileSync(0))[0].id")
-for n in ana ben cal; do
-  curl -s -X POST localhost:3000/api/dev/vote -H "Content-Type: application/json" \
-    -d "{\"name\":\"$n\",\"questionId\":\"$QID\",\"option\":3}"; echo
-done
+- **Website:** [http://localhost:3000/app](http://localhost:3000/app)
+- **Dashboard:** [http://localhost:3000](http://localhost:3000)
+- **Join page:** [http://localhost:3000/join](http://localhost:3000/join)
+
+A physical phone needs a reachable backend address. `localhost` on a phone refers to the phone itself. Use a public HTTPS address for phone testing and browser access to the camera, microphone, and location.
+
+For a temporary public link, `npm run demo` starts the server and a configured tunnel. See [deployment instructions](docs/WEB_DEPLOYMENT.md) before setting up a separate preview or changing the live server.
+
+## Connect an AI assistant
+
+The shared Oracle MCP address is:
+
+```text
+https://oracle.tryalethea.com/mcp
 ```
 
-Watch the bars fill and the answer land. Ask again: it answers instantly with the **memory** tag.
+The shared endpoint is configured for **no authentication**. For your own deployment, check `/api/app/config` to see its MCP address and authentication setting. Setting `ORACLE_API_KEY` enables key protection on that server.
 
-To see a **dispute**, vote 1, 2, 3, 1, 2 with five different people. Disputes need a real Discord or Telegram user among the voters to receive the photo link, so check in on your own phone too.
+Add Oracle as a custom MCP connector in an assistant that supports remote MCP servers. Setup and availability depend on the assistant and account. The iPhone app includes Claude and ChatGPT setup guidance; it does not silently install a connector or claim a connection it cannot verify.
 
-## 6. Test with phones
-
-All three of you tap the same place in `#oracle` (or `/checkin`). Ask from the dashboard or with `/ask` in Discord. Tap on your phones.
-
-If DMs don't arrive: Discord **Settings → Privacy & Safety → allow DMs from server members**. Polls fall back to `#oracle` either way.
-
-## 7. Connect an AI agent (Claude Desktop)
-
-```bash
-pwd          # e.g. /Users/harshitha/Desktop/oracle
-which node   # e.g. /opt/homebrew/bin/node
-open -e ~/Library/Application\ Support/Claude/claude_desktop_config.json
-```
-
-(No file? Claude Desktop → **Settings → Developer → Edit Config**.) Paste, with your paths:
+For a local client that supports stdio MCP servers, use a configuration like this with your own Node and repository paths:
 
 ```json
 {
   "mcpServers": {
     "oracle": {
-      "command": "/opt/homebrew/bin/node",
-      "args": ["/Users/harshitha/Desktop/oracle/mcp/oracle-mcp.js"],
-      "env": { "ORACLE_URL": "http://localhost:3000", "ORACLE_API_KEY": "" }
+      "command": "/absolute/path/to/node",
+      "args": ["/absolute/path/to/oracle/mcp/oracle-mcp.js"],
+      "env": {
+        "ORACLE_URL": "http://localhost:3000",
+        "ORACLE_API_KEY": ""
+      }
     }
   }
 }
 ```
 
-Quit Claude Desktop with **Cmd+Q**, reopen it, and try:
+Oracle exposes five tools: `ask_place`, `get_answer`, `get_live_status`, `get_place_insights`, and `get_floor_report`.
 
-- "How long is the line at the Student Pavilion right now?"
-- "Is there still pizza at the hackathon?"
-- "Which campus spot is least crowded right now?"
-- "When is the MU line usually shortest?"
+Try asking:
 
-The same server works in Cursor (**Settings → MCP**, same JSON).
+- “How long is the coffee line at this venue right now?”
+- “Which floor of this library is quietest?”
+- “Is there still food at the event?”
 
-### Claude on the web or phone (claude.ai)
+Include a city or address when the place name could refer to more than one venue.
 
-Start the server with `npm run demo`; it prints a `Claude MCP` address ending in `/mcp`. In claude.ai: **Settings → Connectors → Add custom connector** and paste that address. No install is needed, and the same five tools appear. While `ORACLE_API_KEY` is empty the endpoint is open to anyone who has the link, so don't post it publicly.
+## Work on the iPhone app
 
-## 8. Go live (Vultr + domain + HTTPS)
+Open `ios/Oracle/Oracle.xcodeproj` in Xcode. The app uses the backend in this repository.
 
-HTTPS matters: phones only share location with the photo page over HTTPS.
+See the [iPhone README](ios/Oracle/README.md) for server settings, signing, TestFlight preparation, and push notifications. [NATIVE.md](NATIVE.md) describes the native API integration.
 
-1. **Vultr:** deploy the cheapest Ubuntu 24.04 instance and copy its IP.
-2. **Domain:** register one with GoDaddy Registry and add an **A record** `@` → the IP.
-3. On the server:
-   ```bash
-   ssh root@<IP>
-   curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt install -y nodejs git caddy
-   git clone https://github.com/<you>/oracle.git && cd oracle && npm install
-   nano .env      # paste .env, set PUBLIC_URL=https://<your-domain>
-   npx pm2 start src/server.js --name oracle && npx pm2 save
-   echo "<your-domain> {
-     reverse_proxy localhost:3000
-   }" > /etc/caddy/Caddyfile && systemctl restart caddy
-   ufw allow 80,443/tcp   # Vultr's firewall only opens SSH by default
-   ```
-4. Open `https://<your-domain>`. Caddy gets the certificate automatically.
-5. Stop the bots on your laptops, and set `ORACLE_URL` in the Claude config to `https://<your-domain>`.
+Push notifications require an Apple-enabled build, server APNs credentials, a registered device token, and the user’s permission. Alerts and sounds follow the person’s iOS notification settings, Focus, and Silent Mode. Keep Apple keys on the server, not in the app or Git.
 
----
+## Check your changes
 
-# HTTPS for phones (needed for the app, camera, microphone and location)
+Run the local tests without sending payouts or creating database users:
 
-Phones only allow the camera, microphone and location on https pages. `npm run demo` starts the public link for you and writes it to `PUBLIC_URL`. It uses the first of these that is set in `.env`:
+```bash
+node --test test/*.test.js
+```
 
-| Setting | Link | Notes |
-|---|---|---|
-| `TUNNEL_TOKEN` + `PUBLIC_DOMAIN` | Cloudflare named tunnel on your own domain | Fixed address, no notice page. The domain's DNS must be on Cloudflare |
-| `NGROK_DOMAIN` | ngrok fixed domain | Fixed address. Browsers see ngrok's notice page once; API clients such as Claude don't |
-| neither | Cloudflare quick tunnel | A new address every run, which breaks QR codes and the Claude connector |
+The separate `scripts/test-redemptions.js` script is an integration test. It creates a temporary user and sends devnet transactions. Use it only with a deliberately configured test environment.
 
-# Earners: choose once, answer where you already are
+The team’s databases contain real users. Use separate preview databases where possible. For shared-database tests, follow [AGENTS.md](AGENTS.md) and the testing instructions in [HANDOFF.md](HANDOFF.md): use `zz-test-` users at a faraway location and clean up afterward.
 
-**Questions are only asked in Claude.** Earners never have to open anything else to answer.
+## Code guide
 
-**Any place, not a fixed list.** Claude can ask about any store, restaurant, park, parking lot or address ("Trader Joe's on Mill Ave", "the Target on Rural Rd"). Oracle finds it on the map (OpenStreetMap), remembers it, and asks earners whose shared location is within `ANSWER_RADIUS_MILES` (default 5), nearest first. Each request says how far it is ("📍 0.3 mi from you"). The campus places in `src/config.js` are just shortcuts.
+| Location | What is there |
+| --- | --- |
+| [src/core.js](src/core.js) | Questions, matching, voting, and answer resolution |
+| [src/db/](src/db/) | MongoDB and Tiger Data access |
+| [src/ai/](src/ai/) | Question planning, photo checks, privacy masking, and audio helpers |
+| [src/channels/](src/channels/) | Telegram, Discord, web push, and APNs |
+| [src/pay/](src/pay/) | Solana payouts and gift-card redemption records |
+| [mcp/](mcp/) | Local and remote MCP servers |
+| [public/](public/) | Website, dashboard, and shared assets |
+| [ios/Oracle/](ios/Oracle/) | Native iPhone app |
 
-The room QR opens `/join` (one general code, not tied to a place), where people pick **once** where requests should reach them, then share their location once:
+Start with [AGENTS.md](AGENTS.md) before changing the code. The project’s decisions are recorded in [docs/DECISIONS.md](docs/DECISIONS.md).
 
-| Channel | How they answer | Extra sensors |
-|---|---|---|
-| **Telegram** (fastest) | Tap a button in the chat | Send a photo, type a number for people counts, or send a 10-second voice note for a noise reading |
-| **Discord** | Tap a button in the DM | Reply with a photo, a number or a voice message |
-| **Oracle web app** | Phone notification → tap → answer | Camera, 10-second microphone meter, 1 MB Wi-Fi speed test, live location, live map |
-| **iPhone app** | Native client in `ios/Oracle` | Push needs Apple push keys (`APNS_*`) |
+## Team
 
-- Every request can be answered with **one tap** everywhere. Photos and readings are optional and earn +5 points.
-- Telegram and Discord answer inside the chat. The one exception is a Wi-Fi question: a bot can't measure a connection, so the message adds a personal link that opens the speed test in the browser.
-- The full table of what each channel can and can't do is in [`docs/CHANNELS.md`](docs/CHANNELS.md).
-- iPhone app users: Share → **Add to Home Screen**, then open Oracle from the Home Screen to allow notifications (iOS 16.4+).
-- Voice-note noise readings need ffmpeg on the server: `brew install ffmpeg`.
-- The native app pitch (Profile tab): motion, Bluetooth crowd density, light and air pressure, which are sensors a chat bot can't reach.
-
-# Join once, earn everywhere
-
-- **First time:** scan the join QR. Telegram opens, checks you in, and offers to share your location.
-- **After that:** no scanning. Share **live location** (📎 → Location → Share My Live Location) and Oracle matches you to the nearest place with a MongoDB geo query. Walk to the MU and you get MU questions.
-- **Points:** +1 per answer, +5 for a verified photo or a real measurement. Right answers also earn devnet SOL automatically: 0.001 for a tap, 0.01 for a verified photo.
-- **Spend them in Telegram:**
-  - `/points`: balance, trust, earnings
-  - `/rewards`: gift cards (catalog in `src/config.js` → `REWARDS`). Redemptions are listed at `GET /api/redemptions` for you to fulfil.
-  - `/wallet <address>`: link a Phantom wallet (Developer settings → Testnet mode → Devnet)
-  - `/cashout <points>`: points → SOL at `POINTS_PER_SOL`, sent on-chain with an explorer link
-
-# Room demo: the judges answer
-
-1. Before judging: `MIN_VOTES=3` in `.env`, server running, dashboard open full screen on the projector.
-2. Click **Invite the room** (or press **J**). A big QR appears. Judges scan it and Telegram opens already checked in at `DEMO_PLACE`. Their names pop in and the counter climbs.
-3. Click **Start asking** and ask from Claude: *"How long is the food line here right now?"*
-4. The map shows one ringing phone per person pinged ("Pinging 6 people"). Judges' phones buzz; each tap lights a phone in its answer's colour and fills the bars.
-5. Once 3 agree, Oracle waits `GRACE_SECONDS` (default 8) for the rest of the room, then settles with everyone's votes. Confetti, the answer headline, and Claude answers.
-6. Ask again: instant, from memory.
-
-# Demo (3 minutes)
-
-1. **Problem (20 s):** "Ask any AI how long the food line is right now. It can't know."
-2. **Join (20 s):** QR to `#oracle`. Judges tap **Student Pavilion**.
-3. **Ask (50 s):** in Claude: "How long is the line for food at the hackathon right now?" Phones buzz, the map pulses, bars fill, Claude answers.
-4. **Memory (15 s):** ask again. ⚡ Instant. "The first answer costs a tap. The second is free."
-5. **Dispute (40 s):** split votes, a photo request, Gemini verifies with a GPS check, the SOL payout appears with its explorer link.
-6. **Patterns (20 s):** "When is the line shortest?" Claude answers from Tiger Data.
-7. **Close (15 s):** "Oracle turns being somewhere into paid work, and gives every AI agent eyes on the ground."
-
-**Backups:** five teammates' phones checked in, an answer seeded a few minutes before (so step 4 always works), and the demo video.
-
-# Tuning
-
-All the knobs are in `src/config.js`: vote thresholds, timeouts, rewards and places (drop exact map pins before the demo). The ones you're most likely to change are env settings: `MIN_VOTES` (3; set 1 to test alone), `DEADLINE_SECONDS` (40), `CACHE_MINUTES` (10) and `ANSWER_RADIUS_MILES` (5).
-
-# API
-
-| Route | What |
-|---|---|
-| `POST /api/ask` `{place, question, waitSeconds}` | Ask. Waits up to `waitSeconds` (default 45) and returns `answered`, or `pending` + `question_id` |
-| `POST /mcp` | Remote MCP endpoint (Streamable HTTP) for claude.ai and other MCP clients |
-| `GET /api/questions/:id` | Result of a pending question |
-| `GET /api/status` | Every place: latest answer + people checked in |
-| `GET /api/insights?place=&topic=` | Busiest hours + last 24 h |
-| `GET /api/stream` | Live events (Server-Sent Events) |
-| `GET /verify/:token` | Photo page |
-| `/api/dev/*` | Fake people for testing |
-
-## Native iPhone app
-
-The SwiftUI client is in [`ios/Oracle`](ios/Oracle/README.md). Open `ios/Oracle/Oracle.xcodeproj` in Xcode. Home, Explore, Requests, Rewards and Settings use the backend in this repository. See [`NATIVE.md`](NATIVE.md) for the HTTP/MCP integration and the native README for TestFlight preparation. Signing and App Store Connect upload remain separate from this source push.
+Built by Harshitha, Rithwik, and Sashikant for SunHacks.
