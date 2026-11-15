@@ -18,7 +18,14 @@ export const env = {
   telegramToken: process.env.TELEGRAM_TOKEN,
 
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+  googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID || "", // Google Cloud → Credentials → OAuth client of type "iOS"
   microsoftClientId: process.env.MICROSOFT_CLIENT_ID || "",
+
+  // Apple Push for the iPhone app (developer.apple.com → Keys → APNs). APNS_KEY = .p8 text or a path to it.
+  apnsKey: process.env.APNS_KEY || "",
+  apnsKeyId: process.env.APNS_KEY_ID || "",
+  apnsTeamId: process.env.APNS_TEAM_ID || "",
+  apnsBundleId: process.env.APNS_BUNDLE_ID || "com.oracleprototype.Oracle",
   geminiKey: process.env.GEMINI_API_KEY,
   geminiModel: process.env.GEMINI_MODEL || "gemini-3.8-flash",
   // Tried in order when the main model is overloaded or slow, e.g. "gemini-3.8-flash-lite".
@@ -34,7 +41,9 @@ export const env = {
   minCashout: num(process.env.MIN_CASHOUT, 10),            // smallest cash-out in points
   activeHours: num(process.env.ACTIVE_HOURS, 24),          // check-ins / locations older than this are ignored
   answerRadiusMiles: num(process.env.ANSWER_RADIUS_MILES, 5), // earners this close to a place get its requests (nearest first)
-  geoBias: (process.env.GEO_BIAS || "33.4242,-111.9281").split(",").map(Number), // place search prefers results near here (ASU Tempe)
+  // Optional home area "lat,lng" (e.g. ASU Tempe: 33.4242,-111.9281). Biases agent place lookups and seeds nearby places.
+  // Empty: lookups are worldwide and no area is auto-imported.
+  geoBias: (() => { const v = (process.env.GEO_BIAS || "").split(",").map(Number); return v.length === 2 && v.every(Number.isFinite) ? v : null; })(),
 
   demoPlace: process.env.DEMO_PLACE || "pavilion",          // where the join QR checks people in
   discordInvite: process.env.DISCORD_INVITE_URL || "",      // optional second QR

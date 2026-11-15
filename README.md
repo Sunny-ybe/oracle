@@ -260,3 +260,7 @@ All the knobs are in `src/config.js`: vote thresholds, timeouts, rewards, places
 | `GET /api/stream` | Live events (Server-Sent Events) |
 | `GET /verify/:token` | Photo page |
 | `/api/dev/*` | Fake people for testing |
+
+## Native iPhone app
+
+The SwiftUI client is in [`ios/Oracle`](ios/Oracle/README.md). Open `ios/Oracle/Oracle.xcodeproj` in Xcode. Home, Explore, Requests, Rewards and Settings use the backend in this repository. See [`NATIVE.md`](NATIVE.md) for the HTTP/MCP integration and the native README for TestFlight preparation. Signing and App Store Connect upload remain separate from this source push.

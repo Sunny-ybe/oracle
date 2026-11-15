@@ -1,0 +1,19 @@
+{
+  "Simulator Target Bundle": "com.oracleprototype.Oracle",
+  "aps": {
+    "alert": {
+      "title": "Quick Poll · Student Pavilion",
+      "body": "How crowded is it right now?"
+    },
+    "category": "ORACLE_POLL",
+    "sound": "default"
+  },
+  "request": {
+    "id": "demo-poll",
+    "place": "Student Pavilion",
+    "placeId": "pavilion",
+    "question": "How crowded is it right now?",
+    "options": ["Quiet", "Moderate", "Busy"],
+    "sensor": "poll"
+  }
+}

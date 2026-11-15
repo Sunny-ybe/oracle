@@ -35,3 +35,10 @@ Claude **with vs. without** the Oracle connector (guess vs. real answer), in bot
 ## Data notes
 - App sign-in token is in `localStorage["oracleToken"]`. Accounts, credits, trust and wallets are in Mongo `users`, so clearing the browser loses nothing. Push keys are in Mongo `settings`.
 - Question types (Gemini picks one): `poll`, `photo`, `people_count`, `noise`, `report`.
+
+## Native integration branch (2026-11-15)
+
+- `native-ios` adds the iPhone project under `ios/Oracle` plus its HTTP/MCP, account and optional APNs integration. Upstream SESSION_SECRET, history fallback and photo reward changes are retained.
+- Verified before packaging: unsigned iOS device Release build; assistant swipe/setup navigation; sound preference persistence and preview; generated WAV format/clipping checks; Crowd Guess eligibility and positive/insufficient-photo UI paths (positive UI path uses isolated fixtures).
+- Native backend `.env` values and Xcode user state are excluded. Shared DB writes and bots are not run by this branch preparation.
+- Remaining: stable public HTTPS URL, appropriate API/OAuth authentication for remote assistants, physical-device/APNs validation, and signed TestFlight archive/upload.
