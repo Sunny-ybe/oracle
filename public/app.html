@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1e6b46" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Oracle · earn by being somewhere</title>
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icon.png?s=180" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --green: #1e6b46; --green-2: #2f8a5c; --mint: #e7f3eb; --mint-2: #f3f8f4;
+    --ink: #13241b; --muted: #66756c; --line: #e3e9e4; --bg: #f6f8f6; --card: #fff;
+    --purple: #5b3fd6; --red: #d64545; --amber: #c98a12; --blue: #2f6fe0;
+    --o1: #2f8a5c; --o2: #c98a12; --o3: #d64545;
+    --r: 18px; --shadow: 0 6px 20px -10px rgba(19,36,27,.25);
+    font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+  body { overscroll-behavior: none; }
+  button { font: inherit; color: inherit; }
+  .app { height: 100dvh; display: flex; flex-direction: column; max-width: 520px; margin: 0 auto; background: var(--bg); position: relative; overflow: hidden; }
+  .screen { flex: 1; overflow: auto; display: none; padding-bottom: 92px; }
+  .screen.on { display: block; animation: in .25s ease; }
+  @keyframes in { from { opacity: 0; transform: translateY(6px); } }
+
+  /* header */
+  .head { display: flex; align-items: center; gap: 10px; padding: calc(14px + env(safe-area-inset-top)) 18px 10px; }
+  .head h1 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin: 0; }
+  .head .sp { flex: 1; }
+  .owl { width: 34px; height: 34px; }
+  .iconbtn { width: 40px; height: 40px; border-radius: 12px; border: 0; background: transparent; position: relative; display: grid; place-items: center; cursor: pointer; }
+  .badge { position: absolute; top: 4px; right: 3px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; padding: 0 5px; }
+  .badge:empty { display: none; }
+
+  /* explore */
+  #explore { padding-bottom: 0; position: relative; }
+  #explore.on { display: flex; flex-direction: column; }
+  .find { margin: 0 18px 10px; display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); }
+  .find input { border: 0; outline: 0; flex: 1; font-size: 16px; background: transparent; color: var(--ink); }
+  .mapwrap { position: relative; flex: 1; margin: 0 12px 84px; border-radius: 22px; overflow: hidden; box-shadow: var(--shadow); }
+  #map { position: absolute; inset: 0; }
+  .locate { position: absolute; right: 12px; bottom: 12px; z-index: 500; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; }
+  .hint { position: absolute; left: 12px; right: 68px; bottom: 12px; z-index: 500; background: rgba(255,255,255,.95); border-radius: 14px; padding: 10px 12px; font-size: 13px; color: var(--muted); box-shadow: var(--shadow); }
+  .hint b { color: var(--ink); }
+  .pin { display: flex; align-items: center; gap: 6px; transform: translate(-21px, -50px); white-space: nowrap; }
+  .pin .ic { width: 42px; height: 42px; border-radius: 50% 50% 50% 6px; transform: rotate(-45deg); display: grid; place-items: center; box-shadow: 0 6px 14px -6px rgba(0,0,0,.45); border: 3px solid #fff; }
+  .pin .ic svg { transform: rotate(45deg); }
+  .pin .lab { background: rgba(255,255,255,.96); border-radius: 12px; padding: 6px 10px; box-shadow: 0 4px 14px -6px rgba(0,0,0,.35); line-height: 1.15; }
+  .pin .lab b { display: block; font-size: 13px; }
+  .pin .lab span { font-size: 12.5px; font-weight: 600; }
+  .pin.live .ic { animation: bob 1.2s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: rotate(-45deg) translate(3px, -3px); } }
+  .me-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--blue); border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(47,111,224,.18); }
+
+  /* cards and lists */
+  .section { padding: 0 18px; }
+  .card { background: var(--card); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+  .title { font-size: 22px; font-weight: 800; letter-spacing: -.01em; margin: 8px 0 12px; }
+  .muted { color: var(--muted); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; border-radius: 99px; padding: 4px 10px; background: var(--mint); color: var(--green); }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .grow { flex: 1; min-width: 0; }
+  .req { cursor: pointer; }
+  .req h3 { margin: 6px 0 4px; font-size: 17px; line-height: 1.3; }
+  .empty { text-align: center; color: var(--muted); padding: 38px 20px; line-height: 1.5; }
+  .empty .big { font-size: 44px; }
+
+  /* live request */
+  .lr-head { display: flex; align-items: center; gap: 8px; padding: calc(14px + env(safe-area-inset-top)) 18px 6px; }
+  .back { width: 40px; height: 40px; border: 0; background: transparent; border-radius: 12px; display: grid; place-items: center; cursor: pointer; }
+  .live-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--mint); color: var(--green); font-weight: 700; font-size: 13px; padding: 5px 10px; border-radius: 8px; }
+  .live-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green-2); animation: blinkdot 1.2s infinite; }
+  @keyframes blinkdot { 50% { opacity: .2; } }
+  .where { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; margin: 12px 0 6px; }
+  .q { font-size: 22px; font-weight: 800; line-height: 1.25; margin: 0 0 16px; }
+  .opt { display: block; width: 100%; border: 1.5px solid var(--line); background: #fff; border-radius: 14px; padding: 15px; font-size: 17px; font-weight: 600; margin-bottom: 10px; text-align: center; cursor: pointer; position: relative; transition: all .15s; }
+  .opt.sel { background: var(--green); color: #fff; border-color: var(--green); }
+  .opt.sel::after { content: "✓"; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 50%; background: #fff; color: var(--green); display: grid; place-items: center; font-size: 14px; }
+  .sensors { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 12px; }
+  .sensor { border: 1.5px solid var(--line); background: #fff; border-radius: 16px; padding: 14px 10px; text-align: center; cursor: pointer; font-weight: 700; font-size: 14px; }
+  .sensor small { display: block; font-weight: 500; color: var(--muted); margin-top: 2px; font-size: 12px; }
+  .sensor.done { border-color: var(--green-2); background: var(--mint-2); color: var(--green); }
+  .sensor.need { border-color: var(--green); box-shadow: 0 0 0 3px var(--mint); }
+  .sensor.wide { grid-column: span 2; }
+  .meter { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 8px; }
+  .meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--o1), var(--o2), var(--o3)); transition: width .08s linear; }
+  .shot { width: 100%; border-radius: 14px; margin: 4px 0 10px; display: none; }
+  textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; font: 16px inherit; font-family: inherit; resize: vertical; min-height: 96px; margin-bottom: 10px; }
+  .note { display: flex; gap: 8px; color: var(--muted); font-size: 13px; line-height: 1.4; margin: 8px 2px 14px; }
+  .primary { display: block; width: 100%; border: 0; border-radius: 16px; background: var(--green); color: #fff; font-size: 18px; font-weight: 700; padding: 16px; cursor: pointer; }
+  .primary:disabled { opacity: .5; }
+  .done-card { text-align: center; padding: 26px 18px; }
+  .done-card .pts { font-size: 40px; font-weight: 800; color: var(--green); }
+  .masked { width: 100%; border-radius: 14px; margin-top: 12px; }
+  input[type=file] { display: none; }
+
+  /* place detail */
+  .hero { height: 210px; background: linear-gradient(135deg, #cfe6d8, #e9f1fb); position: relative; }
+  .hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hero .back { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 10px; background: rgba(255,255,255,.9); }
+  .hero .cap { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.55); color: #fff; font-size: 11.5px; padding: 4px 8px; border-radius: 8px; }
+  .pd { margin-top: -26px; position: relative; }
+  .pd .name { display: flex; gap: 12px; align-items: center; }
+  .pd .name .ic { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .pd h2 { margin: 0; font-size: 21px; }
+  .headline { display: flex; align-items: center; gap: 12px; background: var(--mint-2); border-radius: 14px; padding: 12px; margin-top: 14px; }
+  .headline b { font-size: 21px; color: var(--purple); }
+  .conf { margin-left: auto; text-align: center; font-size: 11px; color: var(--muted); }
+  .conf b { display: block; font-size: 15px; color: var(--green); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 14px 0 8px; }
+  .tabs button { flex: 1; border: 0; background: none; padding: 10px; font-weight: 600; color: var(--muted); border-bottom: 2.5px solid transparent; cursor: pointer; }
+  .tabs button.on { color: var(--green); border-color: var(--green); }
+  .stat { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .stat:last-child { border: 0; }
+  .pillv { margin-left: auto; font-size: 12.5px; font-weight: 700; padding: 4px 10px; border-radius: 99px; }
+  .updated { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+
+  /* rewards & profile */
+  .wallet { background: linear-gradient(135deg, var(--green), #2b8a5c); color: #fff; }
+  .wallet .pts { font-size: 44px; font-weight: 800; letter-spacing: -.02em; }
+  .wallet .sub { opacity: .85; font-size: 14px; }
+  .reward { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .reward:last-child { border: 0; }
+  .reward .gc { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: var(--mint); }
+  .small { border: 0; border-radius: 12px; background: var(--green); color: #fff; font-weight: 700; padding: 9px 14px; cursor: pointer; }
+  .small.ghost { background: var(--mint); color: var(--green); }
+  .small:disabled { opacity: .4; }
+  .field { display: flex; gap: 8px; margin-top: 10px; }
+  .field input { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px; font-size: 15px; }
+  .kv { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .kv:last-child { border: 0; }
+  .sens { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .sens .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green-2); }
+  .sens .dot.off { background: #c9d2cc; }
+  .pro { background: linear-gradient(135deg, #12241b, #1e6b46); color: #fff; }
+  .pro p { opacity: .85; line-height: 1.45; }
+
+  /* tab bar */
+  .tabbar { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(255,255,255,.97);
+    border-top: 1px solid var(--line); padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); z-index: 1000; backdrop-filter: blur(10px); }
+  .tabbar button { border: 0; background: none; display: grid; justify-items: center; gap: 3px; font-size: 11.5px; color: var(--muted); cursor: pointer; position: relative; padding: 4px; }
+  .tabbar button.on { color: var(--green); font-weight: 700; }
+  .tabbar .badge { top: -2px; right: calc(50% - 22px); }
+
+  .toast { position: absolute; left: 16px; right: 16px; top: calc(12px + env(safe-area-inset-top)); z-index: 3000; background: var(--ink); color: #fff; border-radius: 16px; padding: 14px 16px;
+    font-size: 15px; box-shadow: 0 16px 40px -12px rgba(0,0,0,.5); transform: translateY(-140%); transition: transform .35s cubic-bezier(.2,1.2,.4,1); cursor: pointer; }
+  .toast.show { transform: none; }
+  .gate { position: absolute; inset: 0; z-index: 4000; background: var(--bg); display: none; place-content: center; text-align: center; padding: 30px; }
+  .gate.on { display: grid; }
+  .notify { background: var(--ink); color: #fff; border-radius: var(--r); padding: 14px 16px; margin: 0 18px 12px; display: none; gap: 12px; align-items: center; }
+  .notify.on { display: flex; }
+  .notify p { margin: 0; flex: 1; font-size: 14px; line-height: 1.4; }
+  .notify button { border: 0; border-radius: 12px; background: #f2b33d; color: #2a1a00; font-weight: 700; padding: 10px 12px; white-space: nowrap; }
+  :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- EXPLORE -->
+  <section class="screen on" id="explore">
+    <div class="head">
+      <svg class="owl" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#1e6b46"/><circle cx="23" cy="31" r="9" fill="#fff"/><circle cx="41" cy="31" r="9" fill="#fff"/><circle cx="23" cy="31" r="4" fill="#13241b"/><circle cx="41" cy="31" r="4" fill="#13241b"/><path d="M29 41h6l-3 6z" fill="#f2b33d"/></svg>
+      <h1>Oracle</h1><div class="sp"></div>
+      <button class="iconbtn" aria-label="Requests" onclick="go('contribute')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg>
+        <span class="badge" id="bellBadge"></span>
+      </button>
+    </div>
+    <div class="notify" id="notify1"><p id="notifyText1">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
+    <div class="find">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#66756c" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="search" placeholder="Find a place" aria-label="Find a place" />
+    </div>
+    <div class="mapwrap">
+      <div id="map"></div>
+      <div class="hint" id="mapHint">Agents ask in Claude. <b>You answer here</b> and earn.</div>
+      <button class="locate" aria-label="Share my location" onclick="locateMe()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2"><path d="M3 11l18-8-8 18-2-8z"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- PLACE DETAIL -->
+  <section class="screen" id="place"></section>
+
+  <!-- CONTRIBUTE: requests sent to you -->
+  <section class="screen" id="contribute">
+    <div class="head"><h1>Live requests</h1></div>
+    <div class="notify" id="notify2"><p id="notifyText2">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
+    <div class="section" id="reqList"></div>
+  </section>
+
+  <!-- ONE LIVE REQUEST -->
+  <section class="screen" id="request"></section>
+
+  <!-- REWARDS -->
+  <section class="screen" id="rewards">
+    <div class="head"><h1>Rewards</h1></div>
+    <div class="section" id="rewardsBody"></div>
+  </section>
+
+  <!-- PROFILE -->
+  <section class="screen" id="profile">
+    <div class="head"><h1>Profile</h1></div>
+    <div class="section" id="profileBody"></div>
+  </section>
+
+  <nav class="tabbar" aria-label="Main">
+    <button class="on" data-tab="explore" onclick="go('explore')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg>Explore</button>
+    <button data-tab="contribute" onclick="go('contribute')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Contribute<span class="badge" id="tabBadge"></span></button>
+    <button data-tab="rewards" onclick="go('rewards')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>Rewards</button>
+    <button data-tab="profile" onclick="go('profile')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Profile</button>
+  </nav>
+
+  <div class="toast" id="toast" role="status"></div>
+  <div class="gate" id="gate">
+    <form id="signup" style="max-width:340px;width:100%;text-align:left">
+      <div style="text-align:center;font-size:52px">🦉</div>
+      <h2 style="text-align:center;margin:6px 0 4px">Welcome to Oracle</h2>
+      <p class="muted" style="text-align:center;line-height:1.5;margin:0 0 18px">Get a notification when an AI agent asks about a place you're at. Answer in one tap, earn points.</p>
+      <label for="suName" style="font-weight:600;font-size:14px">Your first name</label>
+      <input id="suName" autocomplete="given-name" required style="width:100%;border:1.5px solid var(--line);border-radius:14px;padding:14px;font-size:17px;margin:6px 0 14px">
+      <button class="primary" type="submit">Start earning</button>
+      <p class="muted" id="suPlace" style="text-align:center;font-size:13px;margin-top:12px"></p>
+    </form>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp; tg?.ready(); tg?.expand();
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ago = (t) => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+const OPT = ["var(--o1)", "var(--o2)", "var(--o3)"];
+const params = new URLSearchParams(location.search);
+if (params.get("t")) localStorage.setItem("oracleToken", params.get("t"));
+const auth = localStorage.getItem("oracleToken") ? { "x-oracle-token": localStorage.getItem("oracleToken") } : {};
+const api = (path, body) => fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json", ...auth }, body: JSON.stringify(body) } : { headers: auth })
+  .then(async (r) => { if (r.status === 401) { $("gate").classList.add("on"); throw new Error("signed out"); } return r.json(); });
+
+/* ---------- icons per kind of place ---------- */
+const KIND = {
+  food:    { color: "var(--purple)", hex: "#5b3fd6", svg: '<path d="M7 3v8a2 2 0 002 2v8M9 3v6M11 3v8M17 3c-2 0-3 3-3 6s1 4 3 4v8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>' },
+  coffee:  { color: "#7a4b2a", hex: "#7a4b2a", svg: '<path d="M5 9h11v5a5 5 0 01-5 5H10a5 5 0 01-5-5zM16 10h2a2 2 0 010 4h-2M8 3c0 1 1 1 1 2s-1 1-1 2M12 3c0 1 1 1 1 2s-1 1-1 2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>' },
+  library: { color: "var(--green)", hex: "#1e6b46", svg: '<path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1zM12 6v14" stroke="#fff" stroke-width="2" fill="none"/>' },
+  gym:     { color: "var(--red)", hex: "#d64545", svg: '<path d="M6 8v8M9 6v12M15 6v12M18 8v8M9 12h6M3 10v4M21 10v4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>' },
+  events:  { color: "var(--green-2)", hex: "#2f8a5c", svg: '<circle cx="9" cy="8" r="3" stroke="#fff" stroke-width="2" fill="none"/><circle cx="17" cy="9" r="2.5" stroke="#fff" stroke-width="2" fill="none"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M15 14c3 0 6 1.5 6 4.5" stroke="#fff" stroke-width="2" fill="none"/>' },
+  place:   { color: "var(--green)", hex: "#1e6b46", svg: '<circle cx="12" cy="10" r="3" fill="#fff"/>' },
+};
+const kindOf = (p) => KIND[p.kind] || KIND.place;
+const icon = (p, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24">${kindOf(p).svg}</svg>`;
+
+/* ---------- status shown on each pin ---------- */
+function status(p) {
+  if (p.headline && Date.now() - new Date(p.headline.at) < 3 * 3600e3) return { text: p.headline.answer, option: p.headline.option };
+  const l = p.live || {};
+  const pick = l.line || l.people || l.crowd || l.noise;
+  if (pick) return { text: pick.value != null && l.people === pick ? `~${Math.round(pick.value)} people` : pick.answer, option: pick.option };
+  return { text: p.people_here ? `${p.people_here} earner${p.people_here > 1 ? "s" : ""} here` : "No reports yet", option: null };
+}
+const colorFor = (o) => (o ? OPT[o - 1] : "var(--muted)");
+
+/* ---------- navigation ---------- */
+let current = "explore";
+function go(id) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
+  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id || (id === "request" && b.dataset.tab === "contribute") || (id === "place" && b.dataset.tab === "explore")));
+  current = id;
+  if (id === "explore") setTimeout(() => map.invalidateSize(), 50);
+  if (id === "contribute") renderRequests();
+  if (id === "rewards") renderRewards();
+  if (id === "profile") renderProfile();
+  tg?.BackButton?.[id === "request" || id === "place" ? "show" : "hide"]?.();
+}
+tg?.BackButton?.onClick?.(() => go(current === "request" ? "contribute" : "explore"));
+function toast(html, onclick) {
+  const t = $("toast"); t.innerHTML = html; t.onclick = () => { t.classList.remove("show"); onclick?.(); };
+  t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 5000);
+  tg?.HapticFeedback?.notificationOccurred?.("success"); navigator.vibrate?.(60);
+}
+
+/* ---------- map ---------- */
+let PLACES = [], ME = null;
+const pins = {};
+const map = L.map("map", { zoomControl: false, attributionControl: false });
+L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { maxZoom: 19 }).addTo(map);
+let meMarker;
+
+function pinHtml(p, live) {
+  const s = status(p);
+  return `<div class="pin ${live ? "live" : ""}"><div class="ic" style="background:${kindOf(p).color}">${icon(p)}</div>
+    <div class="lab"><b>${esc(p.name)}</b><span style="color:${colorFor(s.option)}">${esc(s.text)}</span></div></div>`;
+}
+async function loadPlaces(fit) {
+  PLACES = await api("/api/app/places");
+  for (const p of PLACES) {
+    const html = pinHtml(p, liveQuestions.has(p.id));
+    if (!pins[p.id]) {
+      pins[p.id] = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html, iconSize: [0, 0] }) }).addTo(map);
+      pins[p.id].on("click", () => openPlace(p.id));
+    } else pins[p.id].setIcon(L.divIcon({ className: "", html, iconSize: [0, 0] }));
+  }
+  if (fit) map.fitBounds(L.latLngBounds(PLACES.map((p) => [p.lat, p.lng])).pad(0.5));
+  const live = PLACES.reduce((n, p) => n + p.people_here, 0);
+  $("mapHint").innerHTML = `<b>${live} earner${live === 1 ? "" : "s"}</b> on the map right now. Agents ask in Claude; you answer here.`;
+}
+$("search").addEventListener("input", (e) => {
+  const s = e.target.value.toLowerCase(); if (!s) return;
+  const p = PLACES.find((x) => x.name.toLowerCase().includes(s)); if (p) map.setView([p.lat, p.lng], 18);
+});
+function locateMe() {
+  if (!navigator.geolocation) return toast("Location isn't available on this device.");
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    if (!meMarker) meMarker = L.marker([lat, lng], { icon: L.divIcon({ className: "", html: '<div class="me-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(map);
+    else meMarker.setLatLng([lat, lng]);
+    map.setView([lat, lng], 17);
+    const r = await api("/api/app/checkin", { lat, lng }).catch(() => null);
+    toast(r?.place ? `📍 You're near <b>${esc(r.place)}</b>. Requests for places around you will come here.` : "📍 You're all set. Requests for places near you will come here.");
+    refreshMe();
+  }, () => toast("Allow location so Oracle can send you requests for where you are."), { enableHighAccuracy: true, timeout: 10000 });
+}
+
+/* ---------- place detail ---------- */
+let chart;
+async function openPlace(id) {
+  const d = await api(`/api/app/place/${id}`);
+  const s = status(d), h = d.headline;
+  const rows = [
+    ["line", "Line", '<path d="M8 8a3 3 0 100-6 3 3 0 000 6zM16 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM2 20c0-3 3-5 6-5s6 2 6 5M14 14c3 0 7 1 7 5"/>'],
+    ["noise", "Noise level", '<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>'],
+    ["crowd", "Crowd", '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2"/>'],
+    ["people", "People counted", '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'],
+  ].map(([k, label, path]) => {
+    const v = d.live?.[k];
+    const txt = v ? (k === "people" && v.value != null ? `~${Math.round(v.value)}` : k === "noise" && v.value != null ? `${v.answer} (${Math.round(v.value)} dB)` : v.answer) : "No report";
+    const col = v ? colorFor(v.option) : "var(--muted)";
+    return `<div class="stat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#66756c" stroke-width="2">${path}</svg>${label}
+      <span class="pillv" style="color:${col};background:${v ? "color-mix(in srgb, " + col + " 14%, white)" : "var(--mint-2)"}">${esc(txt)}</span></div>`;
+  }).join("");
+  $("place").innerHTML = `
+    <div class="hero">${d.photo ? `<img src="${d.photo}" alt="Latest photo of ${esc(d.name)}"><span class="cap">Faces and IDs blurred</span>` : ""}
+      <button class="back" aria-label="Back" onclick="go('explore')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button></div>
+    <div class="section pd"><div class="card">
+      <div class="name"><div class="ic" style="background:${kindOf(d).color}">${icon(d, 24)}</div>
+        <div><h2>${esc(d.name)}</h2><div class="muted" style="font-size:13.5px">${esc(d.tagline || "")}</div></div></div>
+      <div class="headline">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5b3fd6" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2"/></svg>
+        <div><b>${esc(s.text)}</b><div class="muted" style="font-size:12.5px">${h ? `Verified by ${h.votes} ${h.votes === 1 ? "person" : "people"} ✓` : `${d.people_here} earners here now`}</div></div>
+        ${h?.confidence != null ? `<div class="conf"><b>${Math.round(h.confidence * 100)}%</b>confidence</div>` : ""}
+      </div>
+      <div class="tabs" role="tablist"><button class="on" data-pt="live">Live</button><button data-pt="trends">Trends</button><button data-pt="history">Details</button></div>
+      <div data-pane="live">${rows}<div class="updated">🕒 ${h ? `Updated ${ago(h.at)}` : "Waiting for the first report"}</div></div>
+      <div data-pane="trends" hidden><canvas id="pchart" height="170"></canvas><div class="updated">Line length over the last 24 hours</div></div>
+      <div data-pane="history" hidden>${(d.history || []).map((x) => `<div class="stat"><div class="grow"><div style="font-weight:600">${esc(x.question)}</div><div class="muted" style="font-size:13px">${esc(x.answer || "No answer")} · ${x.votes || 0} people · ${ago(x.at)}</div></div></div>`).join("") || '<div class="empty">No questions answered here yet.</div>'}</div>
+    </div></div>`;
+  $("place").querySelectorAll("[data-pt]").forEach((b) => b.onclick = () => {
+    $("place").querySelectorAll("[data-pt]").forEach((x) => x.classList.toggle("on", x === b));
+    $("place").querySelectorAll("[data-pane]").forEach((p) => p.hidden = p.dataset.pane !== b.dataset.pt);
+    if (b.dataset.pt === "trends") drawTrend(d.trend || []);
+  });
+  go("place");
+}
+function drawTrend(rows) {
+  chart?.destroy();
+  chart = new Chart($("pchart"), { type: "line",
+    data: { labels: rows.map((r) => new Date(r.bucket).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })),
+      datasets: [{ data: rows.map((r) => r.avg_option), borderColor: "#1e6b46", backgroundColor: "rgba(30,107,70,.12)", fill: true, tension: .4, pointRadius: 3 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { min: 1, max: 3, ticks: { stepSize: 1, callback: (v) => ({ 1: "Short", 2: "Medium", 3: "Long" }[v] || "") } }, x: { grid: { display: false } } } } });
+}
+
+/* ---------- requests ---------- */
+let REQS = [];
+const liveQuestions = new Set();
+const SENSOR_LABEL = { poll: "Tap an answer", noise: "Microphone · 5 sec", people_count: "Camera · count people", photo: "Camera · show it", report: "Find out and reply" };
+function renderRequests() {
+  $("reqList").innerHTML = REQS.length ? REQS.map((r) => `
+    <div class="card req" onclick="openRequest('${r.id}')">
+      <span class="live-badge">Live request</span>
+      <h3>${esc(r.question)}</h3>
+      <div class="row muted" style="font-size:13.5px"><span class="grow">📍 ${esc(r.place)} · ${SENSOR_LABEL[r.sensor] || ""}</span><span>${r.answered}/${r.pinged} answered</span></div>
+    </div>`).join("")
+    : `<div class="empty"><div class="big">🦉</div><b>No requests right now.</b><br>When an AI agent asks about a place you're at, it shows up here and your phone buzzes.<br><br><button class="small ghost" onclick="locateMe()">Share my location</button></div>`;
+}
+let draft = {};
+function openRequest(id) {
+  const r = REQS.find((x) => x.id === id);
+  if (!r) { toast("That request was already answered by people nearby."); return go("contribute"); }
+  draft = { id, option: null, image: null, db: null, text: "" };
+  const s = r.sensor || "poll";
+  const needsPhoto = s === "photo" || s === "people_count";
+  $("request").innerHTML = `
+    <div class="lr-head"><button class="back" aria-label="Back" onclick="go('contribute')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <svg class="owl" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#1e6b46"/><circle cx="23" cy="31" r="9" fill="#fff"/><circle cx="41" cy="31" r="9" fill="#fff"/><circle cx="23" cy="31" r="4" fill="#13241b"/><circle cx="41" cy="31" r="4" fill="#13241b"/><path d="M29 41h6l-3 6z" fill="#f2b33d"/></svg>
+      <b style="font-size:20px">Oracle</b></div>
+    <div class="section"><div class="card" id="reqCard">
+      <span class="live-badge">Live request</span>
+      <div class="where">📍 ${esc(r.place)}</div>
+      <p class="q">${esc(r.question)}</p>
+      ${s === "poll" ? r.options.map((o, i) => `<button class="opt" data-o="${i + 1}">${esc(o)}</button>`).join("") : ""}
+      ${s === "report" ? `<textarea id="rtext" placeholder="What did you find out?"></textarea>` : ""}
+      <img class="shot" id="shot" alt="Your photo">
+      <div class="sensors">
+        ${s === "noise" ? `<button class="sensor wide need" id="noiseBtn">🎙️ Measure noise<small>5 seconds · only a number is sent</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
+        ${s !== "noise" ? `<label class="sensor ${needsPhoto ? "wide need" : ""}" for="cam" id="camBtn">📸 ${needsPhoto ? (s === "people_count" ? "Photograph the room" : "Take a photo") : "Add photo"}<small>${needsPhoto ? "Faces & IDs are blurred" : "(optional)"}</small></label><input id="cam" type="file" accept="image/*" capture="environment">` : ""}
+        ${s === "poll" || s === "report" ? `<button class="sensor" id="noiseBtn">🎙️ Report noise<small>(5 sec)</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
+      </div>
+      <div class="note">🔒 Photos are shared only after faces, name badges, screens and plates are blurred. Your location is used to check you're there, never shown.</div>
+      <button class="primary" id="submitBtn" disabled>Submit</button>
+    </div></div>`;
+  $("request").querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+    $("request").querySelectorAll(".opt").forEach((x) => x.classList.toggle("sel", x === b));
+    draft.option = Number(b.dataset.o); ready(); tg?.HapticFeedback?.selectionChanged?.();
+  });
+  $("rtext")?.addEventListener("input", (e) => { draft.text = e.target.value; ready(); });
+  $("cam")?.addEventListener("change", onPhoto);
+  $("noiseBtn")?.addEventListener("click", measure);
+  $("submitBtn").onclick = submit;
+  draft.sensor = s;
+  go("request");
+}
+function ready() {
+  const s = draft.sensor;
+  const ok = s === "poll" ? !!draft.option : s === "noise" ? draft.db != null : s === "report" ? draft.text.trim().length > 0 : !!draft.image;
+  $("submitBtn").disabled = !ok;
+}
+async function onPhoto(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const img = await createImageBitmap(f), k = Math.min(1, 1280 / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  draft.image = c.toDataURL("image/jpeg", 0.8);
+  $("shot").src = draft.image; $("shot").style.display = "block";
+  $("camBtn").classList.add("done"); $("camBtn").firstChild.textContent = "📸 Photo added ";
+  ready();
+}
+async function measure() {
+  const btn = $("noiseBtn"); if (btn.dataset.busy) return; btn.dataset.busy = 1;
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch { delete btn.dataset.busy; return toast("Allow the microphone to measure noise."); }
+  const ctx = new (window.AudioContext || window.webkitAudioContext)(), an = ctx.createAnalyser(); an.fftSize = 2048;
+  ctx.createMediaStreamSource(stream).connect(an);
+  const buf = new Float32Array(an.fftSize); let energy = 0, n = 0; const t0 = performance.now();
+  await new Promise((done) => { const tick = () => {
+    an.getFloatTimeDomainData(buf); let s = 0; for (const v of buf) s += v * v; const rms = Math.sqrt(s / buf.length) || 1e-8;
+    energy += rms * rms; n++;
+    const db = 20 * Math.log10(rms) + 95;   // rough phone calibration
+    $("lvl").style.width = `${Math.max(0, Math.min(100, (db - 30) / 70 * 100))}%`;
+    const left = 5 - (performance.now() - t0) / 1000;
+    btn.firstChild.textContent = `🎙️ Listening… ${Math.max(0, left).toFixed(1)}s `;
+    left > 0 ? requestAnimationFrame(tick) : done();
+  }; tick(); });
+  stream.getTracks().forEach((t) => t.stop()); ctx.close();
+  draft.db = Math.round(10 * Math.log10(energy / n) + 95);
+  btn.firstChild.textContent = `🎙️ ${draft.db} dB · ${draft.db < 55 ? "Quiet" : draft.db < 70 ? "Chatty" : "Loud"} `;
+  btn.classList.add("done"); delete btn.dataset.busy; ready();
+}
+async function submit() {
+  const b = $("submitBtn"); b.disabled = true; b.textContent = draft.image ? "Blurring and checking…" : "Sending…";
+  const body = { option: draft.option, db: draft.db, text: draft.text, ...(draft.image && { image: draft.image, mime: "image/jpeg" }) };
+  const r = await api(`/api/app/answer/${draft.id}`, body).catch((e) => ({ ok: false, message: e.message }));
+  if (!r.ok) { b.disabled = false; b.textContent = "Submit"; return toast(`🦉 ${esc(r.message || r.error)}`); }
+  tg?.HapticFeedback?.notificationOccurred?.("success");
+  const pts = r.points ?? (r.message?.match(/\+(\d+)/)?.[1]);
+  $("reqCard").innerHTML = `<div class="done-card"><div style="font-size:46px">🦉</div><div class="pts">+${pts ?? 1} points</div>
+    <p>${esc(r.message || "Thanks!")}</p>${r.image ? `<img class="masked" src="${r.image}" alt="Your photo as shared, personal details blurred"><p class="muted" style="font-size:13px">This is what gets shared: personal details blurred.</p>` : ""}
+    <button class="primary" onclick="go('contribute')" style="margin-top:14px">Done</button></div>`;
+  refreshMe();
+}
+
+/* ---------- rewards ---------- */
+function renderRewards() {
+  if (!ME) return;
+  $("rewardsBody").innerHTML = `
+    <div class="card wallet"><div class="sub">Your points</div><div class="pts">⭐ ${ME.credits}</div>
+      <div class="sub">${(ME.earnedSol || 0).toFixed(3)} SOL earned · trust ${ME.trust}</div></div>
+    <div class="card"><b>Gift cards</b>${ME.rewards.map((r) => `
+      <div class="reward"><div class="gc">🎁</div><div class="grow"><div style="font-weight:600">${esc(r.name)}</div><div class="muted" style="font-size:13px">${r.points} points</div></div>
+      <button class="small" ${ME.credits < r.points ? "disabled" : ""} onclick="redeem('${r.id}')">Redeem</button></div>`).join("")}</div>
+    <div class="card"><b>Cash out to Solana</b><div class="muted" style="font-size:13.5px;margin-top:4px">${ME.pointsPerSol} points = 1 SOL (devnet) · minimum ${ME.minCashout}</div>
+      <div class="field"><input id="coPts" type="number" inputmode="numeric" placeholder="Points" min="${ME.minCashout}" max="${ME.credits}"><button class="small" onclick="cashout()">Cash out</button></div>
+      <div class="muted" style="font-size:13px;margin-top:10px">Paying to <a href="${ME.walletUrl}" target="_blank" rel="noopener">${ME.wallet.slice(0, 4)}…${ME.wallet.slice(-4)}</a>${ME.linkedWallet ? "" : " (your Oracle wallet)"}</div>
+      <div class="field"><input id="wAddr" placeholder="Link your Phantom address"><button class="small ghost" onclick="linkWallet()">Link</button></div></div>`;
+}
+async function redeem(id) { const r = await api("/api/app/redeem", { rewardId: id }); toast(`${r.ok ? "🎁" : "🦉"} ${esc(r.message)}`); refreshMe().then(renderRewards); }
+async function cashout() {
+  const pts = Number($("coPts").value); if (!pts) return toast("Enter how many points to cash out.");
+  toast("💸 Sending on Solana…");
+  const r = await api("/api/app/cashout", { points: pts });
+  toast(r.ok ? `✅ ${esc(r.message)} <a href="${r.url}" target="_blank" style="color:#9fe3bf">View</a>` : `🦉 ${esc(r.message)}`);
+  refreshMe().then(renderRewards);
+}
+async function linkWallet() { const r = await api("/api/app/wallet", { address: $("wAddr").value.trim() }).catch((e) => ({ error: e.message })); toast(r.ok ? "✅ Wallet linked." : `🦉 ${esc(r.error)}`); refreshMe().then(renderRewards); }
+
+/* ---------- profile ---------- */
+function renderProfile() {
+  if (!ME) return;
+  const acc = ME.answered ? Math.round((ME.correct / ME.answered) * 100) : 0;
+  $("profileBody").innerHTML = `
+    <div class="card"><div class="row"><div style="width:54px;height:54px;border-radius:50%;background:var(--mint);display:grid;place-items:center;font-size:24px;font-weight:800;color:var(--green)">${esc((ME.name || "?")[0])}</div>
+      <div class="grow"><div style="font-size:19px;font-weight:700">${esc(ME.name)}</div><div class="muted" style="font-size:13.5px">📍 ${esc(ME.place || "Not checked in")} · via ${esc(ME.channel)}</div></div></div>
+      <div style="margin-top:12px"><div class="kv"><span>Trust</span><b>${ME.trust}</b></div><div class="kv"><span>Answers</span><b>${ME.answered}</b></div>
+      <div class="kv"><span>Matched the crowd</span><b>${acc}%</b></div><div class="kv"><span>SOL earned</span><b>${(ME.earnedSol || 0).toFixed(3)}</b></div></div>
+      <button class="small ghost" style="margin-top:12px;width:100%" onclick="locateMe()">📍 Update my location</button></div>
+    <div class="card"><b>Where requests reach you</b>
+      <div class="sens"><span class="dot ${"Notification" in window && Notification.permission === "granted" ? "" : "off"}"></span><div class="grow">Oracle app notifications<div class="muted" style="font-size:12.5px">${"Notification" in window && Notification.permission === "granted" ? "On" : "Off"}</div></div>
+      ${"Notification" in window && Notification.permission !== "granted" ? '<button class="small" onclick="enableNotifications()">Turn on</button>' : ""}</div></div>
+    <div class="card"><b>Sensors you share</b>
+      <div class="sens"><span class="dot"></span><div class="grow">Location<div class="muted" style="font-size:12.5px">Matches you to nearby places</div></div></div>
+      <div class="sens"><span class="dot"></span><div class="grow">Camera<div class="muted" style="font-size:12.5px">Photos are blurred before sharing</div></div></div>
+      <div class="sens"><span class="dot"></span><div class="grow">Microphone<div class="muted" style="font-size:12.5px">Only a loudness number, never audio</div></div></div></div>
+    <div class="card pro"><b style="font-size:18px">Earn 2× with the Oracle app</b>
+      <p>Telegram, Discord and iMessage can only use your camera, microphone and location. The native Oracle app adds sensors a chat bot can't reach: motion (are people moving or queued), Bluetooth density (how many devices nearby), light, and air pressure. More signals, better answers, higher pay.</p>
+      <div class="sens" style="padding:4px 0"><span class="dot off"></span>Accelerometer</div><div class="sens" style="padding:4px 0"><span class="dot off"></span>Bluetooth crowd density</div>
+      <div class="sens" style="padding:4px 0"><span class="dot off"></span>Ambient light & barometer</div>
+      <button class="small" style="margin-top:10px;background:#f2b33d;color:#2a1a00" onclick="toast('🦉 The native app is coming soon. You\\'ll be first to know.')">Join the waitlist</button></div>`;
+}
+
+/* ---------- sign-up (once) ---------- */
+const joinPlace = params.get("join") || "";
+if (joinPlace && joinPlace !== "anywhere") fetch(`/api/join?place=${encodeURIComponent(joinPlace)}`).then((r) => r.json()).then((j) => { if (j.name) $("suPlace").textContent = `You'll start at ${j.name}.`; });
+$("signup").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const r = await fetch("/api/app/register", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: $("suName").value, place: joinPlace }) }).then((x) => x.json());
+  if (!r.token) return toast(esc(r.error || "Couldn't sign up."));
+  localStorage.setItem("oracleToken", r.token);
+  location.replace("/app?welcome=1");
+});
+
+/* ---------- notifications ---------- */
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+let swReg = null;
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").then((r) => (swReg = r)).catch(() => {});
+function notifyState() {
+  const supported = "PushManager" in window && "Notification" in window;
+  let text = null;
+  if (isIOS && !standalone) text = "To get notifications on iPhone: tap Share, then <b>Add to Home Screen</b>, and open Oracle from there.";
+  else if (supported && Notification.permission === "default") text = "Turn on notifications so requests reach you even when the app is closed.";
+  else if (supported && Notification.permission === "denied") text = "Notifications are blocked. Allow them for this site in your browser settings.";
+  for (const n of [1, 2]) {
+    $(`notify${n}`).classList.toggle("on", Boolean(text) && Boolean(localStorage.getItem("oracleToken")));
+    if (text) $(`notifyText${n}`).innerHTML = text;
+    $(`notify${n}`).querySelector("button").style.display = isIOS && !standalone ? "none" : "";
+  }
+}
+async function enableNotifications() {
+  try {
+    if (Notification.permission !== "granted" && (await Notification.requestPermission()) !== "granted") return notifyState();
+    const reg = swReg || (await navigator.serviceWorker.ready);
+    const { key } = await (await fetch("/api/app/push-key")).json();
+    const raw = atob(key.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(key.length / 4) * 4, "="));
+    const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from(raw, (c) => c.charCodeAt(0)) }));
+    await api("/api/app/push", sub.toJSON());
+    toast("🔔 Notifications are on. Requests will reach you even when Oracle is closed.");
+  } catch (e) { toast("Couldn't turn on notifications on this device."); }
+  notifyState();
+}
+// Keep the subscription fresh if permission was already granted.
+if ("Notification" in window && Notification.permission === "granted" && localStorage.getItem("oracleToken")) setTimeout(() => enableNotifications().catch(() => {}), 1500);
+
+/* ---------- data & live updates ---------- */
+async function refreshMe() {
+  ME = await api("/api/app/me");
+  REQS = ME.requests || [];
+  const n = REQS.length || "";
+  $("tabBadge").textContent = n; $("bellBadge").textContent = n;
+  if (current === "contribute") renderRequests();
+  return ME;
+}
+const es = new EventSource("/api/stream");
+es.onmessage = async (m) => {
+  const e = JSON.parse(m.data);
+  if (e.type === "question") {
+    liveQuestions.add(e.placeId); await refreshMe();
+    if (REQS.some((r) => r.id === e.id)) toast(`🦉 <b>New request at ${esc(e.place)}</b><br>${esc(e.question)}`, () => openRequest(e.id));
+    loadPlaces();
+  }
+  if (e.type === "answer") { liveQuestions.delete(e.placeId); loadPlaces(); refreshMe(); if (current === "request" && draft.id === e.question_id && !$("reqCard").querySelector(".done-card")) toast("This request was just answered by people nearby."); }
+  if (e.type === "payout" && ME && e.name === ME.name) { toast(`💸 You earned <b>${e.amount} SOL</b>`); refreshMe(); }
+};
+
+(async () => {
+  try { await refreshMe(); } catch { return; }
+  notifyState();
+  if (!ME.place) setTimeout(() => toast("📍 <b>Share your location</b> so requests find you wherever you are. Tap here.", locateMe), 800);
+  await loadPlaces(true);
+  const q = params.get("q");
+  if (q) openRequest(q);
+  if (params.get("welcome")) { toast(`🦉 Welcome, <b>${esc(ME.name)}</b>! Share your location so Oracle can send you requests for places near you.`); setTimeout(locateMe, 900); }
+})();
+</script>
+</body>
+</html>

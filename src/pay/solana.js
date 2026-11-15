@@ -12,6 +12,10 @@ export const explorerTx = (sig) => `https://explorer.solana.com/tx/${sig}?cluste
 export const explorerAddress = (pub) => `https://explorer.solana.com/address/${pub}?cluster=devnet`;
 
 // Devnet only: the secret is kept so the demo works without anyone installing a wallet app.
+export function isValidAddress(a) {
+  try { return PublicKey.isOnCurve(new PublicKey(a).toBytes()); } catch { return false; }
+}
+
 export function newWallet() {
   const kp = Keypair.generate();
   return { pub: kp.publicKey.toBase58(), secret: Array.from(kp.secretKey) };

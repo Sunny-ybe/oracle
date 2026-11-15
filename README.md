@@ -180,6 +180,58 @@ HTTPS matters: phones only share location with the photo page over HTTPS.
 
 ---
 
+# HTTPS for phones (needed for the app, camera, microphone and location)
+
+Phones only allow the camera, microphone and location on https pages, and Telegram only opens in-app pages from https links. For the hackathon, use a free tunnel:
+
+```bash
+brew install cloudflared
+cloudflared tunnel --url http://localhost:3000
+```
+
+It prints an address like `https://something.trycloudflare.com`. Put it in `.env` as `PUBLIC_URL=...` and restart `npm run dev`. (The address changes each time you start the tunnel.)
+
+# Earners: choose once, answer where you already are
+
+**Questions are only asked in Claude.** Earners never have to open anything else to answer.
+
+**Any place, not a fixed list.** Claude can ask about any store, restaurant, park, parking lot or address ("Trader Joe's on Mill Ave", "the Target on Rural Rd"). Oracle finds it on the map (OpenStreetMap), remembers it, and asks earners whose shared location is within `ANSWER_RADIUS_MILES` (default 5), nearest first. Each request says how far it is ("📍 0.3 mi from you"). The campus places in `src/config.js` are just shortcuts.
+
+The room QR opens `/join` (one general code, not tied to a place), where people pick **once** where requests should reach them, then share their location once:
+
+| Channel | How they answer | Extra sensors |
+|---|---|---|
+| **Telegram** (fastest) | Tap a button in the chat | Send a photo, or a 5-second voice note for a precise noise reading |
+| **Discord** | Tap a button in the DM | Reply with a photo or voice message |
+| **iMessage** | Coming soon | |
+| **Oracle app** (earn 2×) | Phone notification → tap → answer | Live camera, live microphone meter, location, live map |
+
+- Every request can be answered with **one tap** everywhere. Photos and readings are optional and earn +5 points.
+- Telegram and Discord never send links to the app. Only people who chose the app get app notifications.
+- iPhone app users: Share → **Add to Home Screen**, then open Oracle from the Home Screen to allow notifications (iOS 16.4+).
+- Voice-note noise readings need ffmpeg on the server: `brew install ffmpeg`.
+- The native app pitch (Profile tab): motion, Bluetooth crowd density, light and air pressure, which are sensors a chat bot can't reach.
+
+# Join once, earn everywhere
+
+- **First time:** scan the join QR. Telegram opens, checks you in, and offers to share your location.
+- **After that:** no scanning. Share **live location** (📎 → Location → Share My Live Location) and Oracle matches you to the nearest place with a MongoDB geo query. Walk to the MU and you get MU questions.
+- **Points:** +1 per answer, +5 per verified photo. Right answers also earn devnet SOL automatically.
+- **Spend them in Telegram:**
+  - `/points`: balance, trust, earnings
+  - `/rewards`: gift cards (catalog in `src/config.js` → `REWARDS`). Redemptions are listed at `GET /api/redemptions` for you to fulfil.
+  - `/wallet <address>`: link a Phantom wallet (Developer settings → Testnet mode → Devnet)
+  - `/cashout <points>`: points → SOL at `POINTS_PER_SOL`, sent on-chain with an explorer link
+
+# Room demo: the judges answer
+
+1. Before judging: `MIN_VOTES=3` in `.env`, server running, dashboard open full screen on the projector.
+2. Click **Invite the room** (or press **J**). A big QR appears. Judges scan it and Telegram opens already checked in at `DEMO_PLACE`. Their names pop in and the counter climbs.
+3. Click **Start asking** and ask from Claude: *"How long is the food line here right now?"*
+4. The map shows one ringing phone per person pinged ("Pinging 6 people"). Judges' phones buzz; each tap lights a phone in its answer's colour and fills the bars.
+5. Once 3 agree, Oracle waits `GRACE_SECONDS` (default 8) for the rest of the room, then settles with everyone's votes. Confetti, the answer headline, and Claude answers.
+6. Ask again: instant, from memory.
+
 # Demo (3 minutes)
 
 1. **Problem (20 s):** "Ask any AI how long the food line is right now. It can't know."

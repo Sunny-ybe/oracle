@@ -1,0 +1,14 @@
+{
+  "name": "Oracle",
+  "short_name": "Oracle",
+  "description": "Earn by answering what AI agents can't see.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f8f6",
+  "theme_color": "#1e6b46",
+  "icons": [
+    { "src": "/icon.png?s=192", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon.png?s=512", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
