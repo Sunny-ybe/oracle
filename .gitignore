@@ -18,3 +18,4 @@ xcuserdata/
 *.mobileprovision
 .env.*
 !.env.example
+.claude/

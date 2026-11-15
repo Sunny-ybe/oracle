@@ -61,12 +61,18 @@ npm run deploy   # syntax check, copy the code, install, restart, confirm it ans
 - `ORACLE_API_KEY` is empty, so `/mcp`, `/api/ask` and `/api/dev/*` accept anyone who has the address (D-015). Don't post the address publicly.
 - TinyFish only knows the five campus places that have a `web` entry in `PLACES` (`src/config.js`).
 
+## Open problems (as of 2026-11-15, 13:45 UTC)
+
+- **Someone ran a second Telegram bot** between 13:29 and 13:37 UTC: the server logged 16 `Conflict: terminated by other getUpdates request` errors. It was not Sashikant's Mac. While two bots run, taps and photos go to whichever copy grabs them and votes are lost. Check with `ssh root@96.30.206.125 'journalctl -u oracle --since "10 min ago" | grep -c Conflict'`; anything above 0 means a laptop is running the bots (rule 1 above).
+- **The claude.ai connector may still point at the old ngrok address**, which now returns 404. It must be `https://oracle.tryalethea.com/mcp`.
+- **The iPhone app changes (D-023) compile and launch but nobody has tapped through them.** To build: from `ios/Oracle`, `xcodebuild -project Oracle.xcodeproj -scheme Oracle -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' build`.
+
 ## What's left
 
-1. **Demo video** (Sashikant): Claude with vs. without the Oracle connector, on Claude Desktop and claude.ai, plus phones answering.
+1. **Demo video** (Sashikant): Claude with vs. without the Oracle connector, on Claude Desktop and claude.ai, plus Telegram on a phone. The web app part is already recorded (`~/Desktop/oracle-demo/oracle-demo-webapp.mp4` on Sashikant's Mac, made by driving the live web app at iPhone size).
 2. **Real-phone checks nobody has done yet:** the web app's Wi-Fi button and number box, the Telegram "Run speed test" link, the dispute photo page `/verify/:token`.
 3. **Discord on the server:** add `DISCORD_TOKEN` to `/opt/oracle/.env` and restart, if Discord is wanted for the demo.
-4. **iPhone app** (`ios/Oracle`, Rithwik): it lacks the Wi-Fi test and typed numbers, and push needs Apple push keys (`APNS_*`), which need a paid Apple Developer account.
+4. **iPhone app** (`ios/Oracle`): it now has the Wi-Fi test and typed numbers and defaults to the live server (D-023), but needs a hand test in the Simulator. Push needs Apple push keys (`APNS_*`), which need a paid Apple Developer account. For a real iPhone with a free Apple ID: pick the Personal Team, change the bundle identifier, and remove the push and Sign in with Apple capabilities if signing fails.
 5. **Judges' phones:** QR → `/join`. iPhone needs "Add to Home Screen" for web push. Telegram is the most reliable buzz.
 6. Optional: use floor-scan Wi-Fi data (Mongo `scans`) in the history fallback.
 
