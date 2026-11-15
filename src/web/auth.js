@@ -5,7 +5,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "../config.js";
 import * as mongo from "../db/mongo.js";
 
-const secret = () => env.apiKey || env.telegramToken || "oracle-dev";
+// Every laptop or server running Oracle must use the same secret, or people get signed out when the
+// demo moves to another machine. SESSION_SECRET wins; it defaults to the old choice so existing sign-ins keep working.
+const secret = () => env.sessionSecret || env.apiKey || env.telegramToken || "oracle-dev";
+if (!env.sessionSecret && !env.apiKey && !env.telegramToken) console.error("Warning: no SESSION_SECRET set. App sign-ins are not secure and won't match other laptops.");
 
 export function linkToken(userId) {
   const sig = createHmac("sha256", secret()).update(userId).digest("base64url").slice(0, 24);
