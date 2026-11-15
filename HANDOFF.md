@@ -1,49 +1,78 @@
 # Handoff: current status
 
-Start at [`AGENTS.md`](AGENTS.md) for the map and rules. Decisions live in [`docs/DECISIONS.md`](docs/DECISIONS.md). This file is only **what's in flight and what's next**. Update it when status changes.
+Written for Harshitha (and any AI agent) picking the project up on 2026-11-15. Start at [`AGENTS.md`](AGENTS.md) for the map and rules. Decisions and their reasons are in [`docs/DECISIONS.md`](docs/DECISIONS.md). This file is only **what's running, what's left, and what not to break**.
 
-- **Local folder:** `/Users/sashikantkumar/Desktop/Projects/oracle` (not `~/Desktop/oracle`)
-- **Team:** Harshitha (core, DBs, MCP), Rithwik (Discord/Telegram bots), Sashikant / "Sunny" (the user: dashboard, Gemini, Solana)
+## Where Oracle runs now
 
-## Running
-- `.env` is complete and verified. **Bot tokens are commented out**, because only one machine runs the bots (D-004). Harshitha's laptop normally does, so coordinate before uncommenting `TELEGRAM_TOKEN` and `DISCORD_TOKEN`.
-- Claude Desktop already has the `oracle` MCP server in `~/Library/Application Support/Claude/claude_desktop_config.json` (backup `.json.bak-oracle`). It needs the server on :3000. Tools: `ask_place`, `get_answer`, `get_live_status`, `get_place_insights`, `get_floor_report`.
+- **Live server:** `https://oracle.tryalethea.com`, a Vultr instance (`96.30.206.125`), always on (D-021). It runs the Telegram bot `@oracle_sunhacks_bot`. Discord is off.
+- **Claude connector:** `https://oracle.tryalethea.com/mcp` (claude.ai → Settings → Connectors → Add custom connector).
+- **Web app:** `https://oracle.tryalethea.com/app`. Join page: `/join`. Dashboard: `/`.
+- **Nobody's laptop needs to be on.** Sashikant's Mac was the server until the cutover; it now has the bot tokens commented out.
+
+## Three rules that prevent lost votes and broken sign-ins
+
+1. **Never run the bots on your laptop.** Leave `TELEGRAM_TOKEN` and `DISCORD_TOKEN` empty or commented out in your own `.env`. The Vultr server is the only place they run (D-004). Two Telegram bots at once lose votes.
+2. **Use the same `SESSION_SECRET` as the server.** Get the `.env` from Sashikant privately. A different secret signs everyone out of the web app (D-009).
+3. **The databases are shared and live.** A local server talks to the same MongoDB and Tiger Data. Asking about an ASU place from your laptop pings real people. Test at a faraway place (see Testing).
+
+## Getting started
+
+```bash
+git pull
+npm install
+# put the .env from Sashikant in the repo root, with the two bot tokens commented out
+npm run check    # validates .env without printing secrets
+npm run dev      # your own copy on http://localhost:3000
+```
+
+Your local copy is for development. People and Claude use the Vultr server.
+
+## Deploying to the live server
+
+```bash
+npm run deploy   # syntax check, copy the code, install, restart, confirm it answers
+```
+
+- Needs SSH access. Send your public key (`cat ~/.ssh/id_ed25519.pub`) to Sashikant; it gets added to `/root/.ssh/authorized_keys` on the server. Then set `ORACLE_SSH_KEY` to your private key path, or name it `~/.ssh/oracle_vultr`.
+- The server keeps its own `.env` at `/opt/oracle/.env`; a deploy never touches it. To change a setting there: `ssh root@96.30.206.125`, edit the file, `systemctl restart oracle`.
+- **A restart drops any question that is open at that moment.** Don't deploy while someone is recording or demoing. Ask first.
+- Logs: `ssh root@96.30.206.125 journalctl -u oracle -f`.
 
 ## Testing
+
 - Dev endpoints (no phones): `POST /api/dev/checkin {name, place}`, `POST /api/dev/vote {name, questionId, option}`, `GET /api/dev/open`, `POST /api/ask {place, question, waitSeconds}`.
-- DBs are shared and real teammates are checked in near ASU (5-mile radius), so asking about an ASU place pings real people. Use a faraway place (e.g. "Merrill-Cazier Library, Utah State University, Logan UT") and `zz-test-` users, and delete test users and answers afterwards.
+- Use a faraway place such as `"Merrill-Cazier Library, Utah State University, Logan UT"` and users named `zz-test-…`, and delete the test users, questions and answers afterwards.
+- Asking the same topic at the same place within 10 minutes returns the remembered answer and pings nobody. Change the place or topic between tests.
 
-## Verified on 2026-11-15 (test server on :3100, then the test data was deleted)
-- D-007 few people → photo: a tap gives "unverified" with no payout; a photo through `/api/app/answer` gives `source: photo`, faces blurred.
-- D-008 history fallback: nobody nearby → `similar_place` in about 2 s; after one report → `past_report` in 0 s.
-- D-009 `SESSION_SECRET`: tokens are signed with it, and `.env` matches the team Telegram token, so old sign-ins stay valid. **Tell Harshitha:** every machine needs the same value.
-- D-013 payouts: **real devnet payouts work end to end** (0.01 for a photo, 0.001 per tap).
-- Leftovers from the previous session: questions `c0a480bc` and `3cc23545`, plus the place `merrill-cazier-library-fcdb`, are still in Mongo.
+## What works (all tested on 2026-11-15)
 
-## Priorities (in order)
-0. **Vultr cutover (D-021).** The server at `96.30.206.125` runs the current code with bots off. Left to do: the user adds a GoDaddy A record `oracle` → the IP; add `oracle.tryalethea.com` to `/etc/caddy/Caddyfile` and set `PUBLIC_URL`; move the bot tokens from the Mac to the server; set `MIN_VOTES=3` there for the live demo (it was copied as 1); update the claude.ai connector address.
-1. **Add the connector in claude.ai** (user): Settings → Connectors → Add custom connector → `https://swarm-exemplify-verbalize.ngrok-free.dev/mcp`. The endpoint is verified from the public link.
-2. **Bots on this Mac.** Harshitha is asleep. Before uncommenting `TELEGRAM_TOKEN` and `DISCORD_TOKEN`, make sure her laptop isn't running them (D-004).
-3. **Photo path on a real phone** (camera, upload, GPS). The API path is verified. The dispute photo at `/verify/:token` is still untested.
-4. **Optional upgrade to `oracle.tryalethea.com`** (D-014): add the domain to a free Cloudflare account, switch the two nameservers at GoDaddy, run `cloudflared tunnel login`, then create the tunnel and put `TUNNEL_TOKEN` and `PUBLIC_DOMAIN` in `.env`. `start.sh` already supports it.
-5. **Judges' phones buzzing:** QR → `/join` → web app. Android Chrome gets push and vibration. iOS needs "Add to Home Screen". Telegram is the most reliable buzz. The native iPhone app needs `APNS_*` keys for push (not set).
-6. Optional: use floor-scan Wi-Fi data (Mongo `scans`) in the history fallback for Wi-Fi questions.
+- **Poll loop:** tap on Telegram, Discord or the web app; trust-weighted consensus; devnet payout.
+- **Photo loop:** Gemini reads or counts the photo, faces blurred, 0.01 SOL. A photo alone answers a plain poll. Few people nearby → photo instead of a poll (D-007).
+- **People count:** number ranges; answer by tap, typed number or photo (D-020).
+- **Noise** (10 s) and **Wi-Fi** (1 MB speed test) as question types (D-017).
+- **Speed:** every question settles within 40 seconds; Claude gets the answer in one call (D-019).
+- **Nobody answers:** official page via TinyFish for hours, schedule and menu questions (D-022), then past reports, then a labeled estimate (D-008).
+- **Remote MCP** for claude.ai, the web app, and the iPhone app's backend routes.
+- What each channel can and can't do: [`docs/CHANNELS.md`](docs/CHANNELS.md).
 
-## iOS merge check (2026-11-15, commit `7ba0c6b`)
-- Pulled as a fast-forward; tag `backup-before-ios-merge` marks the commit before it.
-- Regression on a test server passed: history fallback, few-people tap and photo, 0.01 photo payout, 3-tap consensus, GPS check-in, `/mcp` (initialize, list, `ask_place`), new app endpoints and pages. Test data deleted.
-- Run the server with `npm run demo`. It serves the fixed public link and prints the MCP address.
+## Current settings worth knowing
 
-## Demo video plan
-Claude **with vs. without** the Oracle connector (guess vs. real answer), in both Claude Desktop and claude.ai (web/phone), plus judges' phones buzzing with polls.
+- `MIN_VOTES=1` on the server. One answer settles a question, which suits recording alone. **Set it to 3 on the server before a demo with a room of people** so consensus is real, then `systemctl restart oracle`.
+- `ORACLE_API_KEY` is empty, so `/mcp`, `/api/ask` and `/api/dev/*` accept anyone who has the address (D-015). Don't post the address publicly.
+- TinyFish only knows the five campus places that have a `web` entry in `PLACES` (`src/config.js`).
 
-## Data notes
-- App sign-in token is in `localStorage["oracleToken"]`. Accounts, credits, trust and wallets are in Mongo `users`, so clearing the browser loses nothing. Push keys are in Mongo `settings`.
-- Question types (Gemini picks one): `poll`, `photo`, `people_count`, `noise`, `report`.
+## What's left
 
-## Native integration branch (2026-11-15)
+1. **Demo video** (Sashikant): Claude with vs. without the Oracle connector, on Claude Desktop and claude.ai, plus phones answering.
+2. **Real-phone checks nobody has done yet:** the web app's Wi-Fi button and number box, the Telegram "Run speed test" link, the dispute photo page `/verify/:token`.
+3. **Discord on the server:** add `DISCORD_TOKEN` to `/opt/oracle/.env` and restart, if Discord is wanted for the demo.
+4. **iPhone app** (`ios/Oracle`, Rithwik): it lacks the Wi-Fi test and typed numbers, and push needs Apple push keys (`APNS_*`), which need a paid Apple Developer account.
+5. **Judges' phones:** QR → `/join`. iPhone needs "Add to Home Screen" for web push. Telegram is the most reliable buzz.
+6. Optional: use floor-scan Wi-Fi data (Mongo `scans`) in the history fallback.
 
-- `native-ios` adds the iPhone project under `ios/Oracle` plus its HTTP/MCP, account and optional APNs integration. Upstream SESSION_SECRET, history fallback and photo reward changes are retained.
-- Verified before packaging: unsigned iOS device Release build; assistant swipe/setup navigation; sound preference persistence and preview; generated WAV format/clipping checks; Crowd Guess eligibility and positive/insufficient-photo UI paths (positive UI path uses isolated fixtures).
-- Native backend `.env` values and Xcode user state are excluded. Shared DB writes and bots are not run by this branch preparation.
-- Remaining: stable public HTTPS URL, appropriate API/OAuth authentication for remote assistants, physical-device/APNs validation, and signed TestFlight archive/upload.
+## Other notes
+
+- The fixed ngrok link (`NGROK_DOMAIN`) belongs to Sashikant's ngrok account and is only used by `npm run demo` on his Mac. It is no longer the public address.
+- Test tooling used so far (a fake Telegram server and a regression script) lived outside the repo. If you want it in `scripts/`, ask.
+- Leftovers in the shared DB from an early session: questions `c0a480bc` and `3cc23545`, and the place `merrill-cazier-library-fcdb` (used for testing; harmless).
+- App sign-in token is in the browser's `localStorage["oracleToken"]`. Accounts, credits, trust and wallets are in Mongo `users`. Push keys and TinyFish page facts are in Mongo `settings`.

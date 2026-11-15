@@ -118,7 +118,12 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Why:* The user wants number questions answered in numbers, with more reward for a photo, and wants "reply with a picture" to work for line questions.
 - *Where:* `planQuestion` in `src/ai/gemini.js`; `submitReading`, `typedCount`, `findRequestFor` and `answerFromApp` in `src/core.js`.
 
-**D-021: Always-on server on Vultr** · 2026-11-15 · Active (bots not yet moved)
-- *Decision:* Oracle also runs on a Vultr instance (Ubuntu 26.04, 1 GB, Atlanta, `96.30.206.125`) as a systemd service `oracle` in `/opt/oracle`, behind Caddy for HTTPS. Temporary address: `https://96-30-206-125.sslip.io`. Target address: `https://oracle.tryalethea.com`, once an A record for `oracle` points at the IP (GoDaddy DNS). SSH is key-only (`~/.ssh/oracle_vultr` on the user's Mac). The firewall allows 22, 80 and 443.
+**D-021: Always-on server on Vultr** · 2026-11-15 · Active
+- *Decision:* Oracle also runs on a Vultr instance (Ubuntu 26.04, 1 GB, Atlanta, `96.30.206.125`) as a systemd service `oracle` in `/opt/oracle`, behind Caddy for HTTPS. Address: `https://oracle.tryalethea.com` (a GoDaddy A record `oracle` → the IP). The Telegram bot runs here since the cutover on 2026-11-15. SSH is key-only (`~/.ssh/oracle_vultr` on the user's Mac). The firewall allows 22, 80 and 443.
 - *Why:* A demo that depends on one laptop staying awake is fragile, and a real domain removes the ngrok notice page. It also makes the README's Vultr + GoDaddy section true.
-- *Rules:* Only one place may run the bots (D-004). The server's `.env` has no bot tokens until the cutover; at cutover, add them there and remove them on the Mac. Update the server with `rsync` from the repo (excluding `.env`, `node_modules`, `.git`, `ios`), then `npm ci --omit=dev` and `systemctl restart oracle`.
+- *Rules:* Only one place may run the bots (D-004). Laptops keep the bot tokens commented out. Update the server with `npm run deploy` (`scripts/deploy.sh`); it never touches the server's `.env`.
+
+**D-022: TinyFish answers official-information questions from stored page facts** · 2026-11-15 · Active
+- *Decision:* For questions about hours, schedules, menus, prices or events at a place that has a `web` entry, Oracle uses the place's official page. TinyFish reads each page in the background (at server start and when the facts are older than 3 hours), the facts are stored in Mongo `settings` (`web:<placeId>`), and Gemini answers from them. People still come first: the official answer is returned (labelled `web`, no payout) only when nobody answers; when people do answer, the official fact is attached as `official`. Lines, crowds and noise never go to the web. This narrows D-008, which stays true for live conditions.
+- *Why:* The place's own site is the right source for "is it open?". A live TinyFish run takes 20 seconds to 2 minutes, which breaks the 40-second rule (D-019), so it must not run while someone waits.
+- *Where:* `src/web/tinyfish.js`, `answerFromFacts` in `src/ai/gemini.js`, `ask` and `answerFromHistory` in `src/core.js`.
