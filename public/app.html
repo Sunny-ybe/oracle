@@ -3,9 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#1e6b46" />
+<meta name="theme-color" content="#0d110b" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <title>Oracle · earn by being somewhere</title>
+<meta name="description" content="AI agents ask about a real place. People who are there answer in under 40 seconds and get paid in SOL." />
+<meta property="og:title" content="Oracle · The world, answered." />
+<meta property="og:description" content="Ask your AI about any place. Oracle gets the answer from people who are there." />
+<meta property="og:image" content="https://oracle.tryalethea.com/img/ora.png" />
+<link rel="icon" href="/icon.png?s=64" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="apple-touch-icon" href="/icon.png?s=180" />
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
@@ -15,11 +20,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --green: #1e6b46; --green-2: #2f8a5c; --mint: #e7f3eb; --mint-2: #f3f8f4;
-    --ink: #13241b; --muted: #66756c; --line: #e3e9e4; --bg: #f6f8f6; --card: #fff;
-    --purple: #5b3fd6; --red: #d64545; --amber: #c98a12; --blue: #2f6fe0;
-    --o1: #2f8a5c; --o2: #c98a12; --o3: #d64545;
-    --r: 18px; --shadow: 0 6px 20px -10px rgba(19,36,27,.25);
+    /* Dark + lime, matching the iPhone app (ios/Oracle/Preview.png). --green is the accent (lime); --on is text on it. */
+    --green: #d4f53c; --green-2: #b8e02a; --mint: rgba(212,245,60,.13); --mint-2: #1a2114; --on: #10140c;
+    --ink: #eef3e6; --muted: #9ba590; --line: #2a3224; --bg: #0d110b; --card: #171d13;
+    --purple: #c4b5ff; --red: #ff6b5b; --amber: #f5b83d; --blue: #6aa2ff;
+    --o1: #c6ec34; --o2: #f5b83d; --o3: #ff6b5b;
+    --r: 22px; --shadow: 0 10px 30px -14px rgba(0,0,0,.7);
     font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -245,6 +251,171 @@
   .notify.on { display: flex; }
   .notify p { margin: 0; flex: 1; font-size: 14px; line-height: 1.4; }
   .notify button { border: 0; border-radius: 12px; background: #f2b33d; color: #2a1a00; font-weight: 700; padding: 10px 12px; white-space: nowrap; }
+
+  /* ===== Dark + lime theme overrides (match the iPhone app). Kept together so it is easy to review or revert. ===== */
+  html, body { background: var(--bg); }
+  .app { background: radial-gradient(120% 60% at 50% -10%, #1f3a12 0%, rgba(13,17,11,0) 60%), var(--bg); }
+  .head h1 { font-family: "Schibsted Grotesk", -apple-system, sans-serif; }
+  .card, .find, .locate, .hint, .pin .lab, .opt, .sensor, textarea, .field input, .floors button, .panel input, .msbtn, .seg button.on, .hero .back { background: var(--card); color: var(--ink); border-color: var(--line); }
+  .card { border: 1px solid var(--line); }
+  .find { border: 1.5px solid rgba(212,245,60,.45); background: linear-gradient(90deg, rgba(212,245,60,.16), rgba(212,245,60,.05)); border-radius: 999px; padding: 13px 18px; }
+  .find svg { color: var(--green); }
+  .find input::placeholder { color: var(--muted); }
+  .opt.sel, .primary, .small, .floors button.sel, .step.ok i, .scanEntry .chip, .notify button { background: var(--green); color: var(--on); border-color: var(--green); }
+  .opt.sel::after { background: var(--on); color: var(--green); }
+  .primary { border-radius: 999px; font-weight: 800; }
+  .small.ghost, .pw .eye { background: var(--mint); color: var(--green); }
+  .wallet { background: linear-gradient(135deg, #d4f53c, #9fcf1e); color: var(--on); }
+  .pro, .scanEntry { background: linear-gradient(135deg, #1c2a12, #2f4a17); color: var(--ink); border: 1px solid rgba(212,245,60,.25); }
+  .tabbar { left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 8px; border-radius: 30px; background: rgba(28,33,24,.94); border: 1px solid var(--line); gap: 4px; }
+  .tabbar button { border-radius: 22px; padding: 8px 4px; font-weight: 700; color: var(--ink); }
+  .tabbar button.on { background: var(--green); color: var(--on); }
+  .toast, .notify { background: #232b1c; color: var(--ink); border: 1px solid var(--line); }
+  .gate { background: var(--bg); color: var(--ink); }
+  .sheet { background: var(--card); color: var(--ink); }
+  .panel h2, h2.gt { color: var(--ink); }
+  .seg { background: #0f130c; }
+  .headline { background: var(--mint-2); }
+  .hero { background: linear-gradient(135deg, #1f3a12, #11160f); }
+  .v-okay { background: rgba(245,184,61,.15); color: var(--amber); } .v-bad { background: rgba(255,107,91,.15); color: var(--red); }
+  .sens .dot.off { background: #3a4434; }
+  .me-dot { border-color: var(--bg); }
+  .maplibregl-ctrl-attrib { background: rgba(13,17,11,.7) !important; color: var(--muted) !important; }
+  .maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+  .scene .lid { fill: #b8e02a; }
+
+  /* ===== Home screen (mirrors the iPhone app's Home tab) ===== */
+  #home .wordmark { display: flex; align-items: center; justify-content: center; gap: 10px; margin: calc(12px + env(safe-area-inset-top)) 18px 12px; padding: 10px 14px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid var(--line); position: relative; }
+  #home .wordmark b { font: 800 24px "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.02em; }
+  #home .wordmark .owl { width: 30px; height: 30px; }
+  #home .wordmark .iconbtn { position: absolute; left: 6px; color: var(--ink); }
+  .hm-area { display: flex; align-items: center; gap: 10px; margin: 26px 22px 8px; font-weight: 600; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; font-size: 16px; }
+  .hm-area svg { color: var(--green); }
+  .hm-hero { display: grid; grid-template-columns: 1fr 42%; align-items: center; gap: 4px; padding: 6px 22px 0; }
+  .hm-hero h2 { font: 900 44px/1.02 "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.025em; margin: 0 0 12px; }
+  .hm-hero p { color: var(--muted); font-size: 17px; line-height: 1.4; margin: 0; }
+  .hm-hero img { width: 100%; max-width: 190px; justify-self: end; filter: drop-shadow(0 18px 24px rgba(0,0,0,.5)); animation: float 4s ease-in-out infinite; }
+  @keyframes float { 50% { transform: translateY(-8px) rotate(-2deg); } }
+  .hm-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 24px 18px 8px; }
+  .hm-cta button { display: flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 999px; padding: 18px 10px; font-weight: 800; font-size: 16px; cursor: pointer; }
+  .hm-cta .a { background: var(--green); color: var(--on); }
+  .hm-cta .b { background: #2f3d17; color: var(--ink); }
+  .hm-card { margin: 14px 18px; padding: 18px; border-radius: 26px; background: var(--card); border: 1px solid var(--line); }
+  .hm-card h3 { margin: 0 0 6px; font: 800 21px "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.01em; }
+  .hm-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 2px; border: 0; background: none; color: var(--ink); font-size: 16.5px; text-align: left; cursor: pointer; border-top: 1px solid var(--line); }
+  .hm-row:first-of-type { border-top: 0; }
+  .hm-row small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .hm-row svg { flex: none; color: var(--green); }
+  .hm-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .hm-steps div { border-radius: 16px; padding: 12px 10px; background: #10150d; border: 1px solid var(--line); font-size: 13px; line-height: 1.35; }
+  .hm-steps b { display: block; color: var(--green); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+  .scanEntry .chip { white-space: nowrap; }
+  .toast { transform: translateY(calc(-100% - 30px - env(safe-area-inset-top))); visibility: hidden; transition: transform .35s cubic-bezier(.2,1.2,.4,1), visibility 0s .35s; }
+  .toast.show { transform: none; visibility: visible; transition: transform .35s cubic-bezier(.2,1.2,.4,1); }
+  .notify { position: relative; padding-right: 40px; }
+  .notify .x { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: rgba(255,255,255,.08); color: var(--ink); font-size: 16px; line-height: 1; padding: 0; cursor: pointer; }
+  .card a { color: var(--green); }
+  .small:disabled { background: #2f3d17; color: var(--ink); opacity: .55; }
+  .empty b { color: var(--ink); }
+  /* ===== Set my location on the map (manual pin) ===== */
+  .adjust { position: absolute; right: 12px; bottom: 64px; z-index: 500; display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; font-size: 13px; box-shadow: var(--shadow); cursor: pointer; }
+  .adjust svg { color: var(--green); }
+  .pinpick { position: absolute; left: 50%; top: 50%; z-index: 600; transform: translate(-50%, -100%); pointer-events: none; display: none; filter: drop-shadow(0 8px 10px rgba(0,0,0,.6)); }
+  .pinpick i { position: absolute; left: 50%; bottom: -4px; width: 10px; height: 4px; margin-left: -5px; border-radius: 50%; background: rgba(0,0,0,.6); }
+  .pinbar { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 700; display: none; padding: 14px; border-radius: 20px; background: rgba(23,29,19,.97); border: 1px solid rgba(212,245,60,.35); box-shadow: var(--shadow); }
+  .pinbar b { display: block; font-size: 15px; margin-bottom: 3px; }
+  .pinbar span { display: block; color: var(--muted); font-size: 13px; line-height: 1.35; margin-bottom: 10px; }
+  .pinbar .small { width: 100%; padding: 12px; }
+  .mapwrap.picking .pinpick, .mapwrap.picking .pinbar { display: block; }
+  .mapwrap.picking .hint, .mapwrap.picking .locate, .mapwrap.picking .adjust { display: none; }
+  .mapwrap.picking .pinpick.lift svg { transform: translateY(-8px); transition: transform .15s; }
+  .me-dot.manual { background: var(--green); box-shadow: 0 0 0 4px rgba(212,245,60,.25); animation: none; }
+  .ai-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #0f130c; border-radius: 14px; padding: 4px; }
+  .ai-tabs button { display: flex; align-items: center; justify-content: center; gap: 7px; border: 0; background: none; color: var(--muted); border-radius: 11px; padding: 10px 4px; font-weight: 800; font-size: 14px; cursor: pointer; }
+  .ai-tabs button i { width: 10px; height: 10px; border-radius: 50%; }
+  .ai-tabs button.on { background: var(--card); color: var(--ink); box-shadow: 0 2px 8px -3px rgba(0,0,0,.6); }
+  .ai-steps { display: none; margin: 12px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.45; color: var(--ink); }
+  .ai-steps.on { display: block; }
+  .ai-steps li { margin-bottom: 6px; } .ai-steps li::marker { color: var(--green); font-weight: 800; }
+  .hm-built { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .hm-built span { font-size: 12px; font-weight: 700; border-radius: 99px; padding: 5px 10px; background: var(--mint); color: var(--green); }
+
+  /* ===== Wide screens (640px and up: laptop, desktop, half-screen windows, tablets): sidebar navigation and a roomier layout. Phones keep the app layout above. ===== */
+  .tabbar .nav-brand, .tabbar .nav-extra, .tabbar .nav-foot { display: none; }
+  @media (min-width: 640px) {
+    .app { max-width: none; padding-left: 256px; }
+    .tabbar { left: 16px; top: 16px; bottom: 16px; right: auto; width: 224px; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 18px 12px; border-radius: 28px; }
+    .tabbar .nav-brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 20px; }
+    .tabbar .nav-brand .owl { width: 32px; height: 32px; }
+    .tabbar .nav-brand b { font: 800 24px "Schibsted Grotesk", -apple-system, sans-serif; letter-spacing: -.02em; }
+    .tabbar button { display: flex; align-items: center; justify-content: flex-start; gap: 12px; font-size: 15.5px; padding: 12px 14px; border-radius: 16px; }
+    .tabbar button:not(.on):hover { background: rgba(255,255,255,.05); }
+    .tabbar .nav-extra { display: flex; }
+    .tabbar .badge { position: static; margin-left: auto; }
+    .tabbar .nav-foot { display: block; margin: auto 10px 4px; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+    .screen { padding: 8px 32px 32px; }
+    .screen > .head, .screen > .section, .screen > .notify, .screen > .lr-head { max-width: 880px; margin-left: auto; margin-right: auto; }
+    .screen > .notify { margin-bottom: 14px; }
+    #request > .section, #scan > .section, #request > .lr-head, #scan > .lr-head { max-width: 640px; }
+    #reqList { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 0 14px; }
+    #rewardsBody, #profileBody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; align-items: start; }
+    #place { padding: 0; } #place > .section { max-width: 880px; }
+    .hero { height: 300px; border-radius: 0 0 28px 28px; }
+    /* Home becomes a dashboard: hero across the top, cards in three columns */
+    #home.screen.on { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 18px; align-content: start; max-width: 1240px; margin: 0 auto; width: 100%; padding-top: 24px; }
+    #home > * { grid-column: 1 / -1; }
+    #home .wordmark { display: none; }
+    #home .find { margin: 0 0 6px; max-width: 640px; }
+    #home .hm-area { margin: 18px 0 0; }
+    #home .hm-hero { padding: 0; grid-template-columns: 1fr 340px; }
+    #home .hm-hero h2 { font-size: 76px; }
+    #home .hm-hero p { font-size: 21px; }
+    #home .hm-hero img { max-width: 300px; }
+    #home .hm-cta { padding: 8px 0 18px; max-width: 560px; }
+    #home .hm-card { grid-column: span 1; margin: 0 0 18px; }
+    #home .notify { margin: 8px 0; max-width: 640px; }
+    /* Explore: the map gets the whole screen */
+    #explore.on { padding: 0; }
+    /* one clean top row: search on the left, bell on the right */
+    #explore .head { position: absolute; top: 22px; right: 24px; padding: 0; margin: 0; max-width: none; z-index: 5; }
+    #explore .head .iconbtn { width: 48px; height: 48px; border-radius: 50%; background: var(--card); border: 1px solid var(--line); color: var(--ink); }
+    #explore .find { margin: 22px 96px 16px 24px; max-width: 640px; }
+    #explore .notify { margin: 0 24px 14px; max-width: 640px; }
+    .mapwrap { margin: 0 24px 24px; }
+    .toast { left: auto; right: 24px; width: 420px; }
+    #explore .head .owl, #explore .head h1, #request .lr-head .owl, #request .lr-head b { display: none; }
+    /* Sign-in: scene on the left, form on the right */
+    .gate { flex-direction: row; }
+    .gate .sheet { width: 480px; max-height: none; border-radius: 0; overflow: auto; display: flex; flex-direction: column; justify-content: center; }
+    .gate .scene { min-height: 0; }
+  }
+
+  /* Medium windows (640-1099px, e.g. half a laptop screen): slimmer sidebar, two columns */
+  @media (min-width: 640px) and (max-width: 1099px) {
+    .app { padding-left: 204px; }
+    .tabbar { width: 176px; padding: 16px 10px; }
+    .tabbar .nav-brand b { font-size: 21px; }
+    .tabbar button { font-size: 14.5px; padding: 11px 12px; gap: 10px; }
+    .screen { padding: 8px 20px 24px; }
+    #home.screen.on { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; padding-top: 18px; }
+    #home .hm-hero { grid-template-columns: 1fr 210px; }
+    #home .hm-hero h2 { font-size: 50px; }
+    #home .hm-hero p { font-size: 17px; }
+    #home .hm-hero img { max-width: 200px; }
+    #home .hm-card:last-child { grid-column: 1 / -1; }
+    #rewardsBody, #profileBody { grid-template-columns: 1fr; }
+    #explore .find { margin: 18px 84px 14px 16px; }
+    #explore .head { top: 18px; right: 16px; }
+    .mapwrap { margin: 0 16px 16px; }
+    .gate .sheet { width: 400px; }
+  }
+  /* Narrow windows (640-899px): Home cards stack full width so nothing is squeezed */
+  @media (min-width: 640px) and (max-width: 899px) {
+    #home .hm-card { grid-column: 1 / -1; }
+    #home .hm-hero { grid-template-columns: 1fr 180px; }
+    #home .hm-hero h2 { font-size: 44px; }
+    #home .hm-hero img { max-width: 170px; }
+  }
   :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
@@ -252,26 +423,98 @@
 <body>
 <div class="app" id="app">
 
+  <!-- HOME (mirrors the iPhone app's Home tab) -->
+  <section class="screen on" id="home">
+    <div class="wordmark">
+      <button class="iconbtn" aria-label="Profile and settings" onclick="go('profile')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg><b>Oracle</b>
+    </div>
+    <div class="find" onclick="homeSearch()" style="cursor:pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input placeholder="Find a place or ask nearby…" aria-label="Find a place" readonly style="cursor:pointer" />
+    </div>
+    <div class="notify" id="notify0"><button class="x" aria-label="Dismiss" onclick="dismissNotify()">×</button><p id="notifyText0">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
+    <button class="hm-area" onclick="homeLocate()"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 11l18-8-8 18-2-8z"/></svg><span id="hmArea">Choose your area</span></button>
+    <div class="hm-hero">
+      <div><h2>The world, answered.</h2><p>Find out what's happening.<br>Help someone nearby.</p></div>
+      <img src="/img/ora.png" alt="Ora, Oracle's robot mascot, waving" />
+    </div>
+    <div class="hm-cta">
+      <button class="a" onclick="go('explore')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/></svg>Explore places</button>
+      <button class="b" onclick="go('contribute')"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Answer &amp; earn</button>
+    </div>
+    <div class="hm-card">
+      <h3>Start where you are</h3>
+      <button class="hm-row" onclick="homeLocate()"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M7 12l10-5-5 10-1-4z" fill="#10140c"/></svg><span>Use my location<small>Get requests for places around you</small></span></button>
+      <button class="hm-row" onclick="homeSearch()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Search a city or venue<small>Any store, restaurant, park or address</small></span></button>
+      <button class="hm-row" onclick="startPin()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Set my spot on the map<small>GPS off? Drag the map to where you are</small></span></button>
+      <button class="hm-row" onclick="go('explore')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg><span>Try the ASU demo<small>Live answers from people on campus</small></span></button>
+    </div>
+    <div class="hm-card">
+      <h3>How Oracle works</h3>
+      <div class="hm-steps">
+        <div><b>1 · Ask</b>You ask Claude, ChatGPT or Gemini; it asks Oracle</div>
+        <div><b>2 · Answer</b>People nearby tap, snap a photo or measure</div>
+        <div><b>3 · Earn</b>Matching answers earn points and SOL</div>
+      </div>
+      <div class="hm-built" aria-label="Built with"><span>Gemini</span><span>MongoDB</span><span>Tiger Data</span><span>TinyFish</span><span>Solana</span><span>Vultr</span><span>GoDaddy</span><span>MCP</span></div>
+    </div>
+    <div class="hm-card">
+      <h3>Ask from your AI</h3>
+      <p class="muted" style="margin:0 0 10px;line-height:1.45">Oracle works in Claude, ChatGPT and Gemini. Add this address once, then ask "How long is the line at the MU right now?"</p>
+      <div class="field" style="margin:0 0 12px"><input id="mcpUrl" readonly aria-label="Oracle connector address" /><button class="small" onclick="copyMcp()">Copy</button></div>
+      <div class="ai-tabs" role="tablist">
+        <button class="on" data-ai="claude" onclick="aiTab('claude')"><i style="background:#d97757"></i>Claude</button>
+        <button data-ai="chatgpt" onclick="aiTab('chatgpt')"><i style="background:#10a37f"></i>ChatGPT</button>
+        <button data-ai="gemini" onclick="aiTab('gemini')"><i style="background:linear-gradient(135deg,#4285f4,#9b72cb,#d96570)"></i>Gemini</button>
+      </div>
+      <ol class="ai-steps on" data-ai="claude">
+        <li>Open <b>claude.ai</b> (web or phone) → <b>Settings → Connectors</b>.</li>
+        <li>Tap <b>Add custom connector</b>, name it Oracle, paste the address.</li>
+        <li>In a chat, ask about any place. On Claude Desktop the same works under Settings → Connectors.</li>
+      </ol>
+      <ol class="ai-steps" data-ai="chatgpt">
+        <li>On <b>chatgpt.com</b>: <b>Settings → Apps &amp; Connectors → Advanced</b> → turn on <b>Developer mode</b>.</li>
+        <li>Back in Apps &amp; Connectors, tap <b>Create</b>, name it Oracle, paste the address, choose <b>No authentication</b>, tick "I trust this app".</li>
+        <li>In a new chat, tap <b>+</b> → Developer mode → turn on Oracle, then ask. Needs a paid plan (Plus or higher).</li>
+      </ol>
+      <ol class="ai-steps" data-ai="gemini">
+        <li>On <b>gemini.google.com</b>: <b>Settings → Connected Apps</b>.</li>
+        <li>Under Custom apps, tap <b>Add a custom app</b> and paste the address.</li>
+        <li>Ask in any chat; it works in the Gemini phone app too. Google limits custom apps to some plans and regions (US, English, personal accounts).</li>
+      </ol>
+    </div>
+  </section>
+
   <!-- EXPLORE -->
-  <section class="screen on" id="explore">
+  <section class="screen" id="explore">
     <div class="head">
-      <svg class="owl" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#1e6b46"/><circle cx="23" cy="31" r="9" fill="#fff"/><circle cx="41" cy="31" r="9" fill="#fff"/><circle cx="23" cy="31" r="4" fill="#13241b"/><circle cx="41" cy="31" r="4" fill="#13241b"/><path d="M29 41h6l-3 6z" fill="#f2b33d"/></svg>
+      <svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg>
       <h1>Oracle</h1><div class="sp"></div>
       <button class="iconbtn" aria-label="Requests" onclick="go('contribute')">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg>
         <span class="badge" id="bellBadge"></span>
       </button>
     </div>
-    <div class="notify" id="notify1"><p id="notifyText1">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
+    <div class="notify" id="notify1"><button class="x" aria-label="Dismiss" onclick="dismissNotify()">×</button><p id="notifyText1">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
     <div class="find">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#66756c" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
       <input id="search" placeholder="Find a place" aria-label="Find a place" />
     </div>
     <div class="mapwrap">
       <div id="map"></div>
-      <div class="hint" id="mapHint">Agents ask in Claude. <b>You answer here</b> and earn.</div>
+      <div class="hint" id="mapHint">Agents ask in Claude, ChatGPT or Gemini. <b>You answer here</b> and earn.</div>
+      <div class="pinpick" id="pinpick" aria-hidden="true"><svg width="44" height="56" viewBox="0 0 44 56"><path d="M22 2C11 2 3 10.4 3 21c0 14 19 33 19 33s19-19 19-33C41 10.4 33 2 22 2z" fill="#d4f53c" stroke="#10140c" stroke-width="3"/><circle cx="22" cy="21" r="7" fill="#10140c"/></svg><i></i></div>
+      <div class="pinbar" id="pinbar" role="dialog" aria-label="Set your location on the map">
+        <b>Move the map so the pin is where you are</b>
+        <span id="pinNote">Drag or zoom the map. Use this when your phone puts you in the wrong spot.</span>
+        <div class="two"><button class="small ghost" onclick="cancelPin()">Cancel</button><button class="small" id="pinSave" onclick="savePin()">Set my location here</button></div>
+      </div>
+      <button class="adjust" id="adjustBtn" aria-label="Set my location on the map" onclick="startPin()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><path d="M12 7v6M9 10h6"/></svg><span>Wrong spot?</span>
+      </button>
       <button class="locate" aria-label="Share my location" onclick="locateMe()">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2"><path d="M3 11l18-8-8 18-2-8z"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8-8 18-2-8z"/></svg>
       </button>
     </div>
   </section>
@@ -282,7 +525,7 @@
   <!-- CONTRIBUTE: requests sent to you -->
   <section class="screen" id="contribute">
     <div class="head"><h1>Live requests</h1></div>
-    <div class="notify" id="notify2"><p id="notifyText2">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
+    <div class="notify" id="notify2"><button class="x" aria-label="Dismiss" onclick="dismissNotify()">×</button><p id="notifyText2">Turn on notifications so requests reach you even when the app is closed.</p><button onclick="enableNotifications()">Turn on</button></div>
     <div class="section">
       <button class="scanEntry" onclick="openScan()">
         <span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bfe3cc" stroke-width="2" stroke-linecap="round"><path d="M2 9a15 15 0 0120 0M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0"/><circle cx="12" cy="19.5" r="1.2" fill="#bfe3cc"/></svg></span>
@@ -312,14 +555,18 @@
   </section>
 
   <nav class="tabbar" aria-label="Main">
-    <button class="on" data-tab="explore" onclick="go('explore')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg>Explore</button>
+    <div class="nav-brand"><svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg><b>Oracle</b></div>
+    <button class="on" data-tab="home" onclick="go('home')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg>Home</button>
     <button data-tab="contribute" onclick="go('contribute')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Contribute<span class="badge" id="tabBadge"></span></button>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a3 3 0 013 3v6a3 3 0 01-3 3H9l-4 4v-4H4a3 3 0 01-3-3V7a3 3 0 013-3z" transform="translate(2 0)"/></svg>Requests<span class="badge" id="tabBadge"></span></button>
+    <button data-tab="explore" onclick="go('explore')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/></svg>Explore</button>
     <button data-tab="rewards" onclick="go('rewards')">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>Rewards</button>
-    <button data-tab="profile" onclick="go('profile')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18M12 8v13M12 8c-2-4-6-4-6-1s6 1 6 1zm0 0c2-4 6-4 6-1s-6 1-6 1z"/></svg>Rewards</button>
+    <button class="nav-extra" data-tab="profile" onclick="go('profile')">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Profile</button>
+    <p class="nav-foot">The bridge between your AI and the real world.<br>Ask your AI; people who are there answer.</p>
   </nav>
 
   <div class="toast" id="toast" role="status"></div>
@@ -335,7 +582,7 @@
         <g id="phones"></g>
         <g id="flights"></g>
         <g id="bigOwl" transform="translate(180 150)">
-          <path d="M-30 -36l14 12h32l14-12-3 40c0 21-14 32-27 32s-27-11-27-32z" fill="#1e6b46"/>
+          <path d="M-30 -36l14 12h32l14-12-3 40c0 21-14 32-27 32s-27-11-27-32z" fill="#d4f53c"/>
           <path d="M-14 22c4 6 24 6 28 0" stroke="#bfe3cc" stroke-opacity=".5" stroke-width="2" fill="none"/>
           <circle cx="-12" cy="-6" r="11" fill="#f3f8f4"/><circle cx="12" cy="-6" r="11" fill="#f3f8f4"/>
           <circle id="pupL" cx="-12" cy="-6" r="5" fill="#0b2618"/><circle id="pupR" cx="12" cy="-6" r="5" fill="#0b2618"/>
@@ -426,10 +673,10 @@ function status(p) {
 const colorFor = (o) => (o ? OPT[o - 1] : "var(--muted)");
 
 /* ---------- navigation ---------- */
-let current = "explore";
+let current = "home";
 function go(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
-  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id || ((id === "request" || id === "scan") && b.dataset.tab === "contribute") || (id === "place" && b.dataset.tab === "explore")));
+  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("on", b.dataset.tab === id || ((id === "request" || id === "scan") && b.dataset.tab === "contribute") || (id === "place" && b.dataset.tab === "explore") || (id === "profile" && b.dataset.tab === "home" && !document.querySelector(".nav-extra")?.offsetParent)));
   current = id;
   if (id === "explore") setTimeout(() => map?.resize(), 50);
   if (id === "contribute") renderRequests();
@@ -438,9 +685,19 @@ function go(id) {
   tg?.BackButton?.[id === "request" || id === "place" || id === "scan" ? "show" : "hide"]?.();
 }
 tg?.BackButton?.onClick?.(() => go(current === "request" || current === "scan" ? "contribute" : "explore"));
+// Home screen helpers (the Home tab mirrors the iPhone app).
+function homeSearch() { go("explore"); setTimeout(() => $("search")?.focus(), 120); }
+function homeLocate() { go("explore"); setTimeout(locateMe, 150); }
+function aiTab(k) { document.querySelectorAll("[data-ai]").forEach((el) => el.classList.toggle("on", el.dataset.ai === k)); }
+function copyMcp() { const v = $("mcpUrl").value; navigator.clipboard?.writeText(v).then(() => toast("Copied. Paste it into Claude, ChatGPT or Gemini as a custom connector."), () => $("mcpUrl").select()); }
+(function fillMcp() {
+  const el = document.getElementById("mcpUrl"); if (!el) return;
+  el.value = location.origin + "/mcp";
+  fetch("/api/app/config").then((r) => r.json()).then((c) => { if (c?.mcp?.url && /^https:/.test(c.mcp.url)) el.value = c.mcp.url; }).catch(() => {});
+})();
 function toast(html, onclick) {
   const t = $("toast"); t.innerHTML = html; t.onclick = () => { t.classList.remove("show"); onclick?.(); };
-  t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 5000);
+  t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), html.length > 160 ? 12000 : 5000);
   tg?.HapticFeedback?.notificationOccurred?.("success"); navigator.vibrate?.(60);
 }
 
@@ -453,18 +710,18 @@ const MAP_STYLE = {
   glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
   sources: { omt: { type: "vector", url: "https://tiles.openfreemap.org/planet" } },
   layers: [
-    { id: "bg", type: "background", paint: { "background-color": "#eef3ef" } },
-    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#e6efe8" } },
-    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#d3ead9" } },
-    { id: "grass", type: "fill", source: "omt", "source-layer": "landcover", filter: ["in", ["get", "class"], ["literal", ["grass", "wood", "farmland"]]], paint: { "fill-color": "#d9ecdf" } },
-    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#cfe3f2" } },
+    { id: "bg", type: "background", paint: { "background-color": "#0f140d" } },
+    { id: "campus", type: "fill", source: "omt", "source-layer": "landuse", filter: ["in", ["get", "class"], ["literal", ["school", "university", "college"]]], paint: { "fill-color": "#141a11" } },
+    { id: "park", type: "fill", source: "omt", "source-layer": "park", paint: { "fill-color": "#1a2a14" } },
+    { id: "grass", type: "fill", source: "omt", "source-layer": "landcover", filter: ["in", ["get", "class"], ["literal", ["grass", "wood", "farmland"]]], paint: { "fill-color": "#172312" } },
+    { id: "water", type: "fill", source: "omt", "source-layer": "water", paint: { "fill-color": "#122130" } },
     { id: "paths", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["path", "track", "service"]]],
-      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .6, 18, 3] } },
+      paint: { "line-color": "#2b3424", "line-width": ["interpolate", ["linear"], ["zoom"], 14, .6, 18, 3] } },
     { id: "roads", type: "line", source: "omt", "source-layer": "transportation", filter: ["in", ["get", "class"], ["literal", ["minor", "tertiary", "secondary", "primary", "trunk"]]],
-      paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 11] } },
-    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#c2ccc6", "line-width": 1.5, "line-dasharray": [3, 2] } },
+      paint: { "line-color": "#2b3424", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1, 18, 11] } },
+    { id: "rail", type: "line", source: "omt", "source-layer": "transportation", filter: ["==", ["get", "class"], "rail"], paint: { "line-color": "#3a4434", "line-width": 1.5, "line-dasharray": [3, 2] } },
     { id: "buildings", type: "fill-extrusion", source: "omt", "source-layer": "building", minzoom: 13,
-      paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#dfe6e1", 30, "#cfd9d3", 80, "#bccac2"],
+      paint: { "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], 8], 0, "#1f271b", 30, "#262f21", 80, "#2e3828"],
         "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": .95 } },
   ],
 };
@@ -499,30 +756,30 @@ function addPlaceLayers() {
   map.addLayer({ id: "walk-fill", type: "fill", source: "walk", paint: { "fill-color": "#2f6fe0", "fill-opacity": .07 } }, "buildings");
   map.addLayer({ id: "walk-edge", type: "line", source: "walk", paint: { "line-color": "#2f6fe0", "line-width": 2, "line-opacity": .6, "line-dasharray": [2, 2] } }, "buildings");
   map.addLayer({ id: "dot", type: "circle", source: "dots", paint: {
-    "circle-color": DOT_COLOR, "circle-stroke-color": "#ffffff", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2.5, 1.5],
+    "circle-color": DOT_COLOR, "circle-stroke-color": "#0d110b", "circle-stroke-width": ["case", ["boolean", ["get", "near"], false], 2.5, 1.5],
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["boolean", ["get", "near"], false], 4.5, 2.5], 17, ["case", ["boolean", ["get", "near"], false], 9, 6.5]] } });
   map.addLayer({ id: "dot-name-near", type: "symbol", source: "dots", filter: ["==", ["get", "near"], true], minzoom: 14,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, 1], "text-anchor": "top", "text-max-width": 9 },
-    paint: { "text-color": "#13241b", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
+    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.6 } });
   map.addLayer({ id: "dot-name", type: "symbol", source: "dots", filter: ["==", ["get", "near"], false], minzoom: 15.8,
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.8, 10.5, 18, 12.5], "text-offset": [0, .9], "text-anchor": "top", "text-max-width": 8 },
-    paint: { "text-color": "#3d4a43", "text-halo-color": "#ffffff", "text-halo-width": 1.4 } });
+    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.4 } });
   // Every shop, café, restaurant and campus building from OpenStreetMap. Dots appear as you zoom in, then names fade in.
   const POI_COLOR = ["match", ["get", "class"], ["cafe"], "#7a4b2a", ["restaurant", "fast_food", "bar", "beer", "ice_cream", "bakery"], "#5b3fd6",
     ["shop", "grocery", "clothing_store", "alcohol_shop", "pharmacy", "mobile_phone", "books"], "#2f6fe0", ["library", "college", "school", "university"], "#1e6b46",
     ["sports", "stadium", "fitness", "swimming", "pitch"], "#d64545", ["cinema", "theatre", "music", "art_gallery", "museum", "attraction"], "#2f8a5c", ["parking"], "#66756c", "#4b5a52"];
   map.addLayer({ id: "poi-dot", type: "circle", source: "omt", "source-layer": "poi", minzoom: 14.5, filter: ["has", "name"],
-    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#ffffff", "circle-stroke-width": 1,
+    paint: { "circle-color": POI_COLOR, "circle-radius": ["interpolate", ["linear"], ["zoom"], 14.5, 2, 18, 5.5], "circle-stroke-color": "#0d110b", "circle-stroke-width": 1,
       "circle-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1], "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.1, 1] } }, "dot");
   map.addLayer({ id: "poi-name", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 15.3, filter: ["has", "name"],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 15.3, 10.5, 18, 13],
       "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 8, "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#3d4a43", "text-halo-color": "#ffffff", "text-halo-width": 1.4, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
+    paint: { "text-color": "#b3bca8", "text-halo-color": "#0d110b", "text-halo-width": 1.4, "text-opacity": ["interpolate", ["linear"], ["zoom"], 15.3, 0, 15.8, 1] } });
   // Inside your 5-minute-walk circle, names show from further out and in bold.
   map.addLayer({ id: "poi-name-near", type: "symbol", source: "omt", "source-layer": "poi", minzoom: 13.8, filter: ["==", 1, 0],
     layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Bold"], "text-size": 12.5, "text-offset": [0, .8], "text-anchor": "top", "text-max-width": 9,
       "symbol-sort-key": ["coalesce", ["get", "rank"], 50] },
-    paint: { "text-color": "#13241b", "text-halo-color": "#ffffff", "text-halo-width": 1.6 } });
+    paint: { "text-color": "#eef3e6", "text-halo-color": "#0d110b", "text-halo-width": 1.6 } });
   const pickPoi = async (e) => {
     const f = e.features?.[0]; if (!f?.properties?.name) return;
     const [lng, lat] = f.geometry.coordinates;
@@ -614,25 +871,102 @@ async function sendLocation(pos, force = false) {
 function watchMe() {
   if (watching || !navigator.geolocation) return; watching = true;
   navigator.geolocation.watchPosition((pos) => {
+    lastPos = pos;
+    if (manualActive()) return;   // a spot you set by hand wins until you move away or tap "share my location"
     showMe(pos.coords.latitude, pos.coords.longitude);
     if (firstFix) { firstFix = false; map?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 16.6, pitch: 52, duration: 2000 }); }
-    lastPos = pos; sendLocation(pos);
+    sendLocation(pos);
   }, () => { watching = false; }, { enableHighAccuracy: true, maximumAge: 5000 });
 }
+/* ---------- set my location by hand: drag the map under a pin ---------- */
+// GPS indoors or on Wi-Fi can put you a building or a block off. You can drop your own pin instead.
+// Guard: if the phone has a decent fix, the pin must stay near it (so this fixes a wrong spot, not teleports).
+const MANUAL_KEY = "oracleManualPin", MANUAL_HOURS = 3, MANUAL_MAX_M = 1500, MANUAL_DRIFT_M = 400;
+let manualPin = null;
+try { manualPin = JSON.parse(localStorage.getItem(MANUAL_KEY) || "null"); } catch {}
+function manualActive() {
+  if (!manualPin) return false;
+  const stale = Date.now() - manualPin.at > MANUAL_HOURS * 3600e3;
+  // Walked away from where you pinned yourself (by a good GPS fix)? Go back to live GPS.
+  const moved = lastPos && lastPos.coords.accuracy <= 100 && distM(manualPin, { lat: lastPos.coords.latitude, lng: lastPos.coords.longitude }) > MANUAL_MAX_M + MANUAL_DRIFT_M;
+  if (stale || moved) { clearManual(); return false; }
+  return true;
+}
+function clearManual() { manualPin = null; try { localStorage.removeItem(MANUAL_KEY); } catch {} document.querySelector(".me-dot")?.classList.remove("manual"); }
+function startPin() {
+  if (!ME) return toast("Sign in first, then set your spot.");
+  if (current !== "explore") go("explore");
+  const c = manualPin || me || (lastPos && { lat: lastPos.coords.latitude, lng: lastPos.coords.longitude });
+  document.querySelector("#explore .mapwrap").classList.add("picking");
+  if (c) map?.flyTo({ center: [c.lng, c.lat], zoom: Math.max(map.getZoom(), 17), pitch: 0, duration: 900 });
+  else map?.easeTo({ pitch: 0, duration: 600 });
+  $("pinNote").textContent = "Drag or zoom the map. Use this when your phone puts you in the wrong spot.";
+  if (map && !map._pinHooked) {
+    map._pinHooked = true;
+    map.on("movestart", () => $("pinpick")?.classList.add("lift"));
+    map.on("moveend", () => { $("pinpick")?.classList.remove("lift"); pinCheck(); });
+  }
+}
+function cancelPin() { document.querySelector("#explore .mapwrap").classList.remove("picking"); }
+function pinGpsLimit(c) {
+  // Only limit when the phone's own fix is reasonably good; a fuzzy (Wi-Fi/IP) fix is exactly what this fixes.
+  if (!lastPos || lastPos.coords.accuracy > 1000) return null;
+  const d = distM(c, { lat: lastPos.coords.latitude, lng: lastPos.coords.longitude });
+  return d > MANUAL_MAX_M ? d : null;
+}
+function pinCheck() {
+  if (!map || !document.querySelector("#explore .mapwrap.picking")) return;
+  const c = map.getCenter(), far = pinGpsLimit({ lat: c.lat, lng: c.lng });
+  $("pinSave").disabled = Boolean(far);
+  $("pinNote").textContent = far ? `That's ${(far / 1000).toFixed(1)} km from where your phone says you are. Move the pin closer to you.`
+    : "Drag or zoom the map. Use this when your phone puts you in the wrong spot.";
+}
+async function savePin() {
+  if (!map) return;
+  const c = map.getCenter(), spot = { lat: c.lat, lng: c.lng };
+  if (pinGpsLimit(spot)) return pinCheck();
+  $("pinSave").disabled = true;
+  try {
+    const r = await api("/api/app/checkin", { lat: spot.lat, lng: spot.lng, accuracy: 10, manual: true });
+    manualPin = { ...spot, at: Date.now() };
+    try { localStorage.setItem(MANUAL_KEY, JSON.stringify(manualPin)); } catch {}
+    lastSent = spot; lastSentAt = Date.now();
+    cancelPin();
+    try { showMe(spot.lat, spot.lng); document.querySelector(".me-dot")?.classList.add("manual"); } catch {}
+    toast(r?.place ? `📍 Location set: you're at <b>${esc(r.place)}</b>. Requests for places around you will come here.`
+      : "📍 Location set. Requests for places near this spot will come here.");
+    refreshMe();
+  } catch (e) { toast("Couldn't save that spot. Try again."); }
+  finally { $("pinSave").disabled = false; }
+}
+
 function locateMe() {
-  if (!navigator.geolocation) return toast("Location isn't available on this device.");
+  clearManual();   // asking for GPS again means "use my real location"
+  if (!navigator.geolocation) return toast("Location isn't available on this device. <b>Tap here to set your spot on the map.</b>", startPin);
   if (!window.isSecureContext) return toast("📍 Location only works over <b>https://</b> (or on localhost). Open Oracle from its https address.");
-  navigator.geolocation.getCurrentPosition(async (pos) => {
+  toast("📍 Finding you…");
+  const ok = async (pos) => {
     const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-    firstFix = false;
+    firstFix = false; lastPos = pos;
     showMe(lat, lng); watchMe(); map?.flyTo({ center: [lng, lat], zoom: 16.8, pitch: 55, duration: 1800 });
     const r = await sendLocation(pos, true);
-    const fuzzy = accuracy > COARSE_M ? `<br><small>Your device only knows your spot to about ${accuracy >= 1000 ? (accuracy / 1000).toFixed(1) + " km" : Math.round(accuracy) + " m"}. Turn on Wi-Fi and precise location for a better fix; Oracle will update as it improves.</small>` : "";
-    toast((r?.place ? `📍 You're at <b>${esc(r.place)}</b>. Requests for places around you will come here.` : "📍 You're all set. Requests for places near you will come here.") + fuzzy);
+    const fuzzy = accuracy > COARSE_M ? `<br><small>Your device only knows your spot to about ${accuracy >= 1000 ? (accuracy / 1000).toFixed(1) + " km" : Math.round(accuracy) + " m"}. Turn on Wi-Fi and precise location for a better fix, or tap here to set your spot on the map.</small>` : "";
+    toast((r?.place ? `📍 You're at <b>${esc(r.place)}</b>. Requests for places around you will come here.` : "📍 You're all set. Requests for places near you will come here.") + fuzzy, fuzzy ? startPin : undefined);
     refreshMe();
-  }, (err) => toast(err.code === err.TIMEOUT ? "📍 Couldn't get a location fix in time. Try again near a window or with Wi-Fi on."
-    : "Allow location for this site: tap the icon next to the address bar, then Location → Allow."),
-  { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  };
+  // iPhones indoors often time out on a precise fix, so try precise first, then accept a rougher one.
+  navigator.geolocation.getCurrentPosition(ok, (err) => {
+    if (err.code === err.PERMISSION_DENIED) return locationHelp(err);
+    navigator.geolocation.getCurrentPosition(ok, locationHelp, { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 });
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+}
+function locationHelp(err) {
+  const fallback = "<br><b>Or tap here to set your spot on the map.</b>";
+  if (err.code === err.PERMISSION_DENIED) {
+    if (isIOS) return toast("📍 <b>Location is blocked for Safari.</b> On iPhone: Settings → Privacy &amp; Security → Location Services → <b>Safari Websites → While Using</b>. Then in Safari tap <b>aA</b> → Website Settings → Location → <b>Allow</b>, and reload." + fallback, startPin);
+    return toast("📍 <b>Location is blocked for this site.</b> Tap the icon next to the address bar → Location → Allow, then reload." + fallback, startPin);
+  }
+  toast("📍 Couldn't get a location fix. Try again near a window or with Wi-Fi on." + fallback, startPin);
 }
 // If location is already allowed, keep your dot live on the map.
 navigator.permissions?.query({ name: "geolocation" }).then((st) => { if (st.state === "granted") watchMe(); }).catch(() => {});
@@ -651,12 +985,12 @@ async function openPlace(id) {
     const v = d.live?.[k];
     const txt = v ? (k === "people" && v.value != null ? `~${Math.round(v.value)}` : k === "noise" && v.value != null ? `${v.answer} (${Math.round(v.value)} dB)` : v.answer) : "No report";
     const col = v ? colorFor(v.option) : "var(--muted)";
-    return `<div class="stat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#66756c" stroke-width="2">${path}</svg>${label}
+    return `<div class="stat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${path}</svg>${label}
       <span class="pillv" style="color:${col};background:${v ? "color-mix(in srgb, " + col + " 14%, white)" : "var(--mint-2)"}">${esc(txt)}</span></div>`;
   }).join("");
   $("place").innerHTML = `
     <div class="hero">${d.photo ? `<img src="${d.photo}" alt="Latest photo of ${esc(d.name)}"><span class="cap">Faces and IDs blurred</span>` : ""}
-      <button class="back" aria-label="Back" onclick="go('explore')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button></div>
+      <button class="back" aria-label="Back" onclick="go('explore')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button></div>
     <div class="section pd"><div class="card">
       <div class="name"><div class="ic" style="background:${kindOf(d).color}">${icon(d, 24)}</div>
         <div><h2>${esc(d.name)}</h2><div class="muted" style="font-size:13.5px">${esc(d.tagline || "")}</div></div></div>
@@ -696,7 +1030,7 @@ function renderRequests() {
       <h3>${esc(r.question)}</h3>
       <div class="row muted" style="font-size:13.5px"><span class="grow">📍 ${esc(r.place)} · ${SENSOR_LABEL[r.sensor] || ""}</span><span>${r.answered}/${r.pinged} answered</span></div>
     </div>`).join("")
-    : `<div class="empty"><div class="big">🦉</div><b>No requests right now.</b><br>When an AI agent asks about a place you're at, it shows up here and your phone buzzes.<br><br><button class="small ghost" onclick="locateMe()">Share my location</button></div>`;
+    : `<div class="empty"><img src="/img/ora.png" alt="" style="width:110px;display:block;margin:0 auto 10px"><b>No requests right now.</b><br>When an AI agent asks about a place you're at, it shows up here and your phone buzzes.<br><br><button class="small ghost" onclick="locateMe()">Share my location</button></div>`;
 }
 let draft = {};
 function openRequest(id) {
@@ -706,8 +1040,8 @@ function openRequest(id) {
   const s = r.sensor || "poll";
   const needsPhoto = s === "photo" || s === "people_count";
   $("request").innerHTML = `
-    <div class="lr-head"><button class="back" aria-label="Back" onclick="go('contribute')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <svg class="owl" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 14l8 7h28l8-7-2 26c0 13-9 20-20 20S12 53 12 40z" fill="#1e6b46"/><circle cx="23" cy="31" r="9" fill="#fff"/><circle cx="41" cy="31" r="9" fill="#fff"/><circle cx="23" cy="31" r="4" fill="#13241b"/><circle cx="41" cy="31" r="4" fill="#13241b"/><path d="M29 41h6l-3 6z" fill="#f2b33d"/></svg>
+    <div class="lr-head"><button class="back" aria-label="Back" onclick="go('contribute')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <svg class="owl" viewBox="0 0 40 40" aria-hidden="true"><circle cx="19" cy="21" r="14" fill="none" stroke="#d4f53c" stroke-width="4.5"/><path d="M14 27l9-11" stroke="#d4f53c" stroke-width="4.5" stroke-linecap="round"/><circle cx="33" cy="7" r="3.2" fill="#d4f53c"/></svg>
       <b style="font-size:20px">Oracle</b></div>
     <div class="section"><div class="card" id="reqCard">
       <span class="live-badge">Live request</span>
@@ -716,7 +1050,7 @@ function openRequest(id) {
       ${s !== "poll" && s !== "report" ? `<div class="muted" style="font-size:13.5px;margin:-6px 0 8px">Tap an answer${needsPhoto ? (s === "people_count" ? ", type a number, or add a photo for 5 points" : ", and add a photo for 5 points") : s === "noise" ? ", or measure the noise for an exact reading" : s === "wifi" ? ", or run the speed test for an exact reading" : ""}:</div>` : ""}
       ${(r.options || []).map((o, i) => `<button class="opt" data-o="${i + 1}">${esc(o)}</button>`).join("")}
       ${s === "report" ? `<textarea id="rtext" placeholder="What did you find out?"></textarea>` : ""}
-      ${s === "people_count" ? `<input id="pcount" type="number" inputmode="numeric" min="0" max="9999" placeholder="Or type the number of people you see" style="width:100%;margin:6px 0 2px;padding:13px 14px;border:1.5px solid #d5ddd8;border-radius:14px;font:inherit;box-sizing:border-box">` : ""}
+      ${s === "people_count" ? `<input id="pcount" type="number" inputmode="numeric" min="0" max="9999" placeholder="Or type the number of people you see" style="width:100%;margin:6px 0 2px;padding:13px 14px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;font:inherit;box-sizing:border-box">` : ""}
       <img class="shot" id="shot" alt="Your photo">
       <div class="sensors">
         ${s === "noise" ? `<button class="sensor wide need" id="noiseBtn">🎙️ Measure noise<small>10 seconds · only a number is sent</small><div class="meter"><i id="lvl"></i></div></button>` : ""}
@@ -849,19 +1183,19 @@ function renderProfile() {
       <div class="grow"><div style="font-size:19px;font-weight:700">${esc(ME.name)}</div><div class="muted" style="font-size:13.5px">📍 ${esc(ME.place || "Not checked in")} · via ${esc(ME.channel)}</div></div></div>
       <div style="margin-top:12px"><div class="kv"><span>Trust</span><b>${ME.trust}</b></div><div class="kv"><span>Answers</span><b>${ME.answered}</b></div>
       <div class="kv"><span>Matched the crowd</span><b>${acc}%</b></div><div class="kv"><span>SOL earned</span><b>${(ME.earnedSol || 0).toFixed(3)}</b></div></div>
-      <button class="small ghost" style="margin-top:12px;width:100%" onclick="locateMe()">📍 Update my location</button></div>
+      <button class="small ghost" style="margin-top:12px;width:100%" onclick="locateMe()">📍 Update my location</button><button class="small ghost" style="margin-top:8px;width:100%" onclick="startPin()">🗺️ Set my spot on the map</button></div>
     ${ME.hasPassword || ME.oauth
       ? `<div class="card"><b>Account</b><div class="kv"><span>Name</span><b>${esc(ME.name)}</b></div>${ME.username ? `<div class="kv"><span>Username</span><b>@${esc(ME.username)}</b></div>` : ""}
           <p class="muted" style="font-size:13.5px;line-height:1.45;margin:6px 0 0">${ME.oauth ? `You sign in with ${ME.oauth.startsWith("google") ? "Google" : "Microsoft"}.` : "Log in on any device with your username and password."}</p>
-          <button class="small" style="margin-top:12px;width:100%;background:#fbe4e4;color:var(--red)" onclick="signOut()">Sign out</button></div>`
+          <button class="small" style="margin-top:12px;width:100%;background:rgba(255,107,91,.14);color:var(--red)" onclick="signOut()">Sign out</button></div>`
       : `<div class="card"><b>Secure your account</b>
           <p class="muted" style="font-size:13.5px;line-height:1.45;margin:6px 0 4px">Add a username and password so you can sign in on any device and never lose your points.</p>
-          <div class="two"><input id="acFirst" placeholder="First name" style="border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:6px 0 0;min-width:0">
-          <input id="acLast" placeholder="Last name" style="border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:6px 0 0;min-width:0"></div>
-          <input id="acUser" placeholder="Username" autocapitalize="off" spellcheck="false" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:6px 0">
-          <input id="acPass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-size:15px;margin:0 0 8px">
+          <div class="two"><input id="acFirst" placeholder="First name" style="border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:11px;font-size:15px;margin:6px 0 0;min-width:0">
+          <input id="acLast" placeholder="Last name" style="border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:11px;font-size:15px;margin:6px 0 0;min-width:0"></div>
+          <input id="acUser" placeholder="Username" autocapitalize="off" spellcheck="false" style="width:100%;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:11px;font-size:15px;margin:6px 0">
+          <input id="acPass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password" style="width:100%;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:11px;font-size:15px;margin:0 0 8px">
           <button class="small" style="width:100%" onclick="saveAccount()">Save</button>
-          <button class="small" style="margin-top:10px;width:100%;background:#fbe4e4;color:var(--red)" onclick="signOut()">Sign out</button></div>`}
+          <button class="small" style="margin-top:10px;width:100%;background:rgba(255,107,91,.14);color:var(--red)" onclick="signOut()">Sign out</button></div>`}
     <div class="card"><b>Where requests reach you</b>
       <div class="sens"><span class="dot ${"Notification" in window && Notification.permission === "granted" ? "" : "off"}"></span><div class="grow">Oracle app notifications<div class="muted" style="font-size:12.5px">${"Notification" in window && Notification.permission === "granted" ? "On" : "Off"}</div></div>
       ${"Notification" in window && Notification.permission !== "granted" ? '<button class="small" onclick="enableNotifications()">Turn on</button>' : ""}</div></div>
@@ -1036,12 +1370,12 @@ function openScan() {
   Object.assign(scan, { placeId: nearest || ME?.placeId || PLACES[0]?.id, mbps: null, pingMs: null, db: null, peakDb: null, busy: false });
   scan.floor = Number(localStorage.getItem(`floor:${scan.placeId}`)) || null;
   $("scan").innerHTML = `
-    <div class="lr-head"><button class="back" aria-label="Back" onclick="go('contribute')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13241b" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="lr-head"><button class="back" aria-label="Back" onclick="go('contribute')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
       <b style="font-size:18px">Scan this spot</b></div>
     <div class="section">
       <div class="card">
         <div class="step" id="st1"><i>1</i>Where are you?</div>
-        <select id="scPlace" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:16px;background:#fff">
+        <select id="scPlace" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-size:16px;background:var(--card);color:var(--ink)">
           ${(me ? [...PLACES].sort((a, b) => distM(me, a) - distM(me, b)) : [...PLACES].sort((a, b) => a.name.localeCompare(b.name))).slice(0, 150)
             .map((p) => `<option value="${esc(p.id)}" ${p.id === scan.placeId ? "selected" : ""}>${esc(p.name)}${me ? ` · ${Math.round(distM(me, p))} m` : ""}</option>`).join("")}</select>
         <div class="floors" id="scFloors">${FLOORS.map(([v, l]) => `<button type="button" data-f="${v}" aria-label="${ord(v)}">${l}</button>`).join("")}</div>
@@ -1056,7 +1390,7 @@ function openScan() {
         <svg class="gauge" viewBox="0 -8 220 136" aria-hidden="true">
           <defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#d64545"/><stop offset=".45" stop-color="#c98a12"/><stop offset="1" stop-color="#2f8a5c"/></linearGradient></defs>
           <path class="track" d="M20 110 A90 90 0 0 1 200 110"/><path class="val" id="gVal" d="M20 110 A90 90 0 0 1 200 110" pathLength="100" stroke-dasharray="0 100"/>
-          <line class="needle" id="gNeedle" x1="110" y1="110" x2="110" y2="36" style="transform:rotate(-90deg)"/><circle cx="110" cy="110" r="6" fill="#13241b"/>
+          <line class="needle" id="gNeedle" x1="110" y1="110" x2="110" y2="36" style="transform:rotate(-90deg)"/><circle cx="110" cy="110" r="6" fill="#eef3e6"/>
           <text x="17" y="126" text-anchor="middle">1</text><text x="84" y="6" text-anchor="middle">10</text><text x="200" y="50" text-anchor="middle">100</text><text x="203" y="126" text-anchor="middle">300</text></svg>
         <div class="readout"><b id="mbps">–</b> <span>Mbps</span><div class="muted" id="ping" style="font-size:13px">Downloads a 1 MB test file from Oracle</div></div>
       </div>
@@ -1206,20 +1540,23 @@ function renderFloorReport(rep) {
 }
 
 /* ---------- notifications ---------- */
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
 let swReg = null;
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").then((r) => (swReg = r)).catch(() => {});
+// The banner can be closed; it comes back after 3 days (or never, once notifications are on).
+function notifyDismissed() { try { return Date.now() - Number(localStorage.getItem("oracleNotifyHidden") || 0) < 3 * 864e5; } catch { return false; } }
+function dismissNotify() { try { localStorage.setItem("oracleNotifyHidden", String(Date.now())); } catch {} document.querySelectorAll(".notify").forEach((el) => el.classList.remove("on")); }
 function notifyState() {
   const supported = "PushManager" in window && "Notification" in window;
   let text = null;
   if (isIOS && !standalone) text = "To get notifications on iPhone: tap Share, then <b>Add to Home Screen</b>, and open Oracle from there.";
   else if (supported && Notification.permission === "default") text = "Turn on notifications so requests reach you even when the app is closed.";
   else if (supported && Notification.permission === "denied") text = "Notifications are blocked. Allow them for this site in your browser settings.";
-  for (const n of [1, 2]) {
-    $(`notify${n}`).classList.toggle("on", Boolean(text) && Boolean(localStorage.getItem("oracleToken")));
+  for (const n of [0, 1, 2]) {
+    $(`notify${n}`).classList.toggle("on", Boolean(text) && Boolean(localStorage.getItem("oracleToken")) && !notifyDismissed());
     if (text) $(`notifyText${n}`).innerHTML = text;
-    $(`notify${n}`).querySelector("button").style.display = isIOS && !standalone ? "none" : "";
+    $(`notify${n}`).querySelector("button:not(.x)").style.display = isIOS && !standalone ? "none" : "";
   }
 }
 async function enableNotifications() {
@@ -1243,6 +1580,7 @@ async function refreshMe() {
   REQS = ME.requests || [];
   const n = REQS.length || "";
   $("tabBadge").textContent = n; $("bellBadge").textContent = n;
+  if (ME?.place && $("hmArea")) $("hmArea").textContent = ME.place;
   if (current === "contribute") renderRequests();
   return ME;
 }
@@ -1261,6 +1599,7 @@ es.onmessage = async (m) => {
 
 (async () => {
   try { await refreshMe(); } catch { return; }
+  if (manualActive()) { const show = () => { showMe(manualPin.lat, manualPin.lng); document.querySelector(".me-dot")?.classList.add("manual"); }; map?.loaded() ? show() : map?.once("load", show); }
   if (lastPos) sendLocation(lastPos);
   notifyState();
   if (!window.isSecureContext) setTimeout(() => toast("⚠️ <b>Location is off on this address.</b> Phones only share location on <b>https://</b> pages. Open Oracle from its https link."), 800);
