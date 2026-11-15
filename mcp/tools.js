@@ -6,8 +6,8 @@ import { PLACES } from "../src/config.js";
 
 const BASE = process.env.ORACLE_URL || `http://localhost:${process.env.PORT || 3000}`;
 const headers = { "Content-Type": "application/json", "x-oracle-key": process.env.ORACLE_API_KEY || "" };
-const call = async (path, init) => {
-  const response = await fetch(`${BASE}${path}`, { headers, ...init, signal: AbortSignal.timeout(60000) });
+const call = async (path, init, timeoutMs = 60000) => {
+  const response = await fetch(`${BASE}${path}`, { headers, ...init, signal: AbortSignal.timeout(timeoutMs) });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || `Oracle returned ${response.status}`);
   return data;
@@ -51,7 +51,8 @@ server.tool(
     question: z.string().describe("The question in plain English, exactly as the user would ask it"),
   },
   async ({ place, question }) =>
-    withPhotos(await call("/api/ask", { method: "POST", body: JSON.stringify({ place, question, waitSeconds: 45 }) }))
+    // 90 s: the 45 s wait starts only after the place lookup and question planning, which can take 15+ s.
+    withPhotos(await call("/api/ask", { method: "POST", body: JSON.stringify({ place, question, waitSeconds: 45 }) }, 90000))
 );
 
 server.tool(

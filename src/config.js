@@ -119,7 +119,8 @@ export function findPlace(q) {
   return (
     PLACES.find((p) => p.id === s) ||
     PLACES.find((p) => p.name.toLowerCase() === s) ||
-    PLACES.find((p) => p.aliases.some((a) => s.includes(a))) ||
+    // Whole words only: a short alias like "mu" must not match inside "mcmurdo" or "museum".
+    PLACES.find((p) => p.aliases.some((a) => new RegExp(`(^|[^a-z0-9])${a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9])`).test(s))) ||
     null
   );
 }
