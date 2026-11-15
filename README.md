@@ -1,30 +1,32 @@
 # 🦉 Oracle
 
-**Eyes on the ground for AI agents.** AI can read the whole internet but can't see the room it's in. Oracle lets any agent ask about a real place ("how long is the food line?", "is there still pizza?") and gets the answer from the people standing there, in about a minute. They earn credits, trust and SOL for it.
+**Eyes on the ground for AI agents.** AI can read the whole internet but can't see the room it's in. Oracle lets any agent ask about a real place ("how long is the food line?", "is there still pizza?") and gets the answer from the people standing there, in under 40 seconds. They earn credits, trust and SOL for it.
 
 ## How it works
 
-1. **An agent asks** through MCP (`ask_place`). Gemini turns any free-text question into a one-tap poll with 3 ordered options.
+1. **An agent asks** through MCP (`ask_place`). Gemini turns any free-text question into a request with 3 ordered options and picks how phones should answer it: a one-tap **poll**, a **photo**, a **people count**, a **noise** reading, a **Wi-Fi** speed test, or a **report** (go and find out).
 2. **Memory first.** If people answered the same thing at that place in the last 10 minutes, Tiger Data returns it instantly.
-3. **People nearby get pinged** on Discord or Telegram, highest-trust people first.
-4. **Trust-weighted consensus.** 3 matching votes with combined trust ≥ 2.5 settle it.
-5. **Disagreement → photo.** After 5 split votes, the most trusted voter gets a link, takes a photo, and Gemini checks it. The page also checks GPS distance, so a photo from across campus is rejected.
-6. **Nobody there → web.** TinyFish reads the place's live web pages (hours, schedules) and answers, clearly labeled `web`.
-7. **Everyone who was right** gains trust and gets paid in devnet SOL. Wrong answers lose trust, so liars get quieter over time.
-8. **Every answer becomes data** in Tiger Data: trends, busiest hours, and instant future answers.
-9. **Spot scans.** In the Oracle app, earners tap *Scan this spot*: a Wi-Fi speed test (a 1 MB file served by Oracle), a 10-second loudness recording (only the dB number leaves the phone), and their floor. Scans per floor become "2nd floor is good, 3rd floor is bad", which agents read with `get_floor_report`.
+3. **People nearby get pinged** on Telegram, Discord, the Oracle web app or the iPhone app: everyone checked in at the place or within 5 miles of it, up to 25 people.
+4. **Trust-weighted consensus.** 3 matching votes with combined trust ≥ 2.5 settle it. Every question settles within 40 seconds, so the agent gets its answer in one call.
+5. **Measurements beat taps.** A photo is read by Gemini (it counts people, reads the line, and blurs faces, badges, screens and plates before anything is stored). Noise is 10 seconds of microphone, and only the dB number leaves the phone. Wi-Fi is a 1 MB download. One real measurement stands even if nobody else answers. People can also type a number for "how many people" questions.
+6. **Few people → photo.** If only 1 or 2 people are nearby, 3 votes can't happen, so Oracle asks for one photo instead. A tap without a photo is reported as unverified and isn't paid.
+7. **Disagreement → photo.** After 5 split votes, the most trusted voter gets a link, takes a photo, and Gemini checks it. The page also checks GPS distance, so a photo from across campus is rejected.
+8. **Nobody there → past reports.** Oracle answers at once from the last report at that place, or the same topic at a similar place, or a Gemini estimate. Each is clearly labeled (`past_report`, `similar_place`, `estimate`) and none of them pays.
+9. **Everyone who was right** gains trust and gets paid in devnet SOL: 0.001 for a matching tap, 0.01 for a verified photo. Wrong answers lose trust, so liars get quieter over time.
+10. **Every answer becomes data** in Tiger Data: trends, busiest hours, and instant future answers.
+11. **Spot scans.** In the Oracle app, earners tap *Scan this spot*: a Wi-Fi speed test (a 1 MB file served by Oracle), a 10-second loudness recording, and their floor. Scans per floor become "2nd floor is good, 3rd floor is bad", which agents read with `get_floor_report`.
 
 | Layer | Tech |
 |---|---|
-| Agent interface | MCP server (`mcp/oracle-mcp.js`): `ask_place`, `get_answer`, `get_live_status`, `get_place_insights`, `get_floor_report` |
-| People | Discord bot (buttons + `/checkin` `/ask` `/me` `/leaderboard`), Telegram bot |
+| Agent interface | MCP server with 5 tools: `ask_place`, `get_answer`, `get_live_status`, `get_place_insights`, `get_floor_report`. Local for Claude Desktop (`mcp/oracle-mcp.js`) and remote at `/mcp` for claude.ai on web and phone (`mcp/http.js`) |
+| People | Telegram bot, Discord bot (buttons + `/checkin` `/ask` `/me` `/leaderboard`), installable web app with push notifications, native iPhone app. What each can do: [`docs/CHANNELS.md`](docs/CHANNELS.md) |
 | Brain | Node.js + Express (`src/core.js`) |
 | People, places, questions | MongoDB Atlas (2dsphere geo index) |
 | Answers, trends, payouts | Tiger Data hypertables + continuous aggregate |
-| Questions + photo checks | Gemini API |
-| Web fallback | TinyFish Agent API |
+| Questions, photo reading, people counting, face blurring, estimates | Gemini API |
+| When nobody answers | Past reports in Tiger Data, then a labeled Gemini estimate |
 | Payouts | Solana devnet |
-| Hosting + domain | Vultr + GoDaddy Registry |
+| Hosting + domain | Vultr + GoDaddy Registry (section 8). The hackathon demo runs from a laptop behind a fixed public link (`npm run demo`) |
 | Dashboard | Live map (Leaflet), live vote bars, trend chart, leaderboard, payouts |
 
 ## Team
@@ -35,7 +37,7 @@
 | Rithwik | `src/channels/discord.js`, `src/channels/telegram.js` |
 | Sashikant | `public/` (dashboard + photo page), `src/ai/gemini.js`, `src/pay/solana.js` |
 
-`src/web/tinyfish.js` goes to whoever finishes first.
+For working on the code (people or AI agents), start at [`AGENTS.md`](AGENTS.md). Decisions and their reasons are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
@@ -83,14 +85,16 @@ Share one finished `.env` privately. **Never commit it.**
 | `TELEGRAM_TOKEN` | Rithwik | In Telegram, message **@BotFather** → `/newbot` → copy the token |
 | `GEMINI_API_KEY` | Sashikant | aistudio.google.com → **Get API key** |
 | `SOLANA_TREASURY_SECRET` | Sashikant | `npm run wallet` → paste the secret line into `.env` → fund the printed address at faucet.solana.com (Devnet) |
-| `TINYFISH_API_KEY` | anyone | agent.tinyfish.ai/api-keys |
+| `SESSION_SECRET` | anyone | Any long random string. It signs app sign-ins and **must be the same on every machine** |
+| `GEO_BIAS` | anyone | `lat,lng` of your home area (ASU Tempe: `33.4242,-111.9281`). Place lookups prefer it; without it they are worldwide |
 
-Every key is optional except MongoDB and Tiger Data. Missing keys just switch that feature off.
+Every key is optional except MongoDB and Tiger Data. Missing keys just switch that feature off. `npm run check` validates your `.env` without printing any secrets.
 
 ## 4. Run
 
 ```bash
-npm run dev
+npm run dev     # localhost only
+npm run demo    # demo day: public HTTPS link + server, and the Mac stays awake
 ```
 
 Open **http://localhost:3000**. `#oracle` gets the check-in panel; `/checkin`, `/ask`, `/me` and `/leaderboard` appear in Discord. Message your Telegram bot `/start`.
@@ -158,6 +162,10 @@ Quit Claude Desktop with **Cmd+Q**, reopen it, and try:
 
 The same server works in Cursor (**Settings → MCP**, same JSON).
 
+### Claude on the web or phone (claude.ai)
+
+Start the server with `npm run demo`; it prints a `Claude MCP` address ending in `/mcp`. In claude.ai: **Settings → Connectors → Add custom connector** and paste that address. No install is needed, and the same five tools appear. While `ORACLE_API_KEY` is empty the endpoint is open to anyone who has the link, so don't post it publicly.
+
 ## 8. Go live (Vultr + domain + HTTPS)
 
 HTTPS matters: phones only share location with the photo page over HTTPS.
@@ -183,14 +191,13 @@ HTTPS matters: phones only share location with the photo page over HTTPS.
 
 # HTTPS for phones (needed for the app, camera, microphone and location)
 
-Phones only allow the camera, microphone and location on https pages, and Telegram only opens in-app pages from https links. For the hackathon, use a free tunnel:
+Phones only allow the camera, microphone and location on https pages. `npm run demo` starts the public link for you and writes it to `PUBLIC_URL`. It uses the first of these that is set in `.env`:
 
-```bash
-brew install cloudflared
-cloudflared tunnel --url http://localhost:3000
-```
-
-It prints an address like `https://something.trycloudflare.com`. Put it in `.env` as `PUBLIC_URL=...` and restart `npm run dev`. (The address changes each time you start the tunnel.)
+| Setting | Link | Notes |
+|---|---|---|
+| `TUNNEL_TOKEN` + `PUBLIC_DOMAIN` | Cloudflare named tunnel on your own domain | Fixed address, no notice page. The domain's DNS must be on Cloudflare |
+| `NGROK_DOMAIN` | ngrok fixed domain | Fixed address. Browsers see ngrok's notice page once; API clients such as Claude don't |
+| neither | Cloudflare quick tunnel | A new address every run, which breaks QR codes and the Claude connector |
 
 # Earners: choose once, answer where you already are
 
@@ -202,13 +209,14 @@ The room QR opens `/join` (one general code, not tied to a place), where people 
 
 | Channel | How they answer | Extra sensors |
 |---|---|---|
-| **Telegram** (fastest) | Tap a button in the chat | Send a photo, or a 5-second voice note for a precise noise reading |
-| **Discord** | Tap a button in the DM | Reply with a photo or voice message |
-| **iMessage** | Coming soon | |
-| **Oracle app** (earn 2×) | Phone notification → tap → answer | Live camera, live microphone meter, location, live map |
+| **Telegram** (fastest) | Tap a button in the chat | Send a photo, type a number for people counts, or send a 10-second voice note for a noise reading |
+| **Discord** | Tap a button in the DM | Reply with a photo, a number or a voice message |
+| **Oracle web app** | Phone notification → tap → answer | Camera, 10-second microphone meter, 1 MB Wi-Fi speed test, live location, live map |
+| **iPhone app** | Native client in `ios/Oracle` | Push needs Apple push keys (`APNS_*`) |
 
 - Every request can be answered with **one tap** everywhere. Photos and readings are optional and earn +5 points.
-- Telegram and Discord never send links to the app. Only people who chose the app get app notifications.
+- Telegram and Discord answer inside the chat. The one exception is a Wi-Fi question: a bot can't measure a connection, so the message adds a personal link that opens the speed test in the browser.
+- The full table of what each channel can and can't do is in [`docs/CHANNELS.md`](docs/CHANNELS.md).
 - iPhone app users: Share → **Add to Home Screen**, then open Oracle from the Home Screen to allow notifications (iOS 16.4+).
 - Voice-note noise readings need ffmpeg on the server: `brew install ffmpeg`.
 - The native app pitch (Profile tab): motion, Bluetooth crowd density, light and air pressure, which are sensors a chat bot can't reach.
@@ -217,7 +225,7 @@ The room QR opens `/join` (one general code, not tied to a place), where people 
 
 - **First time:** scan the join QR. Telegram opens, checks you in, and offers to share your location.
 - **After that:** no scanning. Share **live location** (📎 → Location → Share My Live Location) and Oracle matches you to the nearest place with a MongoDB geo query. Walk to the MU and you get MU questions.
-- **Points:** +1 per answer, +5 per verified photo. Right answers also earn devnet SOL automatically.
+- **Points:** +1 per answer, +5 for a verified photo or a real measurement. Right answers also earn devnet SOL automatically: 0.001 for a tap, 0.01 for a verified photo.
 - **Spend them in Telegram:**
   - `/points`: balance, trust, earnings
   - `/rewards`: gift cards (catalog in `src/config.js` → `REWARDS`). Redemptions are listed at `GET /api/redemptions` for you to fulfil.
@@ -247,13 +255,14 @@ The room QR opens `/join` (one general code, not tied to a place), where people 
 
 # Tuning
 
-All the knobs are in `src/config.js`: vote thresholds, timeouts, rewards, places (drop exact map pins before the demo), and the web pages TinyFish reads for each place.
+All the knobs are in `src/config.js`: vote thresholds, timeouts, rewards and places (drop exact map pins before the demo). The ones you're most likely to change are env settings: `MIN_VOTES` (3; set 1 to test alone), `DEADLINE_SECONDS` (40), `CACHE_MINUTES` (10) and `ANSWER_RADIUS_MILES` (5).
 
 # API
 
 | Route | What |
 |---|---|
-| `POST /api/ask` `{place, question}` | Ask (returns `answered` or `pending` + `question_id`) |
+| `POST /api/ask` `{place, question, waitSeconds}` | Ask. Waits up to `waitSeconds` (default 45) and returns `answered`, or `pending` + `question_id` |
+| `POST /mcp` | Remote MCP endpoint (Streamable HTTP) for claude.ai and other MCP clients |
 | `GET /api/questions/:id` | Result of a pending question |
 | `GET /api/status` | Every place: latest answer + people checked in |
 | `GET /api/insights?place=&topic=` | Busiest hours + last 24 h |
