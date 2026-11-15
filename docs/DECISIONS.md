@@ -127,3 +127,9 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Decision:* For questions about hours, schedules, menus, prices or events at a place that has a `web` entry, Oracle uses the place's official page. TinyFish reads each page in the background (at server start and when the facts are older than 3 hours), the facts are stored in Mongo `settings` (`web:<placeId>`), and Gemini answers from them. People still come first: the official answer is returned (labelled `web`, no payout) only when nobody answers; when people do answer, the official fact is attached as `official`. Lines, crowds and noise never go to the web. This narrows D-008, which stays true for live conditions.
 - *Why:* The place's own site is the right source for "is it open?". A live TinyFish run takes 20 seconds to 2 minutes, which breaks the 40-second rule (D-019), so it must not run while someone waits.
 - *Where:* `src/web/tinyfish.js`, `answerFromFacts` in `src/ai/gemini.js`, `ask` and `answerFromHistory` in `src/core.js`.
+
+**D-023: The iPhone app defaults to the live server and answers Wi-Fi and people-count requests natively** · 2026-11-15 · Active (untested by hand)
+- *Decision:* `ios/Oracle` connects to `https://oracle.tryalethea.com` on first launch, on the Simulator too (it used to default to `localhost:3000` there). Settings or the `ORACLE_API_BASE_URL` launch variable still override it. Wi-Fi requests run the 1 MB speed test in the app and send `mbps`; people-count requests accept a typed number sent as `count`.
+- *Why:* The app should work without typing a server address, and it lacked the two answer types the web app has (D-017, D-020).
+- *Watch out:* signing in from the Simulator now touches the live shared data, and UI tests that don't set `ORACLE_API_BASE_URL` reach the live server.
+- *Where:* `OracleSession` in `NativeData.swift`, `SpeedTest` in `Contribute.swift`, `LivePoll` in `NativeScreens.swift`.
