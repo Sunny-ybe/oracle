@@ -107,6 +107,7 @@ export const PRESETS = {
   line_length: { question: (p) => `How long is the line at ${p} right now?`, options: ["0-5 min", "5-15 min", "15+ min"] },
   crowd: { question: (p) => `How crowded is ${p} right now?`, options: ["Empty", "Some space", "Packed"] },
   noise: { question: (p) => `How loud is ${p} right now?`, options: ["Quiet", "Chatty", "Loud"], sensor: "noise", thresholds: [55, 70] },
+  wifi: { question: (p) => `How fast is the Wi-Fi at ${p} right now?`, options: ["Slow", "Okay", "Fast"], sensor: "wifi", thresholds: [10, 50] },
   look: { question: (p) => `What does ${p} look like right now?`, options: ["Calm", "Busy", "Chaotic"], sensor: "photo" },
   ask_staff: { question: (p) => `Can someone at ${p} find out for us?`, options: ["Yes", "Partly", "No"], sensor: "report" },
   people_count: { question: (p) => `How many people are at ${p} right now?`, options: ["Under 15", "15-40", "40+"], sensor: "people_count", thresholds: [15, 40] },

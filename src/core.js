@@ -415,12 +415,17 @@ export async function submitReading(token, body) {
   let option = [1, 2, 3].includes(Number(body.option)) ? Number(body.option) : null;
   let value = null, extra = {}, shown = null;
   const db = Number.isFinite(Number(body.db)) && body.db !== null && body.db !== "" ? Math.round(Math.min(120, Math.max(20, Number(body.db)))) : null;
+  const mbps = Number.isFinite(Number(body.mbps)) && body.mbps !== null && body.mbps !== "" ? Math.round(Math.min(2000, Math.max(0, Number(body.mbps))) * 10) / 10 : null;
 
   try {
     // Every request can be answered with one tap; a reading or photo just makes it precise.
     if (sensor === "noise") {
       if (db != null) { value = db; option = bucket(db, L.q.thresholds); }
       else if (!option) return { ok: false, message: "Tap an answer or send a voice note." };
+    } else if (sensor === "wifi") {
+      // The phone downloaded the 1 MB test file and reports the speed it got.
+      if (mbps != null) { value = mbps; option = bucket(mbps, L.q.thresholds); }
+      else if (!option) return { ok: false, message: "Tap an answer or run the speed test." };
     } else if (sensor === "report") {
       const text = String(body.text || "").trim().slice(0, 500);
       if (!text && !option) return { ok: false, message: "Reply with what you found out." };
@@ -457,8 +462,8 @@ export async function submitReading(token, body) {
   }
 
   t.done = true;
-  // A real measurement (photo or noise reading) earns the sensor bonus.
-  const photoBonus = extra.photoId || (sensor === "noise" && db != null) ? RULES.creditPhoto - RULES.creditVote : 0;
+  // A real measurement (photo, noise reading or speed test) earns the sensor bonus.
+  const photoBonus = extra.photoId || (sensor === "noise" && db != null) || (sensor === "wifi" && mbps != null) ? RULES.creditPhoto - RULES.creditVote : 0;
   if (photoBonus > 0) await mongo.addCredits(t.userId, photoBonus);
   await recordVote(t.userId, L.q._id, option, value, extra);
   const unit = unitOf(sensor);
@@ -466,7 +471,7 @@ export async function submitReading(token, body) {
   return { ok: true, value, unit, image: shown, points: RULES.creditVote + photoBonus, message: `Sent: ${what}. +${RULES.creditVote + photoBonus} point${RULES.creditVote + photoBonus === 1 ? "" : "s"} 🦉` };
 }
 
-const unitOf = (sensor) => (sensor === "noise" ? "dB" : sensor === "people_count" ? "people" : "");
+const unitOf = (sensor) => (sensor === "noise" ? "dB" : sensor === "people_count" ? "people" : sensor === "wifi" ? "Mbps" : "");
 export const photoById = (id) => mongo.getPhoto(id);
 const bucket = (v, th) => (!th ? 2 : v < th[0] ? 1 : v < th[1] ? 2 : 3);
 function median(xs) {
@@ -566,7 +571,7 @@ async function settle(L, r) {
     result.measured = { sensor: q.sensor, median: mid, unit, readings, phones: readings.length };
     result.answer = q.sensor === "people_count"
       ? `About ${Math.round(mid)} people`
-      : `${result.answer || q.options[bucket(mid, q.thresholds) - 1]} (~${Math.round(mid)} dB)`;
+      : `${result.answer || q.options[bucket(mid, q.thresholds) - 1]} (~${q.sensor === "wifi" ? Math.round(mid * 10) / 10 : Math.round(mid)} ${unit})`;
   }
   result.earners_nearby = L.pinged ?? 0;
 
