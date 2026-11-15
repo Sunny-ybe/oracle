@@ -729,6 +729,17 @@
   #rewardsBody .card { padding:30px; border:1px solid var(--rule); border-radius:22px; box-shadow:none; margin:0; } #rewardsBody h2 { font-size:27px; margin:12px 0; } #rewardsBody .muted { font-size:14px; line-height:1.7; }
   .reward b { display:block; font-size:14px; } .reward small { display:block; color:var(--muted); font-size:12px; margin-top:6px; } .reward .gc { width:38px; height:38px; font-size:23px; border-width:1px; background:var(--peri-soft); } .reward .small { padding:8px 10px; font-size:12px; }
   .reward-wallet label { display:block; font-weight:800; font-size:12px; margin-top:24px; } .wallet-rate { padding:18px; background:var(--peri-soft); border-radius:14px; font-size:14px; font-weight:800; margin:24px 0; } .wallet-rate small { font-size:12px; color:var(--muted); } .wallet-address { font-size:12px; color:var(--muted); line-height:1.7; margin:20px 0; } .reward-wallet .field { flex-wrap:wrap; } .reward-wallet input { min-width:130px; width:auto; }
+  /* Redemptions on Solana devnet (D-032) */
+  .rd-progress { height:6px; border-radius:99px; background:var(--sand); border:1px solid var(--rule); overflow:hidden; margin-top:8px; } .rd-progress i { display:block; height:100%; background:var(--blue); border-radius:99px; transition:width .6s ease; }
+  .rd-confirm { margin:4px 0 14px; padding:18px; border:1.5px solid var(--char); border-radius:16px; background:var(--butter-soft); } .rd-confirm b { font-size:15px; } .rd-confirm p { margin:8px 0 12px; }
+  .rd-choice { display:grid; gap:8px; margin-bottom:14px; font-size:14px; font-weight:700; } .rd-choice label { display:flex; gap:8px; align-items:center; margin:0 !important; font-size:14px !important; }
+  .rd-wallet { display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; margin:18px 0 12px; }
+  .rd-badge { display:inline-block; font-size:11.5px; font-weight:900; padding:3px 9px; border-radius:99px; border:1.5px solid var(--char); background:var(--peri-soft); white-space:nowrap; } .rd-badge.ok { background:var(--leaf-soft); } .rd-badge.bad { background:var(--pink-soft); }
+  .rd-list { grid-column:1/-1; } .rd-item { padding:16px 0; border-top:1px solid var(--rule); } .rd-item:first-of-type { border-top:0; }
+  .rd-head { display:flex; justify-content:space-between; gap:12px; align-items:center; } .rd-head b { font-size:15px; } .rd-item > small { display:block; margin-top:4px; font-size:12px; }
+  .rd-steps { display:flex; gap:6px; list-style:none; padding:0; margin:12px 0 8px; } .rd-steps li { flex:1; font-size:12px; font-weight:800; color:var(--muted); padding-top:8px; border-top:4px solid var(--sand); } .rd-steps li.on { color:var(--char); border-color:var(--blue); } .rd-steps li.now { border-color:var(--butter); animation:rdPulse 1.2s ease-in-out infinite; }
+  @keyframes rdPulse { 50% { opacity:.5; } }
+  .rd-error { color:#b0303a; font-size:13px; margin:6px 0; } .rd-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:6px; } .rd-actions a { font-weight:900; font-size:13px; } .rd-note { margin-top:14px; font-size:12.5px !important; }
   .reward-guest { grid-column:1/-1; display:flex; align-items:center; gap:32px; padding:42px; border:1px solid var(--rule); border-radius:24px; background:var(--butter-soft); } .reward-star { font-size:80px; color:#b98600; } .reward-guest h2 { font-size:29px; } .reward-guest p { color:var(--muted); font-size:15px; line-height:1.8; max-width:650px; }
   @media(max-width:639px) { #explore .explore-search { width:calc(100% - 36px); margin:8px 18px 24px; padding:10px; } .explore-search .small { padding:9px; font-size:12px; } .explore-search input { font-size:14px; } .product-page-head { padding:24px 18px 12px; } #contribute .section, #rewards .section { padding:0 18px; } .request-empty { grid-template-columns:1fr; gap:24px; padding:26px; } .request-empty-art { width:110px; height:110px; } .request-empty img { width:90px; } .request-empty h2 { font-size:26px; } .request-how { grid-template-columns:1fr; gap:18px; } .requests-status { gap:10px; } .requests-status .small { font-size:12px; padding:8px; } #rewardsBody { grid-template-columns:1fr; } .reward-overview { grid-template-columns:1fr; padding:26px; gap:22px; } .reward-next { border-left:0; border-top:1px solid #d7c894; padding:22px 0 0; } #rewardsBody .card { padding:24px; } .reward-guest { display:block; padding:26px; } .discovered-place { padding:24px; margin-top:0; } .discovered-place > h2 { font-size:30px; } .discovery-report { padding:24px; } }
 
@@ -1551,12 +1562,82 @@ function renderRewards() {
   if (!ME) { $("rewardsBody").innerHTML=`<div class="reward-guest"><span class="reward-star" aria-hidden="true">✦</span><div><span class="page-eyebrow">MAKE EVERY ANSWER COUNT</span><h2>A home for your hard-earned points.</h2><p>Sign in to see your balance, reward availability, and wallet. Gift-card requests are fulfilled manually; Solana payouts use devnet.</p><button class="small" onclick="showGate('code')">Sign in to see rewards</button></div></div>`; return; }
   const credits=Number(ME.credits)||0, rewards=ME.rewards||[], next=[...rewards].sort((a,b)=>a.points-b.points).find(r=>r.points>credits);
   const wallet=String(ME.wallet||""), walletUrl=/^https:\/\//.test(ME.walletUrl||"")?ME.walletUrl:"https://explorer.solana.com/?cluster=devnet";
+  const short=(a)=>a?`${esc(String(a).slice(0,4))}…${esc(String(a).slice(-4))}`:"";
+  const reds=ME.redemptions||[];
   $("rewardsBody").innerHTML=`<div class="reward-overview"><div><span class="page-eyebrow">YOUR BALANCE</span><div class="reward-balance"><span aria-hidden="true">✦</span> ${credits}<small>points</small></div><p>${(ME.earnedSol||0).toFixed(3)} SOL earned on devnet · Trust ${esc(ME.trust)}</p></div><div class="reward-next"><b>${next?`${Math.max(0,next.points-credits)} points to your next reward`:"Keep sharing what you know."}</b><p>${next?esc(next.name):"Choose a reward below when you’re ready."}</p>${next?`<progress value="${credits}" max="${next.points}" aria-label="Progress toward next reward"></progress>`:""}<button class="linkbtn" onclick="go('contribute')">Answer & earn →</button></div></div>
-    <div class="reward-catalog card"><span class="page-eyebrow">CHOOSE A THANK-YOU</span><h2>Gift cards</h2><p class="muted">Redemptions are requests for manual fulfillment.</p>${rewards.map(r=>`<div class="reward"><div class="gc" aria-hidden="true">✦</div><div class="grow"><b>${esc(r.name)}</b><small>${r.points} points${credits<r.points?` · ${r.points-credits} more to go`:" · Available"}</small></div><button class="small" ${credits<r.points?"disabled":""} onclick="redeem('${esc(r.id)}')">Redeem</button></div>`).join("")||'<p class="muted">No gift cards configured yet.</p>'}</div>
-    <div class="reward-wallet card"><span class="page-eyebrow">SOLANA DEVNET</span><h2>Your wallet</h2><p class="muted">Devnet SOL is for testing. It has no monetary value.</p><div class="wallet-rate">${ME.pointsPerSol} points = 1 devnet SOL<br><small>Minimum ${ME.minCashout} points</small></div><label for="coPts">Points to cash out</label><div class="field"><input id="coPts" type="number" inputmode="numeric" placeholder="Enter points" min="${ME.minCashout}" max="${credits}"><button class="small" ${credits<ME.minCashout?'disabled':''} onclick="cashout()">Cash out</button></div><p class="wallet-address">Destination: ${wallet?`<a href="${esc(walletUrl)}" target="_blank" rel="noopener">${esc(wallet.slice(0,4))}…${esc(wallet.slice(-4))}</a>`:"No wallet linked"}${ME.linkedWallet?"":" · Oracle wallet"}</p><label for="wAddr">Use your own Solana wallet</label><div class="field"><input id="wAddr" placeholder="Solana public address"><button class="small ghost" onclick="linkWallet()">Link</button></div></div>`;
+    <div class="reward-catalog card"><span class="page-eyebrow">CHOOSE A THANK-YOU</span><h2>Gift cards</h2><p class="muted">Each redemption is recorded on Solana devnet with an anonymous ID. Gift cards are sent by hand.</p>${rewards.map(r=>{const pct=Math.min(100,Math.round(credits/r.points*100));return `<div class="reward"><div class="gc" aria-hidden="true">✦</div><div class="grow"><b>${esc(r.name)}</b><small>${r.points} points${credits<r.points?` · ${r.points-credits} more to go`:" · Ready to redeem"}</small><div class="rd-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${r.points}" aria-valuenow="${Math.min(credits,r.points)}" aria-label="Progress toward ${esc(r.name)}"><i style="width:${pct}%"></i></div></div><button class="small" ${credits<r.points?"disabled":""} onclick="redeem('${esc(r.id)}')">Redeem</button></div>${redeemDraft?.rewardId===r.id?redeemPanel(r):""}`;}).join("")||'<p class="muted">No gift cards configured yet.</p>'}</div>
+    <div class="reward-wallet card"><span class="page-eyebrow">SOLANA DEVNET</span><h2>Your wallet</h2><p class="muted">Devnet SOL is for testing. It has no monetary value.</p>
+      <div class="rd-wallet">${ME.walletVerified?`<span class="rd-badge ok">✓ Verified</span> Your wallet ${short(ME.wallet)}`:`<span class="rd-badge">Oracle wallet</span> ${short(ME.oracleWallet||wallet)}`}</div>
+      <button class="small ghost" onclick="connectWallet()">${ME.walletVerified?"Verify a different wallet":"Connect & verify a Solana wallet"}</button>
+      <p class="wallet-address">Supports Phantom, Solflare and Backpack. Your wallet signs a one-time message to prove it’s yours. It costs nothing, and Oracle never asks for your seed phrase.</p>
+      <div class="wallet-rate">${ME.pointsPerSol} points = 1 devnet SOL<br><small>Minimum ${ME.minCashout} points</small></div><label for="coPts">Points to cash out</label><div class="field"><input id="coPts" type="number" inputmode="numeric" placeholder="Enter points" min="${ME.minCashout}" max="${credits}"><button class="small" ${credits<ME.minCashout?'disabled':''} onclick="cashout()">Cash out</button></div><p class="wallet-address">Destination: ${wallet?`<a href="${esc(walletUrl)}" target="_blank" rel="noopener">${short(wallet)}</a>`:"No wallet linked"}${ME.linkedWallet?"":" · Oracle wallet"}</p><label for="wAddr">Or paste a Solana address (not verified)</label><div class="field"><input id="wAddr" placeholder="Solana public address"><button class="small ghost" onclick="linkWallet()">Link</button></div></div>
+    ${reds.length?`<div class="rd-list card"><span class="page-eyebrow">YOUR REDEMPTIONS · SOLANA DEVNET</span><h2>Redemptions</h2>${reds.map(redemptionRow).join("")}<p class="muted rd-note">Devnet is Solana’s test network: the record proves the request, not a payment. Gift cards are fulfilled manually by the Oracle team.</p></div>`:""}`;
+  watchRedemptions();
 }
 
-async function redeem(id) { const r = await api("/api/app/redeem", { rewardId: id }); toast(`${r.ok ? "🎁 " : ""}${esc(r.message)}`); refreshMe().then(renderRewards); }
+/* ---------- redemptions on Solana devnet ---------- */
+let redeemDraft=null, redeemBusy=false, redPoll=null;
+const newKey=()=>(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g,"");
+// Redeem opens a confirmation. One request key per confirmation, so repeated taps or retries can't redeem twice.
+function redeem(id){ redeemDraft={rewardId:id,key:newKey(),payout:ME?.walletVerified?"verified":"oracle"}; renderRewards(); }
+function redeemPanel(r){
+  const short=(a)=>a?`${esc(String(a).slice(0,4))}…${esc(String(a).slice(-4))}`:"";
+  return `<div class="rd-confirm"><b>Redeem ${esc(r.name)} for ${r.points} points?</b>
+    <p class="muted">Points are taken by Oracle’s server, and the request is recorded on Solana devnet with an anonymous ID. Your name and any gift-card code never go on chain.</p>
+    <div class="rd-choice" role="radiogroup" aria-label="Wallet for this redemption">
+      <label><input type="radio" name="rdw" value="oracle" ${redeemDraft.payout==="oracle"?"checked":""} onchange="redeemDraft.payout='oracle'"> Oracle wallet ${short(ME.oracleWallet)}</label>
+      ${ME.walletVerified?`<label><input type="radio" name="rdw" value="verified" ${redeemDraft.payout==="verified"?"checked":""} onchange="redeemDraft.payout='verified'"> Your verified wallet ${short(ME.wallet)}</label>`:`<button class="linkbtn" onclick="connectWallet()">Connect & verify your own wallet →</button>`}
+    </div>
+    <div class="two"><button class="small ghost" onclick="redeemDraft=null;renderRewards()">Cancel</button><button class="small" id="rdGo" ${redeemBusy?"disabled":""} onclick="confirmRedeem()">${redeemBusy?"Recording on devnet…":"Confirm redeem"}</button></div></div>`;
+}
+async function confirmRedeem(){
+  if(redeemBusy||!redeemDraft) return; redeemBusy=true; renderRewards();
+  try {
+    const r=await api("/api/app/redeem",{rewardId:redeemDraft.rewardId,idemKey:redeemDraft.key,payout:redeemDraft.payout});
+    if(r.error) toast(esc(r.error)); else toast(`${r.ok?"🎁 ":""}${esc(r.message)}`);
+    if(r.ok||r.duplicate) redeemDraft=null;
+  } catch { toast("Couldn’t reach Oracle. Tap Confirm again: it won’t redeem twice."); }
+  finally { redeemBusy=false; await refreshMe().catch(()=>{}); renderRewards(); }
+}
+const STEP_DONE={pending:1,signing:0,reserved:0,awaiting_fulfillment:3,fulfilled:4,failed:0,cancelled:0,rejected:0};
+function redemptionRow(x){
+  const done=STEP_DONE[x.status]??0, sent=Boolean(x.signature);
+  const step=(i,label)=>`<li class="${done>=i||(i===1&&sent&&x.status!=="failed")?"on":""} ${x.status==="pending"&&i===2||x.status==="signing"&&i===1?"now":""}">${label}</li>`;
+  const bad=x.status==="failed"||x.status==="cancelled"||x.status==="rejected";
+  return `<div class="rd-item"><div class="rd-head"><b>${esc(x.reward)}</b><span class="rd-badge ${x.status==="awaiting_fulfillment"||x.status==="fulfilled"?"ok":bad?"bad":""}">${esc({reserved:"Starting",signing:"Pending",pending:"Pending",awaiting_fulfillment:"Awaiting fulfillment",fulfilled:"Fulfilled",failed:"Failed",cancelled:"Cancelled · points returned",rejected:"Not enough points"}[x.status]||x.status)}</span></div>
+    <small class="muted">${x.points} points · ${ago(x.createdAt)} · ${x.wallet?.kind==="verified"?"verified wallet":"Oracle wallet"} ${esc(x.wallet?.address||"")} · ID ${esc(x.id)}</small>
+    ${bad&&x.status!=="failed"?"":`<ol class="rd-steps">${step(1,"Pending")}${step(2,"Confirmed on devnet")}${step(3,x.status==="fulfilled"?"Fulfilled":"Awaiting fulfillment")}</ol>`}
+    ${x.error?`<p class="rd-error">${esc(x.error)} Your points are held, not lost.</p>`:""}
+    <div class="rd-actions">${x.explorerUrl?`<a href="${esc(x.explorerUrl)}" target="_blank" rel="noopener">View on Solana Explorer (devnet) ↗</a>`:""}${x.canRetry?`<button class="small" onclick="redemptionAction('${esc(x.id)}','retry',this)">Retry</button><button class="small ghost" onclick="redemptionAction('${esc(x.id)}','cancel',this)">Cancel & refund</button>`:""}</div></div>`;
+}
+async function redemptionAction(id,action,btn){
+  document.querySelectorAll(".rd-actions button").forEach(b=>b.disabled=true); if(btn) btn.textContent=action==="retry"?"Retrying…":"Cancelling…";
+  const r=await api(`/api/app/redemptions/${encodeURIComponent(id)}/${action}`,{}).catch(()=>({error:"Couldn’t reach Oracle."}));
+  toast(esc(r.message||r.error||"Done")); await refreshMe().catch(()=>{}); renderRewards();
+}
+// While anything is still being recorded, check every 3 seconds.
+function watchRedemptions(){
+  const busy=(ME?.redemptions||[]).some(x=>["reserved","signing","pending"].includes(x.status));
+  clearTimeout(redPoll); if(!busy||current!=="rewards") return;
+  redPoll=setTimeout(async()=>{ const r=await api("/api/app/redemptions").catch(()=>null); if(r?.redemptions&&ME){ ME.redemptions=r.redemptions; if(!redeemBusy) renderRewards(); } },3000);
+}
+// Connect a browser wallet (Phantom, Solflare, Backpack) and prove ownership by signing a one-time message.
+function solanaWallet(){ return window.phantom?.solana||window.solflare||window.backpack||((window.solana?.isPhantom||window.solana?.isSolflare)?window.solana:null); }
+async function connectWallet(){
+  const p=solanaWallet();
+  if(!p) return toast(`No Solana wallet found in this browser. Install <a href="https://phantom.com/download" target="_blank" rel="noopener">Phantom</a> or Solflare, or open Oracle in your wallet app’s browser. Your Oracle wallet still works.`);
+  try {
+    const res=await p.connect(); const address=String((res?.publicKey||p.publicKey).toString());
+    const ch=await api("/api/app/wallet/challenge",{address}); if(ch.error) return toast(esc(ch.error));
+    const signed=await p.signMessage(new TextEncoder().encode(ch.message),"utf8");
+    const sig=signed?.signature||signed; const b64=btoa(String.fromCharCode(...new Uint8Array(sig)));
+    const r=await api("/api/app/wallet/verify",{address,signature:b64});
+    toast(r.ok?`✅ ${esc(r.message)}`:esc(r.error||"Couldn’t verify that wallet."));
+    if(r.ok&&redeemDraft) redeemDraft.payout="verified";
+  } catch(e){ toast(/reject|denied|cancel/i.test(String(e?.message))?"Wallet request cancelled.":`Wallet error: ${esc(e?.message||e)}`); }
+  await refreshMe().catch(()=>{}); renderRewards();
+}
+
 async function cashout() {
   const pts = Number($("coPts").value); if (!pts) return toast("Enter how many points to cash out.");
   toast("💸 Sending on Solana…");
