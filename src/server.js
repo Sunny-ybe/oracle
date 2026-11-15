@@ -306,5 +306,10 @@ else console.log("No TINYFISH_API_KEY: official-page answers off");
 
 if (env.discordToken) startDiscord().catch((e) => console.error("Discord failed to start:", e.message));
 else console.log("No DISCORD_TOKEN: Discord off");
-if (env.telegramToken) startTelegram().catch((e) => console.error("Telegram failed to start:", e.message));
+// Telegram's API is sometimes unreachable for a moment at boot; keep trying instead of leaving the bot off until the next restart.
+const bootTelegram = () => startTelegram().catch((e) => {
+  console.error("Telegram failed to start, retrying in 15 s:", e.message);
+  setTimeout(bootTelegram, 15000);
+});
+if (env.telegramToken) bootTelegram();
 else console.log("No TELEGRAM_TOKEN: Telegram off");
