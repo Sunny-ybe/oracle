@@ -9,6 +9,7 @@ import { planQuestion, checkPhoto, analyzePhoto, summarizeReports, estimateAnswe
 import { maskPII } from "./ai/privacy.js";
 import { geocode } from "./web/geo.js";
 import { pay, solanaEnabled } from "./pay/solana.js";
+import { webAnswer, webCanAnswer } from "./web/tinyfish.js";
 
 export const events = new EventEmitter();
 events.setMaxListeners(200);
@@ -21,6 +22,7 @@ const send = (user, fn, ...args) =>
   channels[user.channel]?.[fn]?.(user, ...args)?.catch?.((e) => console.error(`${user.channel} ${fn} failed:`, e.message));
 
 const live = new Map(); // open questions by id
+const WEB_BUDGET_MS = 30000; // if the official facts aren't stored yet, wait this long for the page read, counted from the ask
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const round = (n) => Math.round(n * 100) / 100;
 
@@ -109,6 +111,12 @@ export async function ask({ place, question, topic, askedBy = "agent", waitSecon
   L.done = new Promise((resolve) => { L.resolve = resolve; });
   live.set(q._id, L);
 
+  // Hours, schedules, menus: the place publishes these, so read its official page while people are being asked.
+  if (webCanAnswer(p, question || q.question)) {
+    L.web = webAnswer(p, q.question, q.options, WEB_BUDGET_MS).then((w) => (L.webResult = w));
+    L.web.catch(() => {});
+    emit("web", { id: q._id, placeId: p.id, place: p.name, url: p.web.url });
+  }
   const people = await mongo.pickResponders(p);
   L.pinged = people.length;
   L.pingedIds = new Set(people.map((u) => u._id));
@@ -522,6 +530,18 @@ const ago = (t) => minutesAgo(t);
 async function answerFromHistory(L) {
   const q = L.q, p = findPlace(q.placeId) || { id: q.placeId, name: q.place };
   try {
+    if (L.web) {
+      // Wait for the official page only as long as its budget allows, so nobody waits past 40 seconds.
+      const left = Math.max(0, WEB_BUDGET_MS - (Date.now() - q.createdAt.getTime()));
+      const w = await Promise.race([L.web, sleep(left).then(() => null)]);
+      if (w?.option) {
+        tiger.saveAnswer({ questionId: q._id, placeId: p.id, topic: q.topic, option: w.option, answerText: q.options[w.option - 1], questionText: q.question, source: "web" }).catch(() => {});
+        return settle(L, {
+          source: "web", option: w.option, confidence: 0.5, evidence: w.evidence, source_url: w.source_url, as_of: w.as_of,
+          note: `Nobody at ${p.name} answered. This comes from the place's official page, not from a person there.`,
+        });
+      }
+    }
     const last = await tiger.lastAnswer(p.id, q.topic);
     if (last) {
       return settle(L, {
@@ -586,6 +606,7 @@ async function settle(L, r) {
       ? `About ${Math.round(mid)} people`
       : `${result.answer || q.options[bucket(mid, q.thresholds) - 1]} (~${q.sensor === "wifi" ? Math.round(mid * 10) / 10 : Math.round(mid)} ${unit})`;
   }
+  if (L.webResult?.evidence && r.source !== "web") result.official = { says: L.webResult.evidence, source_url: L.webResult.source_url };
   result.earners_nearby = L.pinged ?? 0;
 
   await mongo.updateQuestion(q._id, { status: "resolved", result, resolvedAt: new Date() });

@@ -211,3 +211,19 @@ export async function searchIntent(query) {
   const result = await generate([{ text: `Return JSON {"query":"place search terms"}. Convert this request to a short map search query. Preserve named venues, streets and cities. Do not invent venues, conditions, or coordinates. User input: ${JSON.stringify(query)}` }], 8000);
   return typeof result.query === 'string' && result.query.trim() ? result.query.trim().slice(0, 250) : query;
 }
+
+// Answer a question from facts TinyFish read off the place's official page (hours, schedule, menu).
+export async function answerFromFacts({ place, question, options, facts, readAt }) {
+  if (!env.geminiKey) return null;
+  return generate([
+    {
+      text: `Official information for "${place.name}", read from its website at ${readAt}:
+"""${facts}"""
+Right now it is ${new Date().toLocaleString("en-US", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Phoenix" })} in Phoenix.
+Question: "${question}"
+Options: 1 = "${options[0]}", 2 = "${options[1]}", 3 = "${options[2]}".
+Answer only from the official information above. If it does not answer the question, use null.
+Return JSON: {"option": 1, 2, 3 or null, "evidence": one short sentence quoting the relevant fact, with times}`,
+    },
+  ], 12000);
+}
