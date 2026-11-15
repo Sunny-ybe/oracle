@@ -107,3 +107,13 @@ Format: **D-NNN: title** · date · status. Then *Decision* and *Why*, plus *Whe
 - *Decision:* At the 90 s deadline, a people-count, noise or Wi-Fi question with at least one measured reading settles as a normal answer (and pays), even if fewer than `MIN_VOTES` people answered. Tap-only answers still need consensus.
 - *Why:* A count read from a photo or a measured speed is evidence in a way one tap is not. Without this, one person answering with a photo while others stayed silent gave "low confidence" and no payout.
 - *Where:* `onDeadline` in `src/core.js`.
+
+**D-019: Every question settles within 40 seconds** · 2026-11-15 · Active
+- *Decision:* `deadlineSeconds` is 40 (`DEADLINE_SECONDS`), down from 90. `ask_place` waits 45 s, so Claude gets the settled answer in the same tool call. At the deadline a question settles as: consensus, a phone measurement (D-018), one unverified answer marked low confidence, or the history fallback (D-008).
+- *Why:* The user's rule: nobody waits more than 30 to 40 seconds for an answer, 60 at the very most.
+- *Where:* `RULES` in `src/config.js`, `ask_place` in `mcp/tools.js`.
+
+**D-020: People counts take a tap, a typed number or a photo; a photo alone answers a poll** · 2026-11-15 · Active
+- *Decision:* Any "how many people" question is a `people_count` question with number ranges, never a crowd poll. People answer by tapping a range, typing a number, or sending a photo that Gemini counts. A typed number pays like a tap (1 point, 0.001 SOL) and is not a measurement for D-018; a photo pays 5 points and 0.01 SOL. On a plain poll, a photo sent without tapping is read by Gemini to pick the option.
+- *Why:* The user wants number questions answered in numbers, with more reward for a photo, and wants "reply with a picture" to work for line questions.
+- *Where:* `planQuestion` in `src/ai/gemini.js`; `submitReading`, `typedCount`, `findRequestFor` and `answerFromApp` in `src/core.js`.

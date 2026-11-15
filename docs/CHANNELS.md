@@ -4,9 +4,9 @@ How a person answers a request, by channel. "Link" means the bot message carries
 
 | Question type | Oracle web app | Telegram bot | Discord bot |
 |---|---|---|---|
-| **Poll** (line length, seats, "is there pizza") | Tap | Tap a button | Tap a button |
+| **Poll** (line length, seats, "is there pizza") | Tap, or a photo alone (Gemini picks the option) | Tap a button, or send a photo | Tap a button, or reply with a photo |
 | **Photo** (what it looks like, is it open) | Tap, or take a photo; Gemini reads it, faces blurred | Tap, or send a photo in the chat | Tap, or reply with a photo in the DM |
-| **People count** | Tap, or photograph the room; Gemini counts | Tap, or send a photo | Tap, or reply with a photo |
+| **People count** | Tap a range, type a number, or photograph the room; Gemini counts | Tap a range, type a number, or send a photo | Tap a range, type a number, or reply with a photo |
 | **Noise** | Tap, or measure 10 s with the microphone (only the dB number is sent) | Tap, or send a voice note; the server works out the loudness | Tap, or send a voice message |
 | **Wi-Fi** | Tap, or run the 1 MB speed test | Tap, or use the link to run the speed test | Tap, or use the link (DM only) |
 | **Report** (go and find out) | Type a reply, photo optional | Reply with text, photo optional | Reply with text, photo optional |
@@ -19,6 +19,8 @@ How a person answers a request, by channel. "Link" means the bot message carries
 | Points, rewards, cash-out | Yes | Yes | Yes |
 | Floor scan (Wi-Fi + 10 s loudness + floor) | Yes | No | No |
 | Dispute photo with GPS check | Yes (`/verify` link) | Opens the link | Opens the link |
+
+Every question settles within 40 seconds (D-019). A photo earns 5 points and 0.01 SOL; a tap or typed number earns 1 point and 0.001 SOL.
 
 Limits that no code change removes:
 - A bot cannot run code on the phone, so it cannot measure Wi-Fi speed or read the microphone live. Telegram and Discord get a voice note (noise) or the link (Wi-Fi).
