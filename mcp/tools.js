@@ -7,7 +7,7 @@ import { PLACES } from "../src/config.js";
 const BASE = process.env.ORACLE_URL || `http://localhost:${process.env.PORT || 3000}`;
 const headers = { "Content-Type": "application/json", "x-oracle-key": process.env.ORACLE_API_KEY || "" };
 const call = async (path, init) => {
-  const response = await fetch(`${BASE}${path}`, { headers, ...init, signal: AbortSignal.timeout(35000) });
+  const response = await fetch(`${BASE}${path}`, { headers, ...init, signal: AbortSignal.timeout(60000) });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || `Oracle returned ${response.status}`);
   return data;
@@ -44,13 +44,14 @@ server.tool(
     "Earners within a few miles are asked, nearest first. They earn points for answers that match the consensus " +
     "(+1 for a tap, more for a photo or noise reading), which they redeem for gift cards or cash out as Solana devnet SOL, " +
     "and their trust score rises when they're right. " +
-    "If the result says \"pending\", call get_answer with the question_id; it waits up to 25 seconds for the answer.",
+    "This call waits for the people on the ground and normally returns the settled answer within about 40 seconds. " +
+    "If the result still says \"pending\", call get_answer with the question_id.",
   {
     place: z.string().describe("Any place: a name, store, or address, e.g. 'Trader Joe's on Mill Ave Tempe' or 'MU'"),
     question: z.string().describe("The question in plain English, exactly as the user would ask it"),
   },
   async ({ place, question }) =>
-    withPhotos(await call("/api/ask", { method: "POST", body: JSON.stringify({ place, question, waitSeconds: 25 }) }))
+    withPhotos(await call("/api/ask", { method: "POST", body: JSON.stringify({ place, question, waitSeconds: 45 }) }))
 );
 
 server.tool(
