@@ -1,16 +1,37 @@
 <p align="center">
-  <img src="public/img/ora.png" alt="Ora, Oracle’s smiling green mascot with a location-pin badge" width="200" />
+  <img src="public/img/ora.png" alt="Ora, Oracle’s smiling green mascot with a location-pin badge" width="180" />
 </p>
 
 <h1 align="center">Oracle</h1>
 
-<p align="center"><strong>AI agents know the internet. Oracle connects them to people who know what’s happening nearby.</strong></p>
+<p align="center"><strong>AI agents can read the whole internet, but they can’t see the physical world.<br/>Oracle gives them eyes: real people nearby answer live questions about real places.</strong></p>
 
 <p align="center">
-  <a href="https://oracle.tryalethea.com/app">Open Oracle</a> ·
-  <a href="https://oracle.tryalethea.com">Live dashboard</a> ·
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-Express-339933?logo=nodedotjs&logoColor=white">
+  <img alt="SwiftUI" src="https://img.shields.io/badge/iOS-SwiftUI-0D96F6?logo=swift&logoColor=white">
+  <img alt="MCP" src="https://img.shields.io/badge/AI-MCP%20server-111111">
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white">
+  <img alt="Gemini" src="https://img.shields.io/badge/Gemini-8E75B2?logo=googlegemini&logoColor=white">
+  <img alt="Solana" src="https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white">
+</p>
+
+<p align="center">
+  <a href="#run-it-locally">Run it locally</a> ·
+  <a href="#connect-an-ai-assistant">Connect an AI assistant</a> ·
   <a href="ios/Oracle/README.md">iPhone app</a>
 </p>
+
+> Ask Claude or ChatGPT *“how long is the coffee line right now?”* and it has no idea. With Oracle connected, the question goes to people who are actually there, and the agent gets back a verified answer in under a minute.
+
+## At a glance
+
+| | |
+| --- | --- |
+| **What** | An MCP server that lets any AI agent ask questions about the physical world, answered by nearby people over Telegram, Discord, the web, or a native iPhone app |
+| **Built at** | SunHacks (ASU), team of 3 |
+| **My role** | Most of the commits (31 of 48): core backend (question matching, voting, answer resolution), the MCP server, Telegram/Discord/push channels, the Gemini pipeline, and the architecture docs |
+| **Shipped** | Backend deployed on Vultr during the hackathon, iPhone app on TestFlight (SwiftUI, ~5k lines), 4 answer channels, Solana devnet rewards |
+| **Hard parts** | Matching questions to people by location in real time, settling disagreements with trust scores and photo checks, blurring faces before photos are stored, and labeling every fallback so a guess never passes as a fresh answer |
 
 ## Why we built it
 
@@ -145,13 +166,7 @@ For a temporary public link, `npm run demo` starts the server and a configured t
 
 ## Connect an AI assistant
 
-The shared Oracle MCP address is:
-
-```text
-https://oracle.tryalethea.com/mcp
-```
-
-The shared endpoint is configured for **no authentication**. For your own deployment, check `/api/app/config` to see its MCP address and authentication setting. Setting `ORACLE_API_KEY` enables key protection on that server.
+The team's hosted server is offline for now, so connect an assistant to your own deployment. Its remote MCP endpoint is `<PUBLIC_URL>/mcp`; check `/api/app/config` to see the exact address and whether it needs a key. Setting `ORACLE_API_KEY` turns on key protection.
 
 Add Oracle as a custom MCP connector in an assistant that supports remote MCP servers. Setup and availability depend on the assistant and account. The iPhone app includes Claude and ChatGPT setup guidance; it does not silently install a connector or claim a connection it cannot verify.
 
